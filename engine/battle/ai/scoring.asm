@@ -177,12 +177,12 @@ AI_Types:
 	ld b, NUM_MOVES + 1
 .checkmove
 	dec b
-	ret z
+	jr z, .checkrain
 
 	inc hl
 	ld a, [de]
 	and a
-	ret z
+	jr z, .checkrain
 
 	inc de
 	call AIGetEnemyMove
@@ -254,6 +254,52 @@ AI_Types:
 .immune
 	call AIDiscourageMove
 	jr .checkmove
+
+; Encourage moves in the Rain Dance list if it's raining.
+.checkrain
+	ld a, [wBattleWeather]
+	cp WEATHER_RAIN
+	jr nz, .checksun
+
+	ld hl, RainDanceMoves
+	jr .encourage_weather_moves
+
+; Encourage moves in the Sunny Day list if it's sunny.
+.checksun
+	cp WEATHER_SUN
+	ret nz
+
+	ld hl, SunnyDayMoves
+.encourage_weather_moves
+	ld b, h
+	ld c, l
+	ld hl, wEnemyAIMoveScores - 1
+	ld de, wEnemyMonMoves
+.checkweathermove
+	inc hl
+	ld a, e
+	cp LOW(wEnemyMonMoves + NUM_MOVES)
+	ret z
+
+	ld a, [de]
+	inc de
+	and a
+	ret z
+
+	push hl
+	push de
+	push bc
+	ld h, b
+	ld l, c
+	ld de, 1
+	call IsInArray
+	pop bc
+	pop de
+	pop hl
+	jr nc, .checkweathermove
+
+	dec [hl]
+	jr .checkweathermove
 
 
 AI_Offensive:
