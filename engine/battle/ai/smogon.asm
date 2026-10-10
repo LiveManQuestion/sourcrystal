@@ -101,6 +101,7 @@ AI_Smogon_Sleep:
 
 ; Sleep is the strongest status in GSC: greatly encourage it, unless the
 ; target uses Sleep Talk and will just keep attacking while asleep.
+; Save sleep for something else then.
 	ld a, SLEEP_TALK
 	call AISmogon_PlayerRevealedMove
 	jr c, .sleep_talker
@@ -108,7 +109,8 @@ AI_Smogon_Sleep:
 	bit SMOGON_SLEEP_TALK_F, a
 	jr z, AISmogon_GreatlyEncourage
 .sleep_talker
-	dec [hl]
+	inc [hl]
+	inc [hl]
 	ret
 
 AI_Smogon_MeanLook:
