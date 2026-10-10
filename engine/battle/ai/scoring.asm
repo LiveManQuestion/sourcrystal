@@ -3075,7 +3075,7 @@ AI_Cautious:
 
 	call Random
 	cp 90 percent + 1
-	ret nc
+	jr nc, .loop
 
 	inc [hl]
 	jr .loop
