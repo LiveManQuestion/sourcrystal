@@ -211,7 +211,7 @@ AIScoringPointers:
 	dw AI_Status
 	dw AI_Risky
 	dw AI_Immunities
-	dw AI_None
+	dw AI_Smogon
 	dw AI_None
 	dw AI_None
 	dw AI_None
