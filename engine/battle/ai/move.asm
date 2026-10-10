@@ -210,7 +210,7 @@ AIScoringPointers:
 	dw AI_Cautious
 	dw AI_Status
 	dw AI_Risky
-	dw AI_None
+	dw AI_Immunities
 	dw AI_None
 	dw AI_None
 	dw AI_None

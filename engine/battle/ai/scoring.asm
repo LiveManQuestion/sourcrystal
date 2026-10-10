@@ -167,7 +167,6 @@ AI_Setup:
 
 
 AI_Types:
-; Dismiss any move that the player is immune to.
 ; Encourage super-effective moves.
 ; Discourage not very effective moves unless
 ; all damaging moves are of the same type.
@@ -198,8 +197,6 @@ AI_Types:
 	pop hl
 
 	ld a, [wTypeMatchup]
-	and a
-	jr z, .immune
 	cp EFFECTIVE
 	jr z, .checkmove
 	jr c, .noteffective
@@ -251,10 +248,6 @@ AI_Types:
 	inc [hl]
 	jr .checkmove
 
-.immune
-	call AIDiscourageMove
-	jr .checkmove
-
 ; Encourage moves in the Rain Dance list if it's raining.
 .checkrain
 	ld a, [wBattleWeather]
@@ -302,6 +295,45 @@ AI_Types:
 
 	dec [hl]
 	jr .checkweathermove
+
+
+AI_Immunities:
+; Dismiss any damaging move that the player is immune to.
+
+	ld hl, wEnemyAIMoveScores - 1
+	ld de, wEnemyMonMoves
+	ld b, NUM_MOVES + 1
+.checkmove
+	dec b
+	ret z
+
+	inc hl
+	ld a, [de]
+	and a
+	ret z
+
+	inc de
+	call AIGetEnemyMove
+	ld a, [wEnemyMoveStruct + MOVE_POWER]
+	and a
+	jr z, .checkmove
+
+	push hl
+	push bc
+	push de
+	ld a, 1
+	ldh [hBattleTurn], a
+	callfar BattleCheckTypeMatchup
+	pop de
+	pop bc
+	pop hl
+
+	ld a, [wTypeMatchup]
+	and a
+	jr nz, .checkmove
+
+	call AIDiscourageMove
+	jr .checkmove
 
 
 AI_Offensive:
