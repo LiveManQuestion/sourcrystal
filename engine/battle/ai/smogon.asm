@@ -291,7 +291,7 @@ AI_Smogon_PerishSong:
 	ld a, [wPlayerSubStatus5]
 	bit SUBSTATUS_CANT_RUN, a
 	ret z
-	jr AISmogon_Encourage
+	jp AISmogon_Encourage
 
 AI_Smogon_Substitute:
 ; A sleeping or frozen Pokemon can't break a Substitute.
@@ -300,7 +300,7 @@ AI_Smogon_Substitute:
 	ret z
 	call AICheckEnemyHalfHP
 	ret nc
-	jr AISmogon_Encourage
+	jp AISmogon_Encourage
 
 AI_Smogon_Setup:
 ; Curse is only a stat-up move for non-Ghosts.
@@ -343,7 +343,7 @@ AI_Smogon_Setup:
 ; A sleeping or frozen Pokemon can't punish setup.
 	ld a, [wBattleMonStatus]
 	and SLP_MASK | 1 << FRZ
-	jr nz, AISmogon_Encourage
+	jp nz, AISmogon_Encourage
 
 ; Otherwise encourage boosting until it's high enough to sweep.
 	ld a, [wEnemyAtkLevel]
