@@ -275,6 +275,8 @@ AI_Types:
 	ld c, l
 	ld hl, wEnemyAIMoveScores - 1
 	ld de, wEnemyMonMoves
+	assert HIGH(wEnemyMonMoves) == HIGH(wEnemyMonMoves + NUM_MOVES), \
+		"wEnemyMonMoves must not cross a page boundary"
 .checkweathermove
 	inc hl
 	ld a, e
