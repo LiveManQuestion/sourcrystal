@@ -273,16 +273,16 @@ AI_Smogon_Paralyze:
 AI_Smogon_Pursuit:
 ; Ghosts and Psychics flee from Pursuit users; catch them on the way out.
 	ld a, [wBattleMonType1]
-	call .GhostOrPsychic
+	call AISmogon_GhostOrPsychic
 	jr z, .encourage
 	ld a, [wBattleMonType2]
-	call .GhostOrPsychic
+	call AISmogon_GhostOrPsychic
 	ret nz
 .encourage
 	dec [hl]
 	ret
 
-.GhostOrPsychic:
+AISmogon_GhostOrPsychic:
 	cp GHOST
 	ret z
 	cp PSYCHIC_TYPE
@@ -410,6 +410,15 @@ AISmogon_PlayerBoosted:
 ; Return carry if any of the player's stat levels are raised.
 	push hl
 	ld hl, wPlayerStatLevels
+	jr AISmogon_StatLevelsRaised
+
+AISmogon_EnemyBoosted:
+; Return carry if any of the enemy's stat levels are raised.
+	push hl
+	ld hl, wEnemyStatLevels
+	; fallthrough
+
+AISmogon_StatLevelsRaised:
 	ld c, NUM_LEVEL_STATS
 .loop
 	ld a, [hli]

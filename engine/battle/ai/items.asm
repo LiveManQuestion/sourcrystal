@@ -32,6 +32,8 @@ AI_SwitchOrTryItem:
 	call AddNTimes
 
 .ok
+	bit SWITCH_SMOGON_F, [hl]
+	jp nz, SwitchSmogon
 	bit SWITCH_OFTEN_F, [hl]
 	jp nz, SwitchOften
 	bit SWITCH_RARELY_F, [hl]
@@ -151,6 +153,123 @@ CheckSubstatusCantRun: ; unreferenced
 	ld a, [wEnemySubStatus5]
 	bit SUBSTATUS_CANT_RUN, a
 	ret
+
+SwitchSmogon:
+; Switch like a GSC OU player.
+	callfar CheckAbleToSwitch
+
+; With a Perish count of 1, escape no matter what.
+	ld a, [wEnemySubStatus1]
+	bit SUBSTATUS_PERISH, a
+	jr z, .no_perish
+	ld a, [wEnemyPerishCount]
+	cp 1
+	jr z, .decide
+.no_perish
+
+; Reasons to stay in:
+; Switching out throws away stat boosts.
+	call AISmogon_EnemyBoosted
+	jp c, DontSwitch
+
+; A Pokemon in KO range is worth more as a sacrifice: staying in gives
+; a healthy teammate a free switch-in when it faints.
+	call AICheckEnemyQuarterHP
+	jp nc, DontSwitch
+
+; A Ghost or Psychic fleeing a Pursuit user takes double damage.
+	ld a, PURSUIT
+	call AISmogon_PlayerRevealedMove
+	jr nc, .no_pursuit
+	ld a, [wEnemyMonType1]
+	call AISmogon_GhostOrPsychic
+	jp z, DontSwitch
+	ld a, [wEnemyMonType2]
+	call AISmogon_GhostOrPsychic
+	jp z, DontSwitch
+.no_pursuit
+
+; A Rest user below half HP should Rest instead of switching.
+	ld a, [wEnemyMonStatus]
+	and SLP_MASK
+	jr nz, .no_rest
+	call AICheckEnemyHalfHP
+	jr c, .no_rest
+	ld hl, .RestMove
+	call AIHasMoveInArray
+	jp c, DontSwitch
+.no_rest
+
+; Reasons to switch out even without a bad matchup:
+	ld a, [wEnemySwitchMonParam]
+	and $f0
+	jr nz, .have_target
+
+; Switching turns Toxic back into regular poison.
+	ld a, [wEnemySubStatus5]
+	bit SUBSTATUS_TOXIC, a
+	jr z, .not_toxic
+	ld a, [wEnemyToxicCount]
+	cp 3
+	jr nc, .escape
+.not_toxic
+
+; Switching removes Leech Seed and a Ghost's Curse.
+	ld a, [wEnemySubStatus4]
+	bit SUBSTATUS_LEECH_SEED, a
+	jr nz, .escape
+	ld a, [wEnemySubStatus1]
+	bit SUBSTATUS_CURSE, a
+	jp z, DontSwitch
+
+.escape
+	farcall FindAliveEnemyMons
+	jp c, DontSwitch
+	callfar CheckAbleToSwitch.EmergencySwitchTarget
+	ld a, [wEnemySwitchMonParam]
+	and $f
+	or $20
+	ld [wEnemySwitchMonParam], a
+
+.have_target
+; Spikes make every switch-in lose 1/8 of its HP: only switch for a good reason.
+	ld a, [wEnemyScreens]
+	bit SCREENS_SPIKES, a
+	jr z, .decide
+	ld a, [wEnemySwitchMonParam]
+	and $f0
+	cp $20
+	jp c, DontSwitch
+
+.decide
+	ld a, [wEnemySwitchMonParam]
+	and $f0
+	jp z, DontSwitch
+	cp $30
+	jr z, .switch
+	cp $20
+	jr z, .likely
+	call Random
+	cp 60 percent
+	jp nc, DontSwitch
+	jr .switch
+
+.likely
+	call Random
+	cp 90 percent
+	jp nc, DontSwitch
+
+.switch
+	ld a, [wEnemySwitchMonParam]
+	and $f
+	inc a
+	; In register 'a' is the number (1-6) of the mon to switch to
+	ld [wEnemySwitchMonIndex], a
+	jp AI_TrySwitch
+
+.RestMove:
+	db REST
+	db -1 ; end
 
 AI_TryItem:
 	; items are not allowed in the Battle Tower
