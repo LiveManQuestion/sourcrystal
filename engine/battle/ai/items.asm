@@ -164,7 +164,7 @@ SwitchSmogon:
 	jr z, .no_perish
 	ld a, [wEnemyPerishCount]
 	cp 1
-	jr z, .decide
+	jp z, .decide
 .no_perish
 
 ; Reasons to stay in:
