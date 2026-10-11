@@ -627,9 +627,9 @@ FindEnemyMonsWithAtLeastQuarterMaxHP:
 	inc hl
 ; hl = MaxHP + 1
 ; bc = [CurHP] * 4
-	srl c
+	sla c
 	rl b
-	srl c
+	sla c
 	rl b
 ; if bc >= [hl], encourage
 	ld a, [hld]
