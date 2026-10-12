@@ -33,7 +33,14 @@ AI_SwitchOrTryItem:
 
 .ok
 	bit SWITCH_SMOGON_F, [hl]
+	jr z, .not_smogon
+; Smogon switching is only for Challenge Mode; otherwise switch sometimes.
+	ld a, [wChallengeMode]
+	bit GAME_CHALLENGE_MODE_F, a
 	jp nz, SwitchSmogon
+	jp SwitchSometimes
+
+.not_smogon
 	bit SWITCH_OFTEN_F, [hl]
 	jp nz, SwitchOften
 	bit SWITCH_RARELY_F, [hl]

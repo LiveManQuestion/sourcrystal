@@ -11,6 +11,11 @@ AI_Smogon:
 ; Pokemon, its types, HP, status and stat changes, the moves it has revealed
 ; since it came in, and how that species is usually played in GSC OU
 ; (SmogonTraits) for moves it hasn't revealed yet.
+; Only active in Challenge Mode.
+
+	ld a, [wChallengeMode]
+	bit GAME_CHALLENGE_MODE_F, a
+	ret z
 
 	ld hl, wEnemyAIMoveScores
 	ld de, wEnemyMonMoves
