@@ -80,7 +80,7 @@ AI_Smogon_EffectHandlers:
 	dbw EFFECT_SUBSTITUTE,   AI_Smogon_Substitute
 	dbw EFFECT_CURSE,        AI_Smogon_Setup
 	dbw EFFECT_ATTACK_UP_2,  AI_Smogon_Setup ; Swords Dance
-	dbw EFFECT_SP_ATK_UP,    AI_Smogon_Setup ; Growth
+	dbw EFFECT_GROWTH,       AI_Smogon_Setup
 	dbw EFFECT_DEFENSE_UP_2, AI_Smogon_Setup ; Acid Armor, Barrier
 	dbw EFFECT_SP_DEF_UP_2,  AI_Smogon_Setup ; Amnesia
 	dbw EFFECT_SPEED_UP_2,   AI_Smogon_Setup ; Agility
