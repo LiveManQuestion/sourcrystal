@@ -39,7 +39,13 @@ VioletGymFalknerScript:
 	setevent EVENT_BEAT_BIRD_KEEPER_ABE
 	setmapscene ELMS_LAB, SCENE_ELMSLAB_NOOP
 	specialphonecall SPECIALCALL_ASSISTANT
+	checkflag ENGINE_CHALLENGE_MODE_ACTIVE
+	iffalse .ZephyrBadgeTextNormal
+	writetext FalknerZephyrBadgeTextChallenge
+	sjump .ZephyrBadgeTextDone
+.ZephyrBadgeTextNormal:
 	writetext FalknerZephyrBadgeText
+.ZephyrBadgeTextDone:
 	promptbutton
 	verbosegiveitem TM_MUD_SLAP
 	iffalse .NoRoomForMudSlap
@@ -181,6 +187,18 @@ FalknerZephyrBadgeText:
 
 	para "FLASH, if they"
 	line "have it, anytime."
+
+	para "Here--take this"
+	line "too."
+	done
+
+FalknerZephyrBadgeTextChallenge:
+; FalknerZephyrBadgeText without the badge boost, which Challenge Mode doesn't have
+	text "ZEPHYRBADGE lets"
+	line "#MON use FLASH,"
+
+	para "if they have it,"
+	line "anytime."
 
 	para "Here--take this"
 	line "too."

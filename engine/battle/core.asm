@@ -7080,6 +7080,11 @@ BadgeStatBoosts:
 
 ; The boosted stats are in order, except PlainBadge and MineralBadge's boosts are swapped.
 
+; Challenge Mode has no badge boosts.
+	ld a, [wChallengeMode]
+	bit GAME_CHALLENGE_MODE_F, a
+	ret nz
+
 	ld a, [wLinkMode]
 	and a
 	ret nz

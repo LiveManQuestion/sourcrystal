@@ -217,7 +217,13 @@ VermilionGymSurgeScript:
 	playsound SFX_GET_BADGE
 	waitsfx
 	setflag ENGINE_THUNDERBADGE
+	checkflag ENGINE_CHALLENGE_MODE_ACTIVE
+	iffalse .ThunderBadgeTextNormal
+	writetext LtSurgeThunderBadgeTextChallenge
+	sjump .ThunderBadgeTextDone
+.ThunderBadgeTextNormal:
 	writetext LtSurgeThunderBadgeText
+.ThunderBadgeTextDone:
 	waitbutton
 	closetext
 	end
@@ -345,6 +351,18 @@ LtSurgeThunderBadgeText:
 	text "SURGE: THUNDER-"
 	line "BADGE increases"
 	cont "#MON's speed. "
+
+	para "Consider it proof"
+	line "that you defeated"
+
+	para "me. You wear it"
+	line "proudly, hear?"
+	done
+
+LtSurgeThunderBadgeTextChallenge:
+; LtSurgeThunderBadgeText without the badge boost, which Challenge Mode doesn't have
+	text "SURGE: Take that"
+	line "THUNDERBADGE."
 
 	para "Consider it proof"
 	line "that you defeated"

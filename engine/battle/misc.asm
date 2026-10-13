@@ -145,6 +145,11 @@ DoWeatherModifiers:
 INCLUDE "data/battle/weather_modifiers.asm"
 
 DoBadgeTypeBoosts:
+; Challenge Mode has no badge boosts.
+	ld a, [wChallengeMode]
+	bit GAME_CHALLENGE_MODE_F, a
+	ret nz
+
 	ld a, [wLinkMode]
 	and a
 	ret nz

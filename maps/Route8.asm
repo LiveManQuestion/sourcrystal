@@ -78,7 +78,13 @@ TrainerSupernerdTom:
 .Script:
 	endifjustbattled
 	opentext
+	checkflag ENGINE_CHALLENGE_MODE_ACTIVE
+	iffalse .TomTextNormal
+	writetext SupernerdTomAfterBattleTextChallenge
+	sjump .TomTextDone
+.TomTextNormal:
 	writetext SupernerdTomAfterBattleText
+.TomTextDone:
 	waitbutton
 	closetext
 	end
@@ -265,6 +271,13 @@ SupernerdTomAfterBattleText:
 	text "GYM BADGES give"
 	line "you advantages in"
 	cont "battles."
+	done
+
+SupernerdTomAfterBattleTextChallenge:
+; SupernerdTomAfterBattleText without the badge boost, which Challenge Mode doesn't have
+	text "GYM BADGES don't"
+	line "make your #MON"
+	cont "any stronger."
 	done
 
 TrainerCoupleMoeandLuluSeenText:

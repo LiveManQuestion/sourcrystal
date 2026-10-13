@@ -66,7 +66,13 @@ GoldenrodGymWhitneyScript:
 	readvar VAR_BADGES
 	scall GoldenrodGymActivateRockets
 .GotPlainBadge:
+	checkflag ENGINE_CHALLENGE_MODE_ACTIVE
+	iffalse .PlainBadgeTextNormal
+	writetext WhitneyPlainBadgeTextChallenge
+	sjump .PlainBadgeTextDone
+.PlainBadgeTextNormal:
 	writetext WhitneyPlainBadgeText
+.PlainBadgeTextDone:
 	promptbutton
 	verbosegiveitem TM_ATTRACT
 	iffalse .NoRoomForAttract
@@ -265,6 +271,18 @@ WhitneyPlainBadgeText:
 	para "It also boosts"
 	line "your #MON's"
 	cont "SPEED."
+
+	para "Oh, you can have"
+	line "this too!"
+	done
+
+WhitneyPlainBadgeTextChallenge:
+; WhitneyPlainBadgeText without the badge boost, which Challenge Mode doesn't have
+	text "PLAINBADGE lets"
+	line "your #MON use"
+
+	para "STRENGTH outside"
+	line "of battle."
 
 	para "Oh, you can have"
 	line "this too!"

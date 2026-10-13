@@ -33,7 +33,13 @@ OlivineGymJasmineScript:
 .FightDone:
 	checkevent EVENT_GOT_TM23_IRON_TAIL
 	iftrue .GotIronTail
+	checkflag ENGINE_CHALLENGE_MODE_ACTIVE
+	iffalse .MineralBadgeTextNormal
+	writetext Jasmine_BadgeSpeechChallenge
+	sjump .MineralBadgeTextDone
+.MineralBadgeTextNormal:
 	writetext Jasmine_BadgeSpeech
+.MineralBadgeTextDone:
 	promptbutton
 	verbosegiveitem TM_IRON_TAIL
 	iffalse .NoRoomForIronTail
@@ -160,6 +166,16 @@ Jasmine_BadgeSpeech:
 	text "MINERALBADGE"
 	line "raises #MON's"
 	cont "DEFENSE."
+
+	para "…Um… Please take"
+	line "this too…"
+	done
+
+Jasmine_BadgeSpeechChallenge:
+; Jasmine_BadgeSpeech without the badge boost, which Challenge Mode doesn't have
+	text "MINERALBADGE"
+	line "is proof of your"
+	cont "strength…"
 
 	para "…Um… Please take"
 	line "this too…"

@@ -43,7 +43,13 @@ MahoganyGymPryceScript:
 	setevent EVENT_BEAT_BOARDER_RONALD
 	setevent EVENT_BEAT_BOARDER_BRAD
 	setevent EVENT_BEAT_BOARDER_DOUGLAS
+	checkflag ENGINE_CHALLENGE_MODE_ACTIVE
+	iffalse .GlacierBadgeTextNormal
+	writetext PryceText_GlacierBadgeSpeechChallenge
+	sjump .GlacierBadgeTextDone
+.GlacierBadgeTextNormal:
 	writetext PryceText_GlacierBadgeSpeech
+.GlacierBadgeTextDone:
 	promptbutton
 	verbosegiveitem TM_ICY_WIND
 	iffalse .MahoganyGym_NoRoomForIcyWind
@@ -226,6 +232,19 @@ PryceText_GlacierBadgeSpeech:
 	line "#MON use WHIRL-"
 	cont "POOL to get across"
 	cont "real whirlpools."
+
+	para "And this… This is"
+	line "a gift from me!"
+	done
+
+PryceText_GlacierBadgeSpeechChallenge:
+; PryceText_GlacierBadgeSpeech without the badge boost, which Challenge Mode doesn't have
+	text "That BADGE lets"
+	line "your #MON use"
+
+	para "WHIRLPOOL to get"
+	line "across real"
+	cont "whirlpools."
 
 	para "And this… This is"
 	line "a gift from me!"
