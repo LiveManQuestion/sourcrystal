@@ -346,6 +346,11 @@ AI_Smogon_Setup:
 	ret z
 .not_ghost
 
+; A move that can't raise any stat further is useless.
+	call .GetBoostLevel
+	cp MAX_STAT_LEVEL
+	jp nc, AIDiscourageMove
+
 ; Don't set up into phazing or Haze, which would erase the boosts.
 	ld de, .AntiSetupMoves
 .anti_setup_loop
@@ -379,19 +384,18 @@ AI_Smogon_Setup:
 	cp SMOGON_MATCHUP_EVEN
 	jr c, .discourage
 
+; Once boosted enough to sweep, attack instead.
+	call .GetBoostLevel
+	cp SMOGON_SETUP_GOAL
+	jr nc, .discourage
+
 ; A sleeping or frozen Pokemon can't punish setup.
 	ld a, [wBattleMonStatus]
 	and SLP_MASK | 1 << FRZ
 	jp nz, AISmogon_Encourage
 
-; Otherwise encourage boosting until it's high enough to sweep,
-; especially against something that can barely hurt us.
-	ld a, [wEnemyAtkLevel]
-	cp BASE_STAT_LEVEL + 3
-	ret nc
-	ld a, [wEnemySAtkLevel]
-	cp BASE_STAT_LEVEL + 3
-	ret nc
+; Otherwise encourage boosting, especially against something that can
+; barely hurt us.
 	dec [hl]
 	ld a, [wEnemyAISwitchScore]
 	cp SMOGON_MATCHUP_GOOD
@@ -402,6 +406,49 @@ AI_Smogon_Setup:
 .discourage
 	inc [hl]
 	inc [hl]
+	ret
+
+.GetBoostLevel:
+; Return in a the lowest stat level among the stats this move raises.
+	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
+	lb bc, ATTACK, DEFENSE
+	cp EFFECT_CURSE
+	jr z, .got_stats
+	lb bc, ATTACK, SP_ATTACK
+	cp EFFECT_GROWTH
+	jr z, .got_stats
+	lb bc, ATTACK, ATTACK
+	cp EFFECT_BELLY_DRUM
+	jr z, .got_stats
+	; Swords Dance, Acid Armor, Agility, Amnesia, ...
+	assert EFFECT_DEFENSE_UP_2 - EFFECT_ATTACK_UP_2 == DEFENSE
+	assert EFFECT_SPEED_UP_2 - EFFECT_ATTACK_UP_2 == SPEED
+	assert EFFECT_SP_DEF_UP_2 - EFFECT_ATTACK_UP_2 == SP_DEFENSE
+	sub EFFECT_ATTACK_UP_2
+	ld b, a
+	ld c, a
+.got_stats
+	push hl
+	ld hl, wEnemyStatLevels
+	ld a, l
+	add b
+	ld l, a
+	adc h
+	sub l
+	ld h, a
+	ld b, [hl]
+	ld hl, wEnemyStatLevels
+	ld a, l
+	add c
+	ld l, a
+	adc h
+	sub l
+	ld h, a
+	ld a, [hl]
+	pop hl
+	cp b
+	ret c
+	ld a, b
 	ret
 
 .AntiSetupMoves:

@@ -40,6 +40,7 @@ DEF SMOGON_REVENGE_BONUS     EQU 6   ; ...and that Pokemon is below half HP
 DEF SMOGON_STAB_POWER        EQU 80  ; assumed power of unrevealed STAB attacks
 DEF SMOGON_WEAK_POWER        EQU 60  ; attacks below this lose a quarter
 DEF SMOGON_STRONG_POWER      EQU 100 ; attacks from this on gain a quarter
+DEF SMOGON_SETUP_GOAL        EQU BASE_STAT_LEVEL + 2 ; boost this far, then attack
 
 ; Smogon AI rough damage points (see AISmogon_AttackPoints)
 DEF SMOGON_POINTS_RESISTED   EQU 4
