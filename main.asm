@@ -181,6 +181,11 @@ INCLUDE "engine/battle/read_trainer_party.asm"
 INCLUDE "data/trainers/parties.asm"
 
 
+SECTION "Smogon AI Switching", ROMX
+
+INCLUDE "engine/battle/ai/smogon_switch.asm"
+
+
 SECTION "Battle Core", ROMX
 
 INCLUDE "engine/battle/core.asm"

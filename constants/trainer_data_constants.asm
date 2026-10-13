@@ -32,6 +32,42 @@ DEF NO_AI EQU 0
 	shift_const SMOGON_SETUP
 	shift_const SMOGON_THREAT
 
+; Smogon AI matchup scores (see engine/battle/ai/smogon_switch.asm)
+DEF SMOGON_MATCHUP_EVEN      EQU 128 ; neither side hits harder
+DEF SMOGON_MATCHUP_GOOD      EQU SMOGON_MATCHUP_EVEN + 16
+DEF SMOGON_FASTER_BONUS      EQU 6   ; outspeeds the player's Pokemon
+DEF SMOGON_REVENGE_BONUS     EQU 6   ; ...and that Pokemon is below half HP
+DEF SMOGON_STAB_POWER        EQU 80  ; assumed power of unrevealed STAB attacks
+DEF SMOGON_WEAK_POWER        EQU 60  ; attacks below this lose a quarter
+DEF SMOGON_STRONG_POWER      EQU 100 ; attacks from this on gain a quarter
+
+; Smogon AI rough damage points (see AISmogon_AttackPoints)
+DEF SMOGON_POINTS_RESISTED   EQU 4
+DEF SMOGON_POINTS_NEUTRAL    EQU 10
+DEF SMOGON_POINTS_SUPER      EQU 20
+DEF SMOGON_POINTS_4X         EQU 32
+
+; Smogon AI switch-in penalties (see AISmogon_SwitchInPenalty)
+DEF SMOGON_PENALTY_HALF_HP    EQU 8
+DEF SMOGON_PENALTY_QUARTER_HP EQU 24
+DEF SMOGON_PENALTY_ASLEEP     EQU 20
+DEF SMOGON_PENALTY_SLEEP_TALK EQU 4 ; asleep, but can still attack
+DEF SMOGON_PENALTY_FROZEN     EQU 30
+DEF SMOGON_PENALTY_PARALYZED  EQU 4
+DEF SMOGON_PENALTY_POISON_BRN EQU 2
+
+; Smogon AI switching thresholds (see SwitchSmogon)
+DEF SMOGON_SWITCH_MARGIN     EQU 20 ; matchup gain needed to switch
+DEF SMOGON_SPIKES_MARGIN     EQU 10 ; extra gain needed with Spikes down
+DEF SMOGON_JUST_IN_MARGIN    EQU 10 ; extra gain needed right after switching in
+DEF SMOGON_SURE_SWITCH       EQU 12 ; gain past the margin that always switches
+DEF SMOGON_ESCAPE_TOLERANCE  EQU 16 ; how much worse an escape switch-in may be
+
+; AISmogon_StatEdges flags
+	const_def
+	const SMOGON_PHYSICAL_EDGE_F ; 0
+	const SMOGON_SPECIAL_EDGE_F  ; 1
+
 ; TRNATTR_AI_ITEM_SWITCH bit flags
 	const_def
 	shift_const SWITCH_OFTEN     ; 0

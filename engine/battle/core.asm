@@ -3302,6 +3302,8 @@ AddBattleParticipant:
 	predef_jump SmallFarFlagAction
 
 FindMonInOTPartyToSwitchIntoBattle:
+	farcall AISmogon_ChooseReplacement
+	ret c
 	ld b, -1
 	ld a, %000001
 	ld [wEnemyEffectivenessVsPlayerMons], a

@@ -8,9 +8,11 @@ AI_Smogon:
 ;   Explosion for a healthy threat, steal Leftovers with Thief, Toxic walls
 ;   that can't Rest it off, and Pursuit fleeing Ghosts and Psychics.
 ; Only uses information a human player could have: the player's active
-; Pokemon, its types, HP, status and stat changes, the moves it has revealed
-; since it came in, and how that species is usually played in GSC OU
-; (SmogonTraits) for moves it hasn't revealed yet.
+; Pokemon, its types, stats, HP, status and stat changes, the moves it has
+; revealed since it came in, and how that species is usually played in GSC OU
+; (SmogonTraits) for moves it hasn't revealed yet. Matchups are judged from
+; types, stats and moves (see smogon_switch.asm), so they hold up against
+; Pokemon that never see OU play too.
 ; Only active in Challenge Mode.
 
 	ld a, [wChallengeMode]
@@ -189,6 +191,12 @@ AI_Smogon_Heal:
 	ret
 
 AI_Smogon_Explosion:
+; Exploding with the last Pokemon just loses the battle.
+	push hl
+	farcall FindAliveEnemyMons
+	pop hl
+	jr c, .bad
+
 ; Don't explode into a resisting type or a Substitute.
 	push hl
 	ld a, 1
@@ -211,12 +219,28 @@ AI_Smogon_Explosion:
 	ret c
 .spikes_done
 
-; Trade this Pokemon for a healthy threat like Snorlax, even at full HP.
+; Trade this Pokemon for a healthy threat like Snorlax, even at full HP,
+; for anything that has started boosting, or for anything that beats this
+; Pokemon and that no teammate matches up well against.
 	call AICheckPlayerHalfHP
 	ret nc
 	call AISmogon_GetPlayerTraits
 	bit SMOGON_THREAT_F, a
-	ret z
+	jr nz, .threat
+	call AISmogon_PlayerBoosted
+	jr c, .threat
+	push hl
+	farcall AISmogon_ScoreActive
+	farcall AISmogon_FindBestSwitchIn
+	pop hl
+	ret c
+	ld a, [wEnemyAISwitchScore]
+	cp SMOGON_MATCHUP_EVEN
+	ret nc
+	ld a, [wSmogonAIBestScore]
+	cp SMOGON_MATCHUP_EVEN
+	ret nc
+.threat
 	dec [hl]
 	jr AISmogon_GreatlyEncourage
 
@@ -347,18 +371,31 @@ AI_Smogon_Setup:
 	call AICheckEnemyHalfHP
 	ret nc
 
+; Don't set up in front of something that hits harder than we do.
+	push hl
+	farcall AISmogon_ScoreActive
+	pop hl
+	ld a, [wEnemyAISwitchScore]
+	cp SMOGON_MATCHUP_EVEN
+	jr c, .discourage
+
 ; A sleeping or frozen Pokemon can't punish setup.
 	ld a, [wBattleMonStatus]
 	and SLP_MASK | 1 << FRZ
 	jp nz, AISmogon_Encourage
 
-; Otherwise encourage boosting until it's high enough to sweep.
+; Otherwise encourage boosting until it's high enough to sweep,
+; especially against something that can barely hurt us.
 	ld a, [wEnemyAtkLevel]
 	cp BASE_STAT_LEVEL + 3
 	ret nc
 	ld a, [wEnemySAtkLevel]
 	cp BASE_STAT_LEVEL + 3
 	ret nc
+	dec [hl]
+	ld a, [wEnemyAISwitchScore]
+	cp SMOGON_MATCHUP_GOOD
+	ret c
 	dec [hl]
 	ret
 
@@ -378,10 +415,9 @@ AISmogon_GetPlayerTraits:
 	push hl
 	push de
 	ld a, [wBattleMonSpecies]
-	dec a
 	ld e, a
 	ld d, 0
-	ld hl, SmogonTraits
+	ld hl, SmogonTraits - 1
 	add hl, de
 	ld a, BANK(SmogonTraits)
 	call GetFarByte

@@ -604,7 +604,13 @@ wEnemyFutureSightCount:: db
 
 wGivingExperienceToExpShareHolders:: db
 
-	ds 7 ; unused
+; Smogon AI matchup scoring (see engine/battle/ai/smogon_switch.asm)
+wSmogonAIMon::       db
+wSmogonAITypes::     ds 2
+wSmogonAIThreat::    db
+wSmogonAIPower::     db
+wSmogonAIBestMon::   db
+wSmogonAIBestScore:: db
 
 wPlayerFutureSightDamage:: dw
 wEnemyFutureSightDamage:: dw

@@ -189,8 +189,6 @@ CheckAbleToSwitch:
 
 	; Perish count is 1
 
-.EmergencySwitchTarget:
-; Also used by SwitchSmogon: pick the best Pokemon to switch to.
 	call FindAliveEnemyMons
 	call FindEnemyMonsWithAtLeastQuarterMaxHP
 	call FindEnemyMonsThatResistPlayer
