@@ -91,6 +91,13 @@ empty save. Never write over the user's save files.
   `tools/claude/battle_summary.py`. Compare against a build of the previous
   commit: a few timeouts on Jasmine/Koga/Brock are normal (stall battles,
   since the harness keeps healing the player). Crashes are not.
+- `tools/claude/ai_scenarios.py ROM SYM RAM`: sets up exact states (moves,
+  weather, statuses, speed, time of day) each time `AI_Smogon` runs and checks
+  its scores, plus the heal-move multiplier the engine picks. Add cases there.
+  The battle can end mid-run; rerun from the case it stopped at (4th arg).
+  `AI_Smogon` is far-called, so its return address is the shared far-call
+  stub that every nested `callfar` also returns through: match the stack
+  pointer, not just the address, when hooking a return.
 - An injected trainer battle needs `winlosstext`, or a win prints a stale
   pointer and crashes. This was a harness bug, not a game bug.
 
@@ -148,3 +155,31 @@ Add an entry here when making notable changes.
   high Sp.Atk with Dark Hidden Power or Seismic Toss): no crashes; Counter
   dominated against physical attackers and once HP/Seismic Toss was revealed,
   Mirror Coat otherwise.
+- **2026-10-14**: Battle mechanics back to vanilla Crystal (the user wants the
+  battle system to match unmodified Crystal; don't reintroduce these):
+  - Body Slam is `EFFECT_PARALYZE_HIT` again (Sour Crystal had given it Stomp's
+    double damage against Minimize). `EFFECT_BODY_SLAM` and
+    `BattleCommand_CheckHit.AntiMinimize` (Body Slam/Stomp never missing a
+    Minimized target, which also checked the wrong side) are gone.
+  - Morning Sun/Synthesis/Moonlight heal by time of day again: 1/2 at their
+    time, 1/4 otherwise, doubled in sun, halved in rain or Sandstorm, no time
+    bonus in link battles. Sour Crystal's Evening (17:00-19:59) counts as day
+    before `VANILLA_NITE_HOUR` (18) and night after, like the original game.
+    `GetTwoThirdsMaxHP` was only used by Sour Crystal's version and is removed.
+
+  New Smogon AI move handling:
+  - Thunder is encouraged in rain, where it never misses (`AI_Smogon_Thunder`).
+  - Rollout is encouraged after Defense Curl (`AI_Smogon_Rollout`).
+  - When the enemy moves first against a player in the air (Fly) or
+    underground (Dig), attacks that can't reach it are discouraged, with
+    Lock-On taken into account (`AISmogon_MissesHiddenPlayer`). Swift misses
+    too: `.FlyDigMoves` runs before the sure-hit check.
+  - Endure is discouraged when residual damage knocks the enemy out anyway
+    (`AI_Smogon_Endure`). Poison/burn/Leech Seed/Curse hit right after the
+    user's own move (before the player's attack, since Endure goes first), so
+    they only matter when they're at least the current HP. Sandstorm, trapping
+    moves and Perish Song come at the end of the turn and always do.
+  - Heal moves: 1/8 is discouraged, 1/4 is left to AI_Smart, 1/2 or more
+    heals at half HP (`AISmogon_TimeBasedHealAmount`).
+
+  Checked with `tools/claude/ai_scenarios.py` (32 AI scenarios plus 8 engine heal cases).

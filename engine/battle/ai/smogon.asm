@@ -11,6 +11,10 @@ AI_Smogon:
 ;   Pass boosts out of trouble, Encore a setup or status move, Heal Bell
 ;   a team weighed down by status, and Protect to stall out the player's
 ;   residual damage.
+; - Know the battle mechanics: Thunder never misses in rain, Defense Curl
+;   doubles Rollout, attacks miss a Pokemon in the air or underground, Endure
+;   doesn't stop residual damage, and Morning Sun, Synthesis and Moonlight
+;   heal by time of day and weather.
 ; Only uses information a human player could have: the player's active
 ; Pokemon, its types, stats, HP, status and stat changes, the moves it has
 ; revealed since it came in, and how that species is usually played in GSC OU
@@ -40,6 +44,14 @@ AI_Smogon:
 	push hl
 	call AIGetEnemyMove
 
+	call AISmogon_MissesHiddenPlayer
+	jr nc, .not_hidden
+	pop hl
+	push hl
+	call AIDiscourageMove
+	jr .nextmove
+
+.not_hidden
 	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
 	ld hl, AI_Smogon_EffectHandlers
 	ld de, 3
@@ -104,6 +116,9 @@ AI_Smogon_EffectHandlers:
 	dbw EFFECT_HEAL_BELL,    AI_Smogon_HealBell
 	dbw EFFECT_COUNTER,      AI_Smogon_Counter
 	dbw EFFECT_MIRROR_COAT,  AI_Smogon_Counter
+	dbw EFFECT_THUNDER,      AI_Smogon_Thunder
+	dbw EFFECT_ROLLOUT,      AI_Smogon_Rollout
+	dbw EFFECT_ENDURE,       AI_Smogon_Endure
 	db -1 ; end
 
 AI_Smogon_Sleep:
@@ -200,6 +215,17 @@ AISmogon_Encourage:
 	ret
 
 AI_Smogon_Heal:
+; Morning Sun, Synthesis and Moonlight vary: not worth a turn for 1/8 of max HP,
+; and left to AI_Smart (heal below a quarter) for 1/4.
+	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
+	cp EFFECT_HEAL
+	jr z, .heal
+	call AISmogon_TimeBasedHealAmount
+	and a
+	jp z, AIDiscourageMove
+	dec a
+	ret z
+.heal
 ; Heal before falling into KO range, at half HP rather than a quarter.
 	call AICheckEnemyHalfHP
 	jr nc, AISmogon_Encourage
@@ -213,6 +239,231 @@ AI_Smogon_Heal:
 	dec [hl]
 	ret
 
+AISmogon_TimeBasedHealAmount:
+; Return in a how much the enemy's Morning Sun, Synthesis or Moonlight (effect
+; a) heals, like BattleCommand_TimeBasedHealContinue: 0 for 1/8 of max HP,
+; 1 for 1/4, 2 for 1/2 and 3 for all of it.
+	ld b, MORN_F
+	cp EFFECT_MORNING_SUN
+	jr z, .got_move_time
+	ld b, DAY_F
+	cp EFFECT_SYNTHESIS
+	jr z, .got_move_time
+	ld b, NITE_F
+.got_move_time
+	ld c, 2
+; Evening isn't in the original game: it was day until 6 PM, then night.
+	ld a, [wTimeOfDay]
+	cp EVE_F
+	jr nz, .got_time_of_day
+	ldh a, [hHours]
+	cp VANILLA_NITE_HOUR
+	ld a, DAY_F
+	jr c, .got_time_of_day
+	ld a, NITE_F
+.got_time_of_day
+	cp b
+	jr z, .weather
+	dec c
+.weather
+; Doubled in sun, halved in rain or Sandstorm.
+	ld a, [wBattleWeather]
+	and a
+	jr z, .done
+	inc c
+	cp WEATHER_SUN
+	jr z, .done
+	dec c
+	dec c
+.done
+	ld a, c
+	ret
+
+AI_Smogon_Thunder:
+; Thunder never misses in rain.
+	ld a, [wBattleWeather]
+	cp WEATHER_RAIN
+	ret nz
+	call AISmogon_IsResisted
+	ret c
+	jp AISmogon_Encourage
+
+AI_Smogon_Rollout:
+; Defense Curl doubles Rollout's power.
+	ld a, [wEnemySubStatus2]
+	bit SUBSTATUS_CURLED, a
+	ret z
+	call AISmogon_IsResisted
+	ret c
+	jp AISmogon_Encourage
+
+AI_Smogon_Endure:
+; Endure only keeps 1 HP against attacks. It goes first, so our poison, burn,
+; Leech Seed and Curse damage comes right after it, before the player attacks;
+; Sandstorm, trapping moves and Perish Song come at the end of the turn,
+; before Leftovers. Don't Endure if any of them knocks us out anyway.
+	ld a, [wBattleWeather]
+	cp WEATHER_SANDSTORM
+	jr nz, .no_sand
+	ld a, [wEnemyMonType1]
+	call AISmogon_SandstormImmune
+	jr z, .no_sand
+	ld a, [wEnemyMonType2]
+	call AISmogon_SandstormImmune
+	jp nz, AIDiscourageMove
+.no_sand
+; A trapping move hurts unless it ends this turn or we're behind a Substitute.
+	ld a, [wEnemyWrapCount]
+	cp 2
+	jr c, .not_trapped
+	ld a, [wEnemySubStatus4]
+	bit SUBSTATUS_SUBSTITUTE, a
+	jp z, AIDiscourageMove
+.not_trapped
+	ld a, [wEnemySubStatus1]
+	bit SUBSTATUS_PERISH, a
+	jr z, .no_perish
+	ld a, [wEnemyPerishCount]
+	cp 1
+	jp z, AIDiscourageMove
+.no_perish
+
+; Add up the damage that comes right after Endure, like ResidualDamage.
+	push hl
+	ld de, 0
+	ld a, [wEnemyMonStatus]
+	and 1 << PSN | 1 << BRN
+	jr z, .no_psn_brn
+	ld a, [wEnemySubStatus5]
+	bit SUBSTATUS_TOXIC, a
+	jr nz, .toxic
+	ld a, 3 ; 1/8
+	call .AddMaxHPFraction
+	jr .no_psn_brn
+
+.toxic
+	ld a, [wEnemyToxicCount]
+	inc a
+.toxic_loop
+	push af
+	ld a, 4 ; 1/16
+	call .AddMaxHPFraction
+	pop af
+	dec a
+	jr nz, .toxic_loop
+.no_psn_brn
+	ld a, [wEnemySubStatus4]
+	bit SUBSTATUS_LEECH_SEED, a
+	ld a, 3 ; 1/8
+	call nz, .AddMaxHPFraction
+	ld a, [wEnemySubStatus1]
+	bit SUBSTATUS_CURSE, a
+	ld a, 2 ; 1/4
+	call nz, .AddMaxHPFraction
+
+; Discourage Endure if that's at least our HP.
+	ld a, [wEnemyMonHP + 1]
+	ld c, a
+	ld a, e
+	sub c
+	ld a, [wEnemyMonHP]
+	ld c, a
+	ld a, d
+	sbc c
+	pop hl
+	ret c
+	jp AIDiscourageMove
+
+.AddMaxHPFraction:
+; Add max HP >> a (at least 1) to de.
+	ld hl, wEnemyMonMaxHP
+	ld b, [hl]
+	inc hl
+	ld c, [hl]
+.shift
+	srl b
+	rr c
+	dec a
+	jr nz, .shift
+	ld a, b
+	or c
+	jr nz, .add
+	inc c
+.add
+	ld h, d
+	ld l, e
+	add hl, bc
+	ld d, h
+	ld e, l
+	ret
+
+AISmogon_IsResisted:
+; Return carry if the player resists the enemy's move or is immune to it.
+	push hl
+	ld a, 1
+	ldh [hBattleTurn], a
+	callfar BattleCheckTypeMatchup
+	pop hl
+	ld a, [wTypeMatchup]
+	cp EFFECTIVE
+	ret
+
+AISmogon_MissesHiddenPlayer:
+; Return carry if the enemy's move is an attack that misses because the
+; player's Pokemon is in the air (Fly) or underground (Dig), and we're faster,
+; so we attack before it comes back.
+	ld a, [wPlayerSubStatus3]
+	and 1 << SUBSTATUS_FLYING | 1 << SUBSTATUS_UNDERGROUND
+	ret z
+	ld b, a
+	call AICompareSpeed
+	ret nc
+	ld a, [wEnemyMoveStruct + MOVE_POWER]
+	and a
+	jr z, .hits
+; Fly and Dig dodge too.
+	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
+	cp EFFECT_FLY
+	jr z, .hits
+	ld hl, .DigMoves
+	ld a, [wPlayerSubStatus5]
+	bit SUBSTATUS_LOCK_ON, a
+	jr z, .no_lock_on
+; Locked on: everything hits but Earthquake, Fissure and Magnitude into Fly.
+	bit SUBSTATUS_FLYING, b
+	jr z, .hits
+	ld a, [wEnemyMoveStruct + MOVE_ANIM]
+	ld de, 1
+	jp IsInArray
+
+.no_lock_on
+	bit SUBSTATUS_FLYING, b
+	jr z, .got_moves
+	ld hl, .FlyMoves
+.got_moves
+	ld a, [wEnemyMoveStruct + MOVE_ANIM]
+	ld de, 1
+	call IsInArray
+	ccf
+	ret
+
+.hits
+	and a
+	ret
+
+.FlyMoves:
+; Whirlwind also hits, but isn't an attack.
+	db GUST
+	db THUNDER
+	db TWISTER
+	db -1 ; end
+
+.DigMoves:
+	db EARTHQUAKE
+	db FISSURE
+	db MAGNITUDE
+	db -1 ; end
+
 AI_Smogon_Explosion:
 ; Exploding with the last Pokemon just loses the battle.
 	push hl
@@ -221,13 +472,7 @@ AI_Smogon_Explosion:
 	jr c, .bad
 
 ; Don't explode into a resisting type or a Substitute.
-	push hl
-	ld a, 1
-	ldh [hBattleTurn], a
-	callfar BattleCheckTypeMatchup
-	pop hl
-	ld a, [wTypeMatchup]
-	cp EFFECTIVE
+	call AISmogon_IsResisted
 	jr c, .bad
 	ld a, [wPlayerSubStatus4]
 	bit SUBSTATUS_SUBSTITUTE, a
@@ -277,7 +522,7 @@ AI_Smogon_Explosion:
 	ret nc
 .threat
 	dec [hl]
-	jr AISmogon_GreatlyEncourage
+	jp AISmogon_GreatlyEncourage
 
 .bad
 	inc [hl]
