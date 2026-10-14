@@ -7,6 +7,14 @@ PascalCase ROM labels, `.local` labels. `pokecrystal-master/` (untracked) is a
 copy of vanilla pret/pokecrystal for reference. Session history:
 `docs/claude_changelog.md` (add an entry there for notable changes).
 
+## Keeping this file current
+
+This file describes how things are now; history goes in
+`docs/claude_changelog.md`. When a change makes something here wrong (a
+renamed label or file, a moved function, a changed mechanic or tool), fix or
+delete that line in the same commit. Keep this file under about 10 KB: past
+that, move detail into `docs/` and leave a one-line pointer here.
+
 ## Hard constraints
 
 - **Stay link compatible with unmodified Pokémon Crystal and the Time Capsule
