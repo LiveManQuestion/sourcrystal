@@ -9,8 +9,9 @@ enemy only heal moves and checks the multiplier index BattleCommand_
 TimeBasedHealContinue picks at .Heal. Alongside, a switch-in phase gives
 AISmogon_FindBestSwitchIn two candidates with equal stats against a player
 type and checks which one it picks (types and moves decide); the party is
-restored and no switch happens. A Hidden Power phase sets the enemy's DVs and
-checks the power and type AIGetEnemyMove loads for it."""
+restored and no switch happens. A move power phase sets the enemy's DVs and
+happiness and checks the power and type AIGetEnemyMove loads for Hidden Power,
+Return, Frustration and Magnitude."""
 import io, json, os, re, sys, random
 from pyboy import PyBoy
 
@@ -139,8 +140,17 @@ HP_TYPES = ['FIGHTING', 'FLYING', 'POISON', 'GROUND', 'ROCK', 'BUG', 'GHOST', 'S
 def hidden_power(ad, ss):
     top = (ad >> 7 & 1) << 3 | (ad >> 3 & 1) << 2 | (ss >> 7 & 1) << 1 | (ss >> 3 & 1)
     return (top * 5 + (ss & 3)) // 2 + 31, C[HP_TYPES[(ad >> 4 & 3) << 2 | (ad & 3)]]
-hp_cases = [(ad, ss) for ad, ss in ((0xcf, 0xff), (0xee, 0xee), (0x00, 0x00), (0xfa, 0x7d))]
 assert hidden_power(0xcf, 0xff) == (70, C['GROUND'])
+# (name, move, (Atk/Def DVs, Spd/Spc DVs), happiness, expected (power, type))
+hp_cases = [('hidden power DVs %02x%02x' % dvs, 'HIDDEN_POWER', dvs, 70, hidden_power(*dvs))
+            for dvs in ((0xcf, 0xff), (0xee, 0xee), (0x00, 0x00), (0xfa, 0x7d))]
+hp_cases += [
+    ('return max happiness', 'RETURN', (0, 0), 255, (102, C['NORMAL'])),
+    ('return happiness 70', 'RETURN', (0, 0), 70, (70 * 10 // 25, C['NORMAL'])),
+    ('frustration no happiness', 'FRUSTRATION', (0, 0), 0, (102, C['NORMAL'])),
+    ('frustration happiness 30', 'FRUSTRATION', (0, 0), 30, ((255 - 30) * 10 // 25, C['NORMAL'])),
+    ('magnitude average', 'MAGNITUDE', (0, 0), 70, (71, C['GROUND'])),
+]
 
 results, state = [], {'i': 0, 'cur': None, 'ret': None, 'heal_i': 0, 'heal_cur': None}
 
@@ -184,16 +194,15 @@ def on_ret(ctx):
               'wEnemySubStatus2', 'wEnemySubStatus4', 'wEnemySubStatus5', 'wPlayerSubStatus3', 'wPlayerSubStatus5'):
         mem[W(n)] = 0
 
-hp = {'i': 0, 'cur': None, 'dvs': None}
+hp = {'i': 0, 'cur': None, 'saved': None}
 def on_get_move(ctx):
-    if hp['cur'] is None or mem[W('wEnemyMoveStruct')] != C['HIDDEN_POWER']:
+    if hp['cur'] is None or mem[W('wEnemyMoveStruct')] != C[hp['cur'][1]]:
         return
-    ad, ss = hp['cur']
+    name, move, dvs, happiness, exp = hp['cur']
     got = [mem[W('wEnemyMoveStruct') + 2], mem[W('wEnemyMoveStruct') + 3]]  # MOVE_POWER, MOVE_TYPE
-    exp = list(hidden_power(ad, ss))
-    results.append(('hidden power DVs %02x%02x' % (ad, ss), got, exp, got == exp))
+    results.append((name, got, list(exp), got == list(exp)))
     hp['cur'] = None
-    mem[W('wEnemyMonDVs')], mem[W('wEnemyMonDVs') + 1] = hp['dvs']
+    mem[W('wEnemyMonDVs')], mem[W('wEnemyMonDVs') + 1], mem[W('wEnemyMonHappiness')] = hp['saved']
 pb.hook_register(*sym['AIGetEnemyMove.done'], on_get_move, None)
 
 def on_entry(ctx):
@@ -204,11 +213,13 @@ def on_entry(ctx):
         state['ret'] = ret
         pb.hook_register(sym['AI_Smogon'][0] if ret >= 0x4000 else 0, ret, on_ret, None)
     if hp['i'] < len(hp_cases):
-        ad, ss = hp_cases[hp['i']]
-        hp['dvs'] = (mem[W('wEnemyMonDVs')], mem[W('wEnemyMonDVs') + 1])
-        apply(dict(), M('HIDDEN_POWER'))
-        mem[W('wEnemyMonDVs')], mem[W('wEnemyMonDVs') + 1] = ad, ss
-        hp['cur'] = (ad, ss)
+        case = hp_cases[hp['i']]
+        name, move, dvs, happiness, exp = case
+        hp['saved'] = (mem[W('wEnemyMonDVs')], mem[W('wEnemyMonDVs') + 1], mem[W('wEnemyMonHappiness')])
+        apply(dict(), M(move))
+        mem[W('wEnemyMonDVs')], mem[W('wEnemyMonDVs') + 1] = dvs
+        mem[W('wEnemyMonHappiness')] = happiness
+        hp['cur'] = case
         hp['i'] += 1
         return
     i = state['i']
@@ -341,6 +352,6 @@ ok = all(r[3] for r in results)
 for r in results:
     print(('PASS' if r[3] else 'FAIL'), r[0], 'got', r[1], 'expected', r[2])
 print('scenarios run', state['i'], '/', len(scen), 'engine', state['heal_i'], '/', len(heal_cases),
-      'switch', sw['i'], '/', len(switch_cases), 'hidden power', hp['i'], '/', len(hp_cases), 'crashed', crashed, 'frames', frame,
+      'switch', sw['i'], '/', len(switch_cases), 'move power', hp['i'], '/', len(hp_cases), 'crashed', crashed, 'frames', frame,
       'ALL OK' if ok and state['i'] == len(scen) and state['heal_i'] == len(heal_cases) and sw['i'] == len(switch_cases)
       and hp['i'] == len(hp_cases) else 'NOT OK')

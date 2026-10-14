@@ -792,7 +792,7 @@ AISmogon_GetAttack:
 AISmogon_GetMovePowerAndType:
 ; Return the power of move a in d and its type in e.
 ; Return and Frustration count as 102, their power at max (min) happiness,
-; which OU sets always have.
+; which OU sets always have, and Magnitude as its average power, 71.
 	push bc
 	push hl
 	push af
@@ -811,7 +811,12 @@ AISmogon_GetMovePowerAndType:
 	cp RETURN
 	jr z, .max_happiness
 	cp FRUSTRATION
+	jr z, .max_happiness
+	cp MAGNITUDE
 	jr nz, .done
+	ld d, 71
+	jr .done
+
 .max_happiness
 	ld d, 102
 .done

@@ -3333,16 +3333,48 @@ AIGetEnemyMove:
 	ld a, BANK(Moves)
 	call FarCopyBytes
 
-; Hidden Power's real power and type come from the DVs, like in battle.
+; Use the power these moves really have in battle.
 	pop af
+	cp RETURN
+	jr z, .return
+	cp FRUSTRATION
+	jr z, .frustration
 	cp HIDDEN_POWER
+	jr z, .attack
+	cp MAGNITUDE
 	jr nz, .done
+.attack
+; Hidden Power's power and type come from the DVs; Magnitude averages 71.
 	ld hl, wEnemyMonDVs
 	call AISmogon_GetAttack
 	ld a, d
 	ld [wEnemyMoveStruct + MOVE_POWER], a
 	ld a, e
 	ld [wEnemyMoveStruct + MOVE_TYPE], a
+	jr .done
+
+.frustration
+	ld a, [wEnemyMonHappiness]
+	cpl
+	jr .happiness_power
+
+.return
+	ld a, [wEnemyMonHappiness]
+.happiness_power
+; happiness * 10 / 25, like BattleCommand_HappinessPower
+	ldh [hMultiplicand + 2], a
+	xor a
+	ldh [hMultiplicand + 0], a
+	ldh [hMultiplicand + 1], a
+	ld a, 10
+	ldh [hMultiplier], a
+	call Multiply
+	ld a, 25
+	ldh [hDivisor], a
+	ld b, 4
+	call Divide
+	ldh a, [hQuotient + 3]
+	ld [wEnemyMoveStruct + MOVE_POWER], a
 .done
 	pop bc
 	pop de
