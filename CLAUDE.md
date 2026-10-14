@@ -122,6 +122,12 @@ Add an entry here when making notable changes.
     player.
   - Verified with 108 headless battles (no crashes; same timeout rate as before).
   - Ideas not done yet:
-    - switch in a Sleep Talk user to absorb sleep
     - Protect to stall out the player's residual damage
     - choose Counter/Mirror Coat by the player's stats
+- **2026-10-13**: Sleep absorbing. When the player's Pokemon has revealed a
+  sleep move (and isn't asleep or frozen, with no enemy Safeguard), Sleep Talk
+  users get `SMOGON_SLEEP_ABSORB_BONUS` as switch-ins (`AISmogon_SwitchInBonus`),
+  and `SwitchSmogon` treats it as an escape reason when the active Pokemon is
+  awake without Sleep Talk and the best switch-in has it
+  (`AISmogon_ShouldAbsorbSleep`). Checked headlessly by giving the player
+  Spore (`$93`; the constants' comments are hex).

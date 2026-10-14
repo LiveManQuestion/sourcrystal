@@ -64,6 +64,7 @@ DEF SMOGON_JUST_IN_MARGIN    EQU 10 ; extra gain needed right after switching in
 DEF SMOGON_SURE_SWITCH       EQU 12 ; gain past the margin that always switches
 DEF SMOGON_ESCAPE_TOLERANCE  EQU 16 ; how much worse an escape switch-in may be
 DEF SMOGON_ANTI_SETUP_BONUS  EQU 24 ; switch-in that can phaze, Haze or explode a boosted player
+DEF SMOGON_SLEEP_ABSORB_BONUS EQU 16 ; Sleep Talk switch-in against a revealed sleep move
 
 ; AISmogon_StatEdges flags
 	const_def

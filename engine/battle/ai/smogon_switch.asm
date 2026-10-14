@@ -67,7 +67,8 @@ AISmogon_ScoreActive:
 
 AISmogon_FindBestSwitchIn:
 ; Find the healthy, non-active Pokemon with the best matchup, discounting
-; low HP and status, and favoring answers to a boosted player. Return its
+; low HP and status, and favoring answers to a boosted player and Sleep Talk
+; users against a sleep move. Return its
 ; party index in b and wSmogonAIBestMon, and its score in wSmogonAIBestScore.
 ; Return carry if there is none.
 	ld a, -1
@@ -104,15 +105,12 @@ AISmogon_FindBestSwitchIn:
 	ld a, 1
 .compare
 	ld c, a
-	call AISmogon_CanStopSetup
-	jr nc, .no_bonus
-	ld a, c
-	add SMOGON_ANTI_SETUP_BONUS
+	call AISmogon_SwitchInBonus
+	add c
 	jr nc, .got_bonus
 	ld a, $ff
 .got_bonus
 	ld c, a
-.no_bonus
 	ld a, [wSmogonAIBestScore]
 	cp c
 	jr nc, .next
@@ -136,6 +134,78 @@ AISmogon_FindBestSwitchIn:
 .none
 	scf
 	ret
+
+AISmogon_SwitchInBonus:
+; Return in a how much better wOTPartyMon [wSmogonAIMon] is as a switch-in
+; for what it can do beyond its matchup.
+	push bc
+	ld c, 0
+	call AISmogon_CanStopSetup
+	jr nc, .sleep
+	ld c, SMOGON_ANTI_SETUP_BONUS
+.sleep
+; A Sleep Talk user takes the player's sleep move and keeps attacking.
+	call AISmogon_PlayerThreatensSleep
+	jr nc, .done
+	ld a, SLEEP_TALK
+	call AISmogon_OTMonHasMove
+	jr nc, .done
+	ld a, c
+	add SMOGON_SLEEP_ABSORB_BONUS
+	ld c, a
+.done
+	ld a, c
+	pop bc
+	ret
+
+AISmogon_PlayerThreatensSleep:
+; Return carry if the player's Pokemon has revealed a sleep move it can use
+; on the AI's side: it isn't asleep or frozen, and no Safeguard is up.
+	ld a, [wBattleMonStatus]
+	and SLP_MASK | 1 << FRZ
+	ret nz
+	ld a, [wEnemyScreens]
+	and 1 << SCREENS_SAFEGUARD
+	ret nz
+	push hl
+	ld hl, .SleepMoves
+.loop
+	ld a, [hli]
+	cp -1
+	jr z, .done ; no carry
+	call AISmogon_PlayerRevealedMove
+	jr nc, .loop
+.done
+	pop hl
+	ret
+
+.SleepMoves:
+	db SPORE
+	db SLEEP_POWDER
+	db LOVELY_KISS
+	db HYPNOSIS
+	db SING
+	db -1 ; end
+
+AISmogon_ShouldAbsorbSleep:
+; Return carry if the player threatens to put the active Pokemon to sleep,
+; and the best switch-in (from AISmogon_FindBestSwitchIn) can take the sleep
+; with Sleep Talk while the active Pokemon can't.
+	ld a, [wEnemyMonStatus]
+	and SLP_MASK
+	ret nz
+	call AISmogon_PlayerThreatensSleep
+	ret nc
+	ld a, [wCurOTMon]
+	ld [wSmogonAIMon], a
+	ld a, SLEEP_TALK
+	call AISmogon_OTMonHasMove
+	ccf
+	ret nc
+	ld a, [wSmogonAIBestMon]
+	ld [wSmogonAIMon], a
+	ld a, SLEEP_TALK
+	jp AISmogon_OTMonHasMove
 
 AISmogon_CanStopSetup:
 ; Return carry if the player's Pokemon has boosted and wOTPartyMon

@@ -246,6 +246,11 @@ SwitchSmogon:
 	bit SUBSTATUS_CURSE, a
 	jr nz, .escape
 	call AISmogon_EncoredIntoStatusMove
+	jr c, .escape
+
+; Let a Sleep Talk user take the player's sleep move instead of losing the
+; active Pokemon to sleep.
+	call AISmogon_ShouldAbsorbSleep
 	jr nc, .matchup
 
 .escape
