@@ -206,3 +206,6 @@ Add an entry here when making notable changes.
     weather starting battle weather, Challenge Mode, trainer DVs/happiness.
   - Smogon AI: Growth is `EFFECT_SP_ATK_UP`; Hidden Power's power comes from
     the DVs (`AISmogon_GetAttack`).
+  - Smogon AI: Return and Frustration count as 102 power, max/min happiness
+    (`AISmogon_GetMovePowerAndType`). Flail, Reversal, Magnitude and Present
+    still count as power 1 (ignored by the matchup scoring).

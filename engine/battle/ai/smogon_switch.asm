@@ -791,8 +791,11 @@ AISmogon_GetAttack:
 
 AISmogon_GetMovePowerAndType:
 ; Return the power of move a in d and its type in e.
+; Return and Frustration count as 102, their power at max (min) happiness,
+; which OU sets always have.
 	push bc
 	push hl
+	push af
 	ld hl, Moves + MOVE_POWER - MOVE_LENGTH
 	ld bc, MOVE_LENGTH
 	call AddNTimes
@@ -804,6 +807,14 @@ AISmogon_GetMovePowerAndType:
 	ld a, BANK(Moves)
 	call GetFarByte
 	ld e, a
+	pop af
+	cp RETURN
+	jr z, .max_happiness
+	cp FRUSTRATION
+	jr nz, .done
+.max_happiness
+	ld d, 102
+.done
 	pop hl
 	pop bc
 	ret
