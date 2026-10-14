@@ -54,10 +54,10 @@ LoadFrame:
 	call AddNTimes
 	ld d, h
 	ld e, l
-	ld hl, vTiles0 tile "┌" ; $ba
+	ld hl, vTiles0 tile '┌' ; $ba
 	lb bc, BANK(Frames), TEXTBOX_FRAME_TILES ; "┌" to "┘"
 	call Get1bppViaHDMA
-	ld hl, vTiles2 tile " " ; $7f
+	ld hl, vTiles2 tile ' ' ; $7f
 	ld de, TextboxSpaceGFX
 	lb bc, BANK(TextboxSpaceGFX), 1
 	jp Get1bppViaHDMA

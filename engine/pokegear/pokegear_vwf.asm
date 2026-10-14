@@ -7,7 +7,7 @@ PokegearPlaceNextVWFChar:
 .loop
 	ld a, [de]
 	inc de
-	cp "@"
+	cp '@'
 	ret z
 
 	push bc

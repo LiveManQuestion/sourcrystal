@@ -684,13 +684,13 @@ endr
 	jr .done
 
 .create_digit
-	ld a, "0"
+	ld a, '0'
 	add c
 	ld [hl], a
 
 .done
 	call .Function1062ff
-	ld a, "0"
+	ld a, '0'
 	add b
 	ld [hli], a
 	pop de
@@ -1035,11 +1035,11 @@ Function10649b: ; unreferenced
 	call AddNTimes
 	ld d, h
 	ld e, l
-	ld hl, vTiles0 tile "┌" ; $ba
+	ld hl, vTiles0 tile '┌' ; $ba
 	ld c, TEXTBOX_FRAME_TILES ; "┌" to "┘"
 	ld b, BANK(Frames)
 	call Function1064c3
-	ld hl, vTiles2 tile " " ; $7f
+	ld hl, vTiles2 tile ' ' ; $7f
 	ld de, TextboxSpaceGFX
 	ld c, 1
 	ld b, BANK(TextboxSpaceGFX)

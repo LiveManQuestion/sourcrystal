@@ -153,9 +153,9 @@ ReplacePeriodsWithSpaces: ; unreferenced
 	ld b, SCREEN_WIDTH * 2
 .loop
 	ld a, [hl]
-	cp "."
+	cp '.'
 	jr nz, .next
-	ld [hl], " "
+	ld [hl], ' '
 .next
 	inc hl
 	dec b
@@ -941,11 +941,11 @@ CopyBottomLineToTopLine:
 ClearBottomLine:
 	hlcoord 1, 15
 	ld bc, SCREEN_WIDTH - 2
-	ld a, " "
+	ld a, ' '
 	call ByteFill
 	hlcoord 1, 16
 	ld bc, SCREEN_WIDTH - 2
-	ld a, " "
+	ld a, ' '
 	jp ByteFill
 
 PokedexShow_GetDexEntryBank:
@@ -1123,7 +1123,7 @@ LuckyNumberShow8:
 	ld de, wLuckyIDNumber
 	lb bc, PRINTNUM_LEADINGZEROS | 2, 5
 	call PrintNum
-	ld a, "@"
+	ld a, '@'
 	ld [wStringBuffer1 + 5], a
 	ld hl, LC_Text8
 	ld a, LUCKY_NUMBER_SHOW_9
@@ -1732,7 +1732,7 @@ GetBuenasPassword:
 .read_loop
 	ld a, [de]
 	inc de
-	cp "@"
+	cp '@'
 	jr nz, .read_loop
 	dec c
 	jr nz, .read_loop
@@ -1743,7 +1743,7 @@ GetBuenasPassword:
 	ld a, [de]
 	inc de
 	ld [hli], a
-	cp "@"
+	cp '@'
 	jr nz, .copy_loop
 	ld de, wStringBuffer1
 	ret

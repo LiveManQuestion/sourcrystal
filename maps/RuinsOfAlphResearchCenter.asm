@@ -620,7 +620,7 @@ RuinsOfAlphResearchCenterTutotScientistScript:
 	hlcoord 5, 10 ; text starting position
 	jr nz, .display_needed_amount
 ; display "-------" instead of the "currency"
-	ld a, "-"
+	ld a, '-'
 	ld c, 14 ; how many dashes to display
 	         ; should cover item name and " x##"
 .fill_bytes

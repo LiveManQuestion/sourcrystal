@@ -8,7 +8,7 @@ Pokedex_FormMode:
 	newfarcall Pokedex_BlackOutBG
 
 	hlcoord 19, 17
-	ld [hl], "M" ; last character of action menu
+	ld [hl], 'M' ; last character of action menu
 
 	; now do the main screen
 	decoord 0, 0

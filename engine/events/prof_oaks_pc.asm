@@ -65,7 +65,7 @@ Rate:
 
 .UpdateRatingBuffer:
 	push hl
-	ld a, "@"
+	ld a, '@'
 	ld bc, ITEM_NAME_LENGTH
 	call ByteFill
 	pop hl

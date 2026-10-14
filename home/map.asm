@@ -102,7 +102,7 @@ LoadOverworldTilemap::
 	rst Bankswitch
 	call LoadMetatiles
 
-	ld a, "■"
+	ld a, '■'
 	hlcoord 0, 0
 	ld bc, SCREEN_WIDTH * SCREEN_HEIGHT
 	call ByteFill

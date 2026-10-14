@@ -400,7 +400,7 @@ pushc
 	newcharmap unown
 	DEF PRINTABLE_UNOWN EQUS "ABCDEFGHIJKLMNOPQRSTUVWXYZ-"
 	for i, STRLEN("{PRINTABLE_UNOWN}")
-		charmap STRSUB("{PRINTABLE_UNOWN}", i + 1, 1), $10 * (i / 8) + 2 * i
+		charmap STRSLICE("{PRINTABLE_UNOWN}", i, i + 1), $10 * (i / 8) + 2 * i
 	endr
 	charmap "@", $ff ; end
 popc
@@ -410,7 +410,7 @@ pushc
 	newcharmap ascii
 	DEF PRINTABLE_ASCII EQUS " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz\{|}~"
 	for i, STRLEN("{PRINTABLE_ASCII}")
-		charmap STRSUB("{PRINTABLE_ASCII}", i + 1, 1), i + $20
+		charmap STRSLICE("{PRINTABLE_ASCII}", i, i + 1), i + $20
 	endr
 	charmap "\t", $09
 	charmap "\n", $0a

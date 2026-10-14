@@ -147,7 +147,6 @@ MACRO text_end
 ENDM
 
 MACRO dict
-	assert CHARLEN(\1) == 1
 	if \1 == 0
 		and a
 	else
@@ -158,7 +157,7 @@ MACRO dict
 		jr nz, .not\@
 		ld a, \2
 	.not\@:
-	elif !STRCMP(STRSUB("\2", 1, 1), ".")
+	elif !STRCMP(STRSLICE("\2", 0, 1), ".")
 		; Locals can use a short jump
 		jr z, \2
 	else

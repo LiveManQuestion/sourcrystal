@@ -21,7 +21,7 @@ PrintMoveDescriptionToScratch:
 	ld a, [de]
 	inc de
 	ld [hli], a
-	cp "@"
+	cp '@'
 	jr nz, .keep_copying
 	ld de, sMoveDescriptionScratch
 	pop hl

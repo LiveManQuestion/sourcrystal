@@ -192,7 +192,7 @@ PrintBlueCardBalance:
 	ld h, b
 	ld l, c
 	inc hl
-	ld a, " "
+	ld a, ' '
 	ld [hli], a
 	ld [hld], a
 	pop de
@@ -280,7 +280,7 @@ endr
 	call Buena_GetPrize
 	inc hl
 	ld a, [hl]
-	ld c, "0"
+	ld c, '0'
 	add c
 	ld [de], a
 	ret
