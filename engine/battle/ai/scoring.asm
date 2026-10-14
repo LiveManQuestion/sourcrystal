@@ -3323,6 +3323,7 @@ AIGetEnemyMove:
 	push hl
 	push de
 	push bc
+	push af
 	dec a
 	ld hl, Moves
 	ld bc, MOVE_LENGTH
@@ -3332,6 +3333,17 @@ AIGetEnemyMove:
 	ld a, BANK(Moves)
 	call FarCopyBytes
 
+; Hidden Power's real power and type come from the DVs, like in battle.
+	pop af
+	cp HIDDEN_POWER
+	jr nz, .done
+	ld hl, wEnemyMonDVs
+	call AISmogon_GetAttack
+	ld a, d
+	ld [wEnemyMoveStruct + MOVE_POWER], a
+	ld a, e
+	ld [wEnemyMoveStruct + MOVE_TYPE], a
+.done
 	pop bc
 	pop de
 	pop hl

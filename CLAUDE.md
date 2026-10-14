@@ -222,3 +222,10 @@ Add an entry here when making notable changes.
   judgment in `AISmogon_AttackPoints` and `ai/switch.asm` after the vanilla
   revert. Don't restore the vanilla version. Checked with switch traces against
   Typhlosion: switches into a better Fire resistance went from 8/37 to 26/56.
+- **2026-10-14**: `AIGetEnemyMove` loads Hidden Power's real power and type
+  from the enemy's DVs (via `AISmogon_GetAttack`), so every AI layer sees
+  them; before, AI_Immunities treated it as a Normal move (dismissed against
+  Ghosts) and AI_Aggressive as a 1-power one. `ai_scenarios.py` checks it
+  (`hp_cases`, against the vanilla formula). Note: any code change shifts the
+  game's RNG timing, so compare battle win rates with many seeds (Koga 1
+  varied 15/36 vs 10/36 between builds with no Hidden Power on his team).
