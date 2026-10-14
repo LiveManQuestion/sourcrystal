@@ -6,7 +6,10 @@ Starts a Challenge Mode battle like tools/claude/battle.py, then each time
 AI_Smogon runs, sets up the next scenario (moves, weather, statuses...), resets
 the scores to 20 and reads them when AI_Smogon returns. A last phase gives the
 enemy only heal moves and checks the multiplier index BattleCommand_
-TimeBasedHealContinue picks at .Heal."""
+TimeBasedHealContinue picks at .Heal. Alongside, a switch-in phase gives
+AISmogon_FindBestSwitchIn two candidates with equal stats against a player
+type and checks which one it picks (types and moves decide); the party is
+restored and no switch happens."""
 import io, json, os, re, sys, random
 from pyboy import PyBoy
 
@@ -37,7 +40,8 @@ def parse(path):
         m = re.match(r'const\s+(\w+)', line)
         if m:
             C[m.group(1)] = val; val += step
-for f in ('constants/move_constants.asm', 'constants/battle_constants.asm', 'constants/type_constants.asm'):
+for f in ('constants/move_constants.asm', 'constants/battle_constants.asm', 'constants/type_constants.asm',
+          'constants/pokemon_constants.asm'):
     parse(f)
 C.update(MORN_F=0, DAY_F=1, NITE_F=2, EVE_F=3)  # constants/ram_constants.asm wTimeOfDay
 assert C['THUNDER'] == 0x57 and C['MOONLIGHT'] == 0xec, (C['THUNDER'], C['MOONLIGHT'])
@@ -112,6 +116,20 @@ heal_cases = [
     ('moonlight night sun', 'MOONLIGHT', C['NITE_F'], 23, C['WEATHER_SUN'], 3),
     ('moonlight day rain', 'MOONLIGHT', C['DAY_F'], 12, C['WEATHER_RAIN'], 0),
     ('synthesis day sand', 'SYNTHESIS', C['DAY_F'], 12, C['WEATHER_SANDSTORM'], 1),
+]
+
+# Switch-in phase: (name, player types, [(species, moves)...], expected index)
+switch_cases = [
+    ('switch vs fire: water over 4x weak', (C['FIRE'], C['FIRE']),
+     [(C['FORRETRESS'], M('TACKLE')), (C['STARMIE'], M('SURF'))], 1),
+    ('switch vs water: grass over fire', (C['WATER'], C['WATER']),
+     [(C['VENUSAUR'], M('RAZOR_LEAF')), (C['CHARIZARD'], M('FLAMETHROWER'))], 0),
+    ('switch vs electric: ground immunity', (C['ELECTRIC'], C['ELECTRIC']),
+     [(C['GYARADOS'], M('SURF')), (C['GOLEM'], M('EARTHQUAKE'))], 1),
+    ('switch vs ground: flying immunity', (C['GROUND'], C['GROUND']),
+     [(C['SKARMORY'], M('DRILL_PECK')), (C['GOLEM'], M('EARTHQUAKE'))], 0),
+    ('switch vs dark: fighting over psychic', (C['DARK'], C['DARK']),
+     [(C['ALAKAZAM'], M('PSYCHIC_M')), (C['HERACROSS'], M('MEGAHORN'))], 1),
 ]
 
 results, state = [], {'i': 0, 'cur': None, 'ret': None, 'heal_i': 0, 'heal_cur': None}
@@ -192,6 +210,65 @@ def on_heal(ctx):
 pb.hook_register(*sym['BattleCommand_TimeBasedHealContinue'], on_heal_entry, None)
 pb.hook_register(*sym['BattleCommand_TimeBasedHealContinue.Heal'], on_heal, None)
 
+# --- switch-in phase ---------------------------------------------------------
+PARTY_LEN = W('wOTPartyMon2') - W('wOTPartyMon1')
+PLAYER_SAVE = [('wBattleMonType1', 2), ('wBattleMonAttack', 10), ('wBattleMonStatus', 1), ('wPlayerUsedMoves', 4)]
+sw = {'i': 0, 'saved': None}
+def on_switch_entry(ctx):
+    if sw['i'] >= len(switch_cases) or sw['saved'] is not None:
+        return
+    name, ptypes, cands, exp = switch_cases[sw['i']]
+    active = mem[W('wCurOTMon')]
+    others = [i for i in range(mem[W('wOTPartyCount')]) if i != active]
+    if len(others) < len(cands):
+        return
+    party = W('wOTPartyMon1')
+    sw['saved'] = ([mem[party + k] for k in range(PARTY_LEN * 6)],
+                   [[mem[W(n) + k] for k in range(l)] for n, l in PLAYER_SAVE])
+    mem[W('wBattleMonType1')], mem[W('wBattleMonType2')] = ptypes
+    for k in range(5):
+        word(W('wBattleMonAttack') + 2 * k, 200)
+    mem[W('wBattleMonStatus')] = 0
+    for k in range(4):
+        mem[W('wPlayerUsedMoves') + k] = 0
+    slots = []
+    for j, i in enumerate(others):
+        b = i * PARTY_LEN
+        if j < len(cands):
+            species, moves = cands[j]
+            mem[W('wOTPartyMon1Species') + b] = species
+            for k in range(4):
+                mem[W('wOTPartyMon1Moves') + b + k] = moves[k] if k < len(moves) else 0
+            mem[W('wOTPartyMon1Status') + b] = 0
+            word(W('wOTPartyMon1HP') + b, 200); word(W('wOTPartyMon1MaxHP') + b, 200)
+            for k in range(5):
+                word(W('wOTPartyMon1Attack') + b + 2 * k, 200)
+            slots.append(i)
+        else:
+            word(W('wOTPartyMon1HP') + b, 0)
+    sw['slots'] = slots
+    sw['cur'] = (name, exp)
+
+def on_switch_done(ctx):
+    if sw['saved'] is None:
+        return
+    name, exp = sw['cur']
+    best = mem[W('wSmogonAIBestMon')]
+    got = sw['slots'].index(best) if best in sw['slots'] else -1
+    results.append((name, [got], [exp], got == exp))
+    party_bytes, player_bytes = sw['saved']
+    for k, v in enumerate(party_bytes):
+        mem[W('wOTPartyMon1') + k] = v
+    for (n, l), vals in zip(PLAYER_SAVE, player_bytes):
+        for k, v in enumerate(vals):
+            mem[W(n) + k] = v
+    # report no switch-in, so the battle goes on as if nothing happened
+    mem[W('wSmogonAIBestMon')] = 0xff
+    sw['saved'] = None
+    sw['i'] += 1
+pb.hook_register(*sym['AISmogon_FindBestSwitchIn'], on_switch_entry, None)
+pb.hook_register(*sym['AISmogon_FindBestSwitchIn.done'], on_switch_done, None)
+
 crashed = []
 pb.hook_register(0, 0x38, lambda ctx: crashed.append(pb.register_file.SP), None)
 
@@ -223,7 +300,7 @@ mem[W('wMapReentryScriptBank')] = 1
 mem[W('wMapReentryScriptAddress')] = 0xe2; mem[W('wMapReentryScriptAddress') + 1] = 0xcf
 
 rng = random.Random(1)
-while frame < 60 * 60 * 120 and not crashed and state['heal_i'] < len(heal_cases):
+while frame < 60 * 60 * 120 and not crashed and (state['heal_i'] < len(heal_cases) or sw['i'] < len(switch_cases)):
     if mem[W('wBattleMode')] == 2:
         word(W('wBattleMonHP'), 999)
         press('a' if rng.random() < 0.8 else 'b', after=rng.randint(8, 30))
@@ -234,4 +311,6 @@ ok = all(r[3] for r in results)
 for r in results:
     print(('PASS' if r[3] else 'FAIL'), r[0], 'got', r[1], 'expected', r[2])
 print('scenarios run', state['i'], '/', len(scen), 'engine', state['heal_i'], '/', len(heal_cases),
-      'crashed', crashed, 'frames', frame, 'ALL OK' if ok and state['i'] == len(scen) and state['heal_i'] == len(heal_cases) else 'NOT OK')
+      'switch', sw['i'], '/', len(switch_cases), 'crashed', crashed, 'frames', frame,
+      'ALL OK' if ok and state['i'] == len(scen) and state['heal_i'] == len(heal_cases) and sw['i'] == len(switch_cases)
+      else 'NOT OK')

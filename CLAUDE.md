@@ -93,7 +93,9 @@ empty save. Never write over the user's save files.
   since the harness keeps healing the player). Crashes are not.
 - `tools/claude/ai_scenarios.py ROM SYM RAM`: sets up exact states (moves,
   weather, statuses, speed, time of day) each time `AI_Smogon` runs and checks
-  its scores, plus the heal-move multiplier the engine picks. Add cases there.
+  its scores, plus the heal-move multiplier the engine picks, and which of
+  two equal-stat candidates `AISmogon_FindBestSwitchIn` picks against a
+  player type (`switch_cases`; no real switch happens). Add cases there.
   The battle can end mid-run; rerun from the case it stopped at (4th arg).
   `AI_Smogon` is far-called, so its return address is the shared far-call
   stub that every nested `callfar` also returns through: match the stack
