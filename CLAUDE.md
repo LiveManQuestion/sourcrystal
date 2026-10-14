@@ -100,6 +100,10 @@ empty save. Never write over the user's save files.
   `AI_Smogon` is far-called, so its return address is the shared far-call
   stub that every nested `callfar` also returns through: match the stack
   pointer, not just the address, when hooking a return.
+- `tools/claude/damage_diff.py VANILLA.gbc VANILLA.sym ROM.gbc ROM.sym [N]`:
+  runs the damage code (DamageStats, DamageCalc, Stab) on the same random
+  inputs in vanilla Crystal and this ROM and reports mismatches. Build
+  vanilla from a copy of `pokecrystal-master/`. Expect 0 mismatches.
 - An injected trainer battle needs `winlosstext`, or a win prints a stale
   pointer and crashes. This was a harness bug, not a game bug.
 
@@ -234,3 +238,9 @@ Add an entry here when making notable changes.
   covers Toxic, Leech Seed and Thunder Wave/Glare immunities). Note: any code change shifts the
   game's RNG timing, so compare battle win rates with many seeds (Koga 1
   varied 15/36 vs 10/36 between builds with no Hidden Power on his team).
+- **2026-10-14**: Final vanilla check. Two leftovers fixed: Sky Attack was
+  in `data/moves/critical_hit_moves.asm`, and Bide (+1) and Teleport (-1)
+  had priorities in `data/moves/effects_priorities.asm`. All battle data
+  tables now match vanilla byte for byte (except pointers and the "SP.ATK"
+  stat names), and `damage_diff.py` found 0 mismatches in 2000 cases (98/500
+  against the pre-revert build).
