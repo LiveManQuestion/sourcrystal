@@ -1,0 +1,138 @@
+# Claude session change log
+
+Notable changes made in Claude Code sessions, oldest first, with how each was
+checked. `CLAUDE.md` summarizes what's still true; add new entries here.
+
+- **2026-10-13**: `342bbfb61` peephole optimization pass over `engine/` and
+  `home/` (~1 KB saved, including room in the full Battle Core, Effect Commands
+  and ROM0 banks). `138621d66` Smogon AI upgrade:
+  - Moved the switching code and SmogonTraits into the AI bank.
+  - New move behavior:
+    - Reflect/Light Screen matched to the player's attack category
+    - Baton Pass, Encore, Heal Bell
+    - Explosion avoids Reflect, and a doomed, outsped Pokémon explodes
+    - Toxic is favored with Spikes down
+    - No phazing out a sleeping, unboosted Pokémon
+  - Switching favors a phazer, Haze user or exploder against a boosted
+    player.
+  - Verified with 108 headless battles (no crashes; same timeout rate as before).
+- **2026-10-13**: Sleep absorbing. When the player's Pokemon has revealed a
+  sleep move (and isn't asleep or frozen, with no enemy Safeguard), Sleep Talk
+  users get `SMOGON_SLEEP_ABSORB_BONUS` as switch-ins (`AISmogon_SwitchInBonus`),
+  and `SwitchSmogon` treats it as an escape reason when the active Pokemon is
+  awake without Sleep Talk and the best switch-in has it
+  (`AISmogon_ShouldAbsorbSleep`). Checked headlessly by giving the player
+  Spore (`$93`; the constants' comments are hex).
+- **2026-10-14**: Protect stalling (`AI_Smogon_Protect`). Protect/Detect is
+  encouraged when the player takes more residual damage per turn than the
+  enemy (`smogon_residual_points` macro: Toxic, Leech Seed, Curse 2 points,
+  3/16+ Toxic 3; poison, burn, Sandstorm, trapping 1; enemy Leftovers +1).
+  Net 2 encourages, 4 greatly encourages; a Perish Song count that runs out
+  before ours always greatly encourages. Never right after Protect or against
+  a sleeping/frozen Pokemon. Checked with 12 headless battles (enemy given
+  Protect, player kept badly poisoned vs. not): no crashes, Protect used
+  alternately with attacks.
+- **2026-10-14**: Counter/Mirror Coat (`AI_Smogon_Counter`, both effects).
+  Encourages the one matching `AISmogon_PlayerIsCounterable` (revealed
+  attacks, else Attack vs. Sp.Atk; like `AISmogon_PlayerIsPhysical` but
+  Hidden Power counts as physical, since Counter goes by its Normal type in
+  the move data, and fixed-damage attacks count) while the enemy has half HP
+  or more; discourages the other one and both against a sleeping/frozen
+  Pokemon; never used into a type immunity (Ghost/Dark). Checked with 36
+  headless battles (enemy given both moves; player physical, special, or
+  high Sp.Atk with Dark Hidden Power or Seismic Toss): no crashes; Counter
+  dominated against physical attackers and once HP/Seismic Toss was revealed,
+  Mirror Coat otherwise.
+- **2026-10-14**: Battle mechanics back to vanilla Crystal (the user wants the
+  battle system to match unmodified Crystal; don't reintroduce these):
+  - Body Slam is `EFFECT_PARALYZE_HIT` again (Sour Crystal had given it Stomp's
+    double damage against Minimize). `EFFECT_BODY_SLAM` and
+    `BattleCommand_CheckHit.AntiMinimize` (Body Slam/Stomp never missing a
+    Minimized target, which also checked the wrong side) are gone.
+  - Morning Sun/Synthesis/Moonlight heal by time of day again: 1/2 at their
+    time, 1/4 otherwise, doubled in sun, halved in rain or Sandstorm, no time
+    bonus in link battles. Sour Crystal's Evening (17:00-19:59) counts as day
+    before `VANILLA_NITE_HOUR` (18) and night after, like the original game.
+    `GetTwoThirdsMaxHP` was only used by Sour Crystal's version and is removed.
+
+  New Smogon AI move handling:
+  - Thunder is encouraged in rain, where it never misses (`AI_Smogon_Thunder`).
+  - Rollout is encouraged after Defense Curl (`AI_Smogon_Rollout`).
+  - When the enemy moves first against a player in the air (Fly) or
+    underground (Dig), attacks that can't reach it are discouraged, with
+    Lock-On taken into account (`AISmogon_MissesHiddenPlayer`). Swift misses
+    too: `.FlyDigMoves` runs before the sure-hit check.
+  - Endure is discouraged when residual damage knocks the enemy out anyway
+    (`AI_Smogon_Endure`). Poison/burn/Leech Seed/Curse hit right after the
+    user's own move (before the player's attack, since Endure goes first), so
+    they only matter when they're at least the current HP. Sandstorm, trapping
+    moves and Perish Song come at the end of the turn and always do.
+  - Heal moves: 1/8 is discouraged, 1/4 is left to AI_Smart, 1/2 or more
+    heals at half HP (`AISmogon_TimeBasedHealAmount`).
+
+  Checked with `tools/claude/ai_scenarios.py` (32 AI scenarios plus 8 engine heal cases).
+- **2026-10-14**: Battles play exactly like vanilla Crystal / GSC on Smogon,
+  bugs included: anything that can matter in a link battle is vanilla (the user
+  wants this; don't reintroduce Sour Crystal's battle mechanics or battle bug
+  fixes). Single-player-only fixes and features stay. `pokecrystal-master/`
+  (untracked) is the vanilla reference.
+  - Data is byte-identical to vanilla: moves, effect scripts and commands, type
+    order (Ghost physical, Dark/Dragon special), base stats (Gen 2; learnsets
+    unchanged), type-boost items 10% (Dragon Scale boosts, Dragon Fang
+    doesn't). Held Sitrus Berry heals 30 HP in battle (1/4 from the bag).
+  - `effect_commands.asm` and `move_effects/` are vanilla, except: no 25% AI
+    status-move failure, Thief's wild-battle changes and stolen-item backup,
+    and cosmetics (freeze/paralysis anims, colored Hidden Power, anim params,
+    Future Sight anim, shorter delays).
+  - `core.asm` battle mechanics are vanilla (Spikes, trap 1/16, Sandstorm
+    1/8, Perish/Spikes 0 HP, Berserk Gene count, PRZ/BRN on switch-in,
+    Struggle with PP Ups, no Teleport switching).
+  - Kept single-player code: exp (Exp. Share split, catch exp), catching and
+    ball fixes, wild held items and flee list, Magikarp length, items stolen
+    by foes returned (`wPartyBackupItems`, `ConsumeUserItem`), Pursuit faint
+    status fix, Glacier Badge fix, max HP < 4 freeze fix, Safari, overworld
+    weather starting battle weather, Challenge Mode, trainer DVs/happiness.
+  - Smogon AI: Growth is `EFFECT_SP_ATK_UP`; Hidden Power's power comes from
+    the DVs (`AISmogon_GetAttack`).
+  - Smogon AI: Return and Frustration count as 102 power, max/min happiness
+    (`AISmogon_GetMovePowerAndType`). Flail, Reversal, Magnitude and Present
+    still count as power 1 (ignored by the matchup scoring).
+- **2026-10-14**: Trainer Pokemon with Return get max happiness (255) and
+  ones with Frustration get 0, both 102 power (`ReadTrainerParty`), unless
+  the party uses `TRAINERTYPE_HAPPINESS`, whose value wins (e.g. the
+  Frustration Koffing set to $1e = 90 power). Checked headlessly on Bugsy 2's
+  Pinsir (and a ROM copy patched to Frustration).
+- **2026-10-14**: `CheckTypeMatchup` takes the attack's type in `a` again
+  (`BattleCheckTypeMatchup` loads the current move's type first, so battles
+  are unchanged). Vanilla ignores `a`, which broke every type-effectiveness
+  judgment in `AISmogon_AttackPoints` and `ai/switch.asm` after the vanilla
+  revert. Don't restore the vanilla version. Checked with switch traces against
+  Typhlosion: switches into a better Fire resistance went from 8/37 to 26/56.
+- **2026-10-14**: `AIGetEnemyMove` loads the power moves really have in
+  battle, so every AI layer sees it: Hidden Power's power and type from the
+  enemy's DVs (via `AISmogon_GetAttack`; before, AI_Immunities dismissed it
+  against Ghosts as a Normal move), Return and Frustration from the enemy's
+  happiness (BattleCommand_HappinessPower's formula), and Magnitude's average
+  of 71. Before, AI_Aggressive saw all of them as 1 power. The Smogon
+  matchup scoring also counts Magnitude as 71. `ai_scenarios.py` checks these
+  (`hp_cases`). Audited for other contract changes from the vanilla revert
+  (only `CheckTypeMatchup` mattered) and status immunities (AI_Status already
+  covers Toxic, Leech Seed and Thunder Wave/Glare immunities). Note: any code change shifts the
+  game's RNG timing, so compare battle win rates with many seeds (Koga 1
+  varied 15/36 vs 10/36 between builds with no Hidden Power on his team).
+- **2026-10-14**: Final vanilla check. Two leftovers fixed: Sky Attack was
+  in `data/moves/critical_hit_moves.asm`, and Bide (+1) and Teleport (-1)
+  had priorities in `data/moves/effects_priorities.asm`. All battle data
+  tables now match vanilla byte for byte (except pointers and the "SP.ATK"
+  stat names), and `damage_diff.py` found 0 mismatches in 2000 cases (98/500
+  against the pre-revert build).
+- **2026-10-14**: Tooling to make sessions cheaper. Fixed the RGBDS 1.0
+  deprecation warnings at the cause (`STRSUB`/`STRIN`/`CHARSUB` and
+  strings used as numbers → `STRSLICE`/`STRFIND`/`STRCHAR` and character
+  literals, as in vanilla); all four ROMs and the VC patch are byte-identical,
+  and an incremental build prints ~5 lines. Moved this log out of
+  `CLAUDE.md`. New tools in `tools/claude/`: `build_vanilla.sh`,
+  `cmp_data.py`, `vanilla_diff.py`, `replace_region.py`, `switch_report.py`,
+  `battle_compare.py`; `battle.py` logs switches; `battle_matrix.sh` takes
+  `SEEDS` and `TRAINERS`; `ai_scenarios.py` restarts itself until every case
+  has run and ends with `RESULT: ALL OK`.

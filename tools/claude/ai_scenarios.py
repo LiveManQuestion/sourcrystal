@@ -1,7 +1,8 @@
 """Scenario tests for the new AI_Smogon handlers and the reverted heal engine.
 usage: ai_scenarios.py ROM SYM SAVE.ram [FIRST_CASE]   (prints PASS/FAIL per case)
-The battle can end before the last cases run ("scenarios run 23 / 32"):
-run again from that case number.
+The last line is "RESULT: ALL OK" or "RESULT: NOT OK". When the test battle
+ends before every case has run, the script restarts itself from the next case
+(skipping phases that already finished) until everything has run.
 Starts a Challenge Mode battle like tools/claude/battle.py, then each time
 AI_Smogon runs, sets up the next scenario (moves, weather, statuses...), resets
 the scores to 20 and reads them when AI_Smogon returns. A last phase gives the
@@ -18,6 +19,11 @@ from pyboy import PyBoy
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
 rom, symf, save = sys.argv[1:4]
 first = int(sys.argv[4]) if len(sys.argv) > 4 else 0
+# set when the script restarts itself (see the end)
+FAILED_BEFORE = int(os.environ.get('AI_SCENARIOS_FAILED', '0'))
+SKIP_SWITCH = os.environ.get('AI_SCENARIOS_SKIP_SWITCH') == '1'
+SKIP_POWER = os.environ.get('AI_SCENARIOS_SKIP_POWER') == '1'
+HEAL_FIRST = int(os.environ.get('AI_SCENARIOS_HEAL_FIRST', '0'))
 
 # --- constants -------------------------------------------------------------
 C = {}
@@ -151,6 +157,12 @@ hp_cases += [
     ('frustration happiness 30', 'FRUSTRATION', (0, 0), 30, ((255 - 30) * 10 // 25, C['NORMAL'])),
     ('magnitude average', 'MAGNITUDE', (0, 0), 70, (71, C['GROUND'])),
 ]
+
+if SKIP_SWITCH:
+    switch_cases = []
+if SKIP_POWER:
+    hp_cases = []
+heal_cases = heal_cases[HEAL_FIRST:]
 
 results, state = [], {'i': 0, 'cur': None, 'ret': None, 'heal_i': 0, 'heal_cur': None}
 
@@ -348,10 +360,21 @@ while frame < 60 * 60 * 120 and not crashed and (state['heal_i'] < len(heal_case
     else:
         run(30)
 
-ok = all(r[3] for r in results)
+failed = FAILED_BEFORE + sum(not r[3] for r in results)
 for r in results:
     print(('PASS' if r[3] else 'FAIL'), r[0], 'got', r[1], 'expected', r[2])
-print('scenarios run', state['i'], '/', len(scen), 'engine', state['heal_i'], '/', len(heal_cases),
-      'switch', sw['i'], '/', len(switch_cases), 'move power', hp['i'], '/', len(hp_cases), 'crashed', crashed, 'frames', frame,
-      'ALL OK' if ok and state['i'] == len(scen) and state['heal_i'] == len(heal_cases) and sw['i'] == len(switch_cases)
-      and hp['i'] == len(hp_cases) else 'NOT OK')
+print('run from case', first, ': scenarios', state['i'], '/', len(scen), 'engine', state['heal_i'], '/', len(heal_cases),
+      'switch', sw['i'], '/', len(switch_cases), 'move power', hp['i'], '/', len(hp_cases), 'crashed', crashed, 'frames', frame)
+complete = (state['i'] == len(scen) and state['heal_i'] == len(heal_cases)
+            and sw['i'] == len(switch_cases) and hp['i'] == len(hp_cases))
+progress = state['i'] or state['heal_i'] or sw['i'] or hp['i']
+if not complete and progress and not crashed:
+    # the test battle ended early: start over from the next case
+    sys.stdout.flush()
+    env = dict(os.environ, AI_SCENARIOS_FAILED=str(failed),
+               AI_SCENARIOS_SKIP_SWITCH='1' if SKIP_SWITCH or sw['i'] == len(switch_cases) else '0',
+               AI_SCENARIOS_SKIP_POWER='1' if SKIP_POWER or hp['i'] == len(hp_cases) else '0',
+               AI_SCENARIOS_HEAL_FIRST=str(HEAL_FIRST + state['heal_i']))
+    script = os.path.abspath(__file__)
+    os.execve(sys.executable, [sys.executable, script, rom, symf, save, str(first + state['i'])], env)
+print('RESULT:', 'ALL OK' if complete and not failed else f'NOT OK ({failed} failed{", incomplete" if not complete else ""})')

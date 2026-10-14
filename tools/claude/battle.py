@@ -6,7 +6,8 @@ player's first Pokemon a bulky level 100 Typhlosion (Tackle/Swords Dance/Roar/
 Toxic), queues a battle script in free WRAM0 ($cfe2) via the map reentry
 script queue, then plays with random inputs. Prints one JSON line: whether the
 battle started and ended, the result, any jump to the rst $38 crash vector
-(with the stack), and how often each hooked AI routine ran.
+(with the stack), how often each hooked AI routine ran, and every enemy
+switch-in ("switches"; summarize with switch_report.py).
 Needs battle_scripts.json from make_battle_scripts.py."""
 import io, json, os, random, sys, collections
 from pyboy import PyBoy
@@ -50,7 +51,26 @@ def on_crash(ctx):
     crashed.append({'sp': hex(sp), 'stack': [hex(x) for x in stack], 'rombank': mem[0xff9d], 'a': rf.A, 'hl': hex(rf.HL)})
 pb.hook_register(0, 0x38, on_crash, None)
 
-for n in ['AI_Smogon', 'AI_TrySwitch', 'SwitchSmogon', 'AISmogon_ChooseReplacement', 'AISmogon_CanStopSetup',
+# Log every enemy switch-in: 'mid' when the AI chose to switch (with the
+# active and best switch-in matchup scores), 'forced' after a faint or Roar.
+switch_log = []
+pending = {'mid': False}
+def on_try_switch(ctx):
+    counts['AI_TrySwitch'] += 1
+    pending['mid'] = True
+    pending['scores'] = (mem[W('wEnemyAISwitchScore')], mem[W('wSmogonAIBestScore')])
+pb.hook_register(*sym['AI_TrySwitch'], on_try_switch, None)
+def on_load_switch(ctx):
+    b = pb.register_file.B
+    L = sym['wOTPartyMon2'][1] - sym['wOTPartyMon1'][1]
+    hp = mem[W('wEnemyMonHP')] << 8 | mem[W('wEnemyMonHP') + 1]
+    switch_log.append({'kind': 'mid' if pending['mid'] else 'forced', 'from': mem[W('wEnemyMonSpecies')],
+                       'from_hp': hp, 'to': mem[W('wOTPartyMon1Species') + b * L], 'vs': mem[W('wBattleMonSpecies')],
+                       'scores': pending.get('scores') if pending['mid'] else None})
+    pending['mid'] = False
+pb.hook_register(*sym['LoadEnemyMonToSwitchTo'], on_load_switch, None)
+
+for n in ['AI_Smogon', 'SwitchSmogon', 'AISmogon_ChooseReplacement', 'AISmogon_CanStopSetup',
           'AI_Smogon_Screens', 'AI_Smogon_BatonPass', 'AI_Smogon_Encore', 'AI_Smogon_HealBell', 'AI_Smogon_Explosion',
           'AI_Smogon_Phaze', 'AI_Smogon_Haze', 'AI_Smogon_Setup', 'AI_Smogon_Spikes', 'AI_Smogon_Toxic', 'AI_Smogon_Sleep',
           'AI_Smogon_RapidSpin', 'AI_Smogon_Heal', 'AISmogon_PlayerIsPhysical', 'AISmogon_PlayerCanPhaze',
@@ -126,7 +146,7 @@ while frame < max_frames and not crashed:
             if out_frames > 900:
                 break
 
-result = {
+result = {'switches': switch_log, 
     'trainer': trainer, 'seed': seed, 'frames': frame, 'started': started,
     'ended': started and mem[W('wBattleMode')] == 0, 'won': mem[W('wBattleResult')] & 0xf, 'crashed_at': crashed[:2],
     'hooks': dict(counts), 'enemy_moves': len(enemy_moves),

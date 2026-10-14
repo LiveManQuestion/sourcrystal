@@ -78,3 +78,6 @@ used_space.png
 # macos files
 .DS_STORE
 tools/claude/battle_scripts.json
+
+# vanilla Crystal reference build (tools/claude/build_vanilla.sh)
+/.vanilla/
