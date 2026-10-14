@@ -253,6 +253,42 @@ ReadTrainerPartyPieces:
 	pop hl
 .no_moves
 
+; Unless the party data sets it, happiness is maximal for a Return user and
+; minimal for a Frustration user, which both give 102 power.
+	ld a, [wOtherTrainerType]
+	bit TRAINERTYPE_HAPPINESS_F, a
+	jr nz, .no_happiness_moves
+
+	push hl
+	ld a, [wOTPartyCount]
+	dec a
+	ld hl, wOTPartyMon1Moves
+	call GetPartyLocation
+	ld b, NUM_MOVES
+.happiness_move_loop
+	ld a, [hli]
+	cp RETURN
+	ld c, $ff
+	jr z, .set_happiness
+	cp FRUSTRATION
+	ld c, 0
+	jr z, .set_happiness
+	dec b
+	jr nz, .happiness_move_loop
+	jr .happiness_moves_done
+
+.set_happiness
+	push bc
+	ld a, [wOTPartyCount]
+	dec a
+	ld hl, wOTPartyMon1Happiness
+	call GetPartyLocation
+	pop bc
+	ld [hl], c
+.happiness_moves_done
+	pop hl
+.no_happiness_moves
+
 ; Custom DVs affect stats, so recalculate them after TryAddMonToParty
 	ld a, [wOtherTrainerType]
 	and TRAINERTYPE_DVS

@@ -209,3 +209,8 @@ Add an entry here when making notable changes.
   - Smogon AI: Return and Frustration count as 102 power, max/min happiness
     (`AISmogon_GetMovePowerAndType`). Flail, Reversal, Magnitude and Present
     still count as power 1 (ignored by the matchup scoring).
+- **2026-10-14**: Trainer Pokemon with Return get max happiness (255) and
+  ones with Frustration get 0, both 102 power (`ReadTrainerParty`), unless
+  the party uses `TRAINERTYPE_HAPPINESS`, whose value wins (e.g. the
+  Frustration Koffing set to $1e = 90 power). Checked headlessly on Bugsy 2's
+  Pinsir (and a ROM copy patched to Frustration).
