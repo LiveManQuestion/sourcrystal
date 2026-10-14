@@ -214,3 +214,9 @@ Add an entry here when making notable changes.
   the party uses `TRAINERTYPE_HAPPINESS`, whose value wins (e.g. the
   Frustration Koffing set to $1e = 90 power). Checked headlessly on Bugsy 2's
   Pinsir (and a ROM copy patched to Frustration).
+- **2026-10-14**: `CheckTypeMatchup` takes the attack's type in `a` again
+  (`BattleCheckTypeMatchup` loads the current move's type first, so battles
+  are unchanged). Vanilla ignores `a`, which broke every type-effectiveness
+  judgment in `AISmogon_AttackPoints` and `ai/switch.asm` after the vanilla
+  revert. Don't restore the vanilla version. Checked with switch traces against
+  Typhlosion: switches into a better Fire resistance went from 8/37 to 26/56.
