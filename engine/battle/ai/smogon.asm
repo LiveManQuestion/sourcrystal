@@ -6,7 +6,10 @@ AI_Smogon:
 ;   into them, spin Spikes away, stop setup sweepers with phazing or Haze,
 ;   set up only when it's safe, heal before falling into KO range, trade
 ;   Explosion for a healthy threat, steal Leftovers with Thief, Toxic walls
-;   that can't Rest it off, and Pursuit fleeing Ghosts and Psychics.
+;   that can't Rest it off (especially into Spikes), Pursuit fleeing Ghosts
+;   and Psychics, put up the screen that blocks the player's attacks, Baton
+;   Pass boosts out of trouble, Encore a setup or status move, and Heal Bell
+;   a team weighed down by status.
 ; Only uses information a human player could have: the player's active
 ; Pokemon, its types, stats, HP, status and stat changes, the moves it has
 ; revealed since it came in, and how that species is usually played in GSC OU
@@ -92,6 +95,11 @@ AI_Smogon_EffectHandlers:
 	dbw EFFECT_SP_DEF_UP_2,  AI_Smogon_Setup ; Amnesia
 	dbw EFFECT_SPEED_UP_2,   AI_Smogon_Setup ; Agility
 	dbw EFFECT_BELLY_DRUM,   AI_Smogon_Setup
+	dbw EFFECT_REFLECT,      AI_Smogon_Screens
+	dbw EFFECT_LIGHT_SCREEN, AI_Smogon_Screens
+	dbw EFFECT_BATON_PASS,   AI_Smogon_BatonPass
+	dbw EFFECT_ENCORE,       AI_Smogon_Encore
+	dbw EFFECT_HEAL_BELL,    AI_Smogon_HealBell
 	db -1 ; end
 
 AI_Smogon_Sleep:
@@ -156,6 +164,17 @@ AI_Smogon_Phaze:
 	ld a, c
 	and a
 	jp z, AIDiscourageMove
+; A sleeping Pokemon is a sitting duck: phazing it out would only bring in
+; something that can fight back. Unless it has boosted.
+	ld a, [wBattleMonStatus]
+	and SLP_MASK
+	jr z, .awake
+	call AISmogon_PlayerBoosted
+	jr c, AISmogon_GreatlyEncourage
+	inc [hl]
+	ret
+
+.awake
 ; Phaze to make the player take Spikes damage again.
 	ld a, [wPlayerScreens]
 	bit SCREENS_SPIKES, a
@@ -209,6 +228,10 @@ AI_Smogon_Explosion:
 	ld a, [wPlayerSubStatus4]
 	bit SUBSTATUS_SUBSTITUTE, a
 	jr nz, .bad
+; Reflect halves Explosion's damage.
+	ld a, [wPlayerScreens]
+	bit SCREENS_REFLECT, a
+	jr nz, .bad
 
 ; Lay Spikes before exploding.
 	ld a, [wPlayerScreens]
@@ -218,6 +241,14 @@ AI_Smogon_Explosion:
 	call AIHasMoveEffect
 	ret c
 .spikes_done
+
+; A Pokemon in KO range that the player outspeeds is about to faint anyway:
+; take something down with it, and get a free switch-in.
+	call AICheckEnemyQuarterHP
+	jr c, .not_doomed
+	call AICompareSpeed
+	jr nc, .threat
+.not_doomed
 
 ; Trade this Pokemon for a healthy threat like Snorlax, even at full HP,
 ; for anything that has started boosting, or for anything that beats this
@@ -230,8 +261,8 @@ AI_Smogon_Explosion:
 	call AISmogon_PlayerBoosted
 	jr c, .threat
 	push hl
-	farcall AISmogon_ScoreActive
-	farcall AISmogon_FindBestSwitchIn
+	call AISmogon_ScoreActive
+	call AISmogon_FindBestSwitchIn
 	pop hl
 	ret c
 	ld a, [wEnemyAISwitchScore]
@@ -281,6 +312,11 @@ AI_Smogon_Toxic:
 	call AISmogon_GetPlayerTraits
 	bit SMOGON_REST_F, a
 	jr nz, .rester
+	dec [hl]
+; Poison and Spikes wear switch-ins down together.
+	ld a, [wPlayerScreens]
+	bit SCREENS_SPIKES, a
+	ret z
 	dec [hl]
 	ret
 
@@ -352,20 +388,8 @@ AI_Smogon_Setup:
 	jp nc, AIDiscourageMove
 
 ; Don't set up into phazing or Haze, which would erase the boosts.
-	ld de, .AntiSetupMoves
-.anti_setup_loop
-	ld a, [de]
-	inc de
-	cp -1
-	jr z, .anti_setup_done
-	call AISmogon_PlayerRevealedMove
+	call AISmogon_PlayerCanPhaze
 	jr c, .discourage
-	jr .anti_setup_loop
-
-.anti_setup_done
-	call AISmogon_GetPlayerTraits
-	bit SMOGON_PHAZER_F, a
-	jr nz, .discourage
 
 ; Badly poisoned: no time to set up.
 	ld a, [wEnemySubStatus5]
@@ -378,7 +402,7 @@ AI_Smogon_Setup:
 
 ; Don't set up in front of something that hits harder than we do.
 	push hl
-	farcall AISmogon_ScoreActive
+	call AISmogon_ScoreActive
 	pop hl
 	ld a, [wEnemyAISwitchScore]
 	cp SMOGON_MATCHUP_EVEN
@@ -451,24 +475,210 @@ AI_Smogon_Setup:
 	ld a, b
 	ret
 
+AI_Smogon_Screens:
+; Put up the screen that blocks the player's attacks: Reflect against a
+; physical attacker, Light Screen against a special one.
+	call AISmogon_PlayerIsPhysical
+	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
+	jr nc, .special
+	cp EFFECT_REFLECT
+	jr .check
+
+.special
+	cp EFFECT_LIGHT_SCREEN
+.check
+	jr z, AISmogon_EncourageNear
+	inc [hl]
+	inc [hl]
+	ret
+
+AI_Smogon_BatonPass:
+; Baton Pass fails without a teammate to pass to.
+	push hl
+	farcall FindAliveEnemyMons
+	pop hl
+	jp c, AIDiscourageMove
+
+; With nothing to pass, it's just a slower switch.
+	call AISmogon_EnemyBoosted
+	jr c, .something_to_pass
+	ld a, [wEnemySubStatus4]
+	bit SUBSTATUS_SUBSTITUTE, a
+	jr nz, .something_to_pass
+	inc [hl]
+	inc [hl]
+	ret
+
+.something_to_pass
+; Pass boosts or a Substitute on before a phazer or Haze erases them, or
+; when the player's Pokemon gets the better of this one.
+	call AISmogon_PlayerCanPhaze
+	jr c, AISmogon_EncourageNear
+	push hl
+	call AISmogon_ScoreActive
+	pop hl
+	ld a, [wEnemyAISwitchScore]
+	cp SMOGON_MATCHUP_EVEN
+	jr c, AISmogon_EncourageNear
+; Otherwise keep the boosts here and use them.
+	inc [hl]
+	ret
+
+AI_Smogon_Encore:
+; Encore a move that doesn't hurt, like a setup or status move, to lock the
+; player into wasting turns. It works best when we move first.
+	ld a, [wPlayerSubStatus5]
+	bit SUBSTATUS_ENCORED, a
+	ret nz
+	ld a, [wLastPlayerMove]
+	and a
+	ret z
+	call AISmogon_GetMovePowerAndType
+	ld a, d
+	and a
+	ret nz
+	dec [hl]
+	call AICompareSpeed
+	ret nc
+	; fallthrough
+
+AISmogon_EncourageNear:
+; Same as AISmogon_Encourage, within jr range of the handlers around it.
+	dec [hl]
+	dec [hl]
+	ret
+
+AI_Smogon_HealBell:
+; Heal Bell is worth a turn once two or more of the team are statused.
+	push hl
+	ld c, 0
+	ld a, [wEnemyMonStatus]
+	and a
+	jr z, .active_done
+	inc c
+.active_done
+	ld hl, wOTPartyMon1Status
+	ld de, PARTYMON_STRUCT_LENGTH
+	ld b, 0
+.loop
+	ld a, [wOTPartyCount]
+	cp b
+	jr z, .done
+	ld a, [wCurOTMon]
+	cp b
+	jr z, .next
+	push hl
+	ld a, [hli]
+	assert MON_HP - MON_STATUS == 2
+	inc hl
+	and a
+	jr z, .next_pop
+	ld a, [hli]
+	or [hl]
+	jr z, .next_pop
+	inc c
+.next_pop
+	pop hl
+.next
+	add hl, de
+	inc b
+	jr .loop
+
+.done
+	pop hl
+	ld a, c
+	cp 2
+	ret c
+	jr AISmogon_EncourageNear
+
+AISmogon_PlayerCanPhaze:
+; Return carry if the player's Pokemon has revealed Roar, Whirlwind or Haze,
+; or is usually played with phazing.
+	push de
+	ld de, .AntiSetupMoves
+.loop
+	ld a, [de]
+	inc de
+	cp -1
+	jr z, .traits
+	call AISmogon_PlayerRevealedMove
+	jr nc, .loop
+	pop de
+	ret
+
+.traits
+	pop de
+	call AISmogon_GetPlayerTraits
+	and SMOGON_PHAZER
+	ret z
+	scf
+	ret
+
 .AntiSetupMoves:
 	db ROAR
 	db WHIRLWIND
 	db HAZE
 	db -1 ; end
 
+AISmogon_PlayerIsPhysical:
+; Return carry if the player's Pokemon attacks mainly physically, going by
+; the attacks it has revealed, or else by its Attack and Sp.Atk stats.
+	push bc
+	push de
+	push hl
+	ld bc, 0 ; b = physical attacks, c = special attacks
+	ld hl, wPlayerUsedMoves
+.loop
+	ld a, [hli]
+	and a
+	jr z, .counted
+	push hl
+	ld hl, wBattleMonDVs
+	call AISmogon_GetAttack
+	pop hl
+	; skip status moves and fixed-damage moves, which screens don't stop
+	ld a, d
+	cp 2
+	jr c, .next
+	ld a, e
+	cp SPECIAL
+	jr nc, .special
+	inc b
+	jr .next
+
+.special
+	inc c
+.next
+	assert HIGH(wPlayerUsedMoves) == HIGH(wPlayerUsedMoves + NUM_MOVES)
+	ld a, l
+	cp LOW(wPlayerUsedMoves + NUM_MOVES)
+	jr nz, .loop
+
+.counted
+	; carry if more physical attacks than special ones
+	ld a, c
+	cp b
+	jr nz, .done
+	; carry if Sp.Atk < Attack
+	ld de, wBattleMonSpclAtk
+	ld hl, wBattleMonAttack
+	call AISmogon_Compare16
+.done
+	pop hl
+	pop de
+	pop bc
+	ret
+
 AISmogon_GetPlayerTraits:
 ; Return the SmogonTraits flags of the player's active Pokemon in a.
 	push hl
-	push de
 	ld a, [wBattleMonSpecies]
-	ld e, a
-	ld d, 0
-	ld hl, SmogonTraits - 1
-	add hl, de
-	ld a, BANK(SmogonTraits)
-	call GetFarByte
-	pop de
+	add LOW(SmogonTraits - 1)
+	ld l, a
+	adc HIGH(SmogonTraits - 1)
+	sub l
+	ld h, a
+	ld a, [hl]
 	pop hl
 	ret
 

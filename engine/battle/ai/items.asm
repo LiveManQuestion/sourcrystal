@@ -42,11 +42,11 @@ AI_SwitchOrTryItem:
 
 .not_smogon
 	bit SWITCH_OFTEN_F, [hl]
-	jp nz, SwitchOften
+	jr nz, SwitchOften
 	bit SWITCH_RARELY_F, [hl]
-	jp nz, SwitchRarely
+	jr nz, SwitchRarely
 	bit SWITCH_SOMETIMES_F, [hl]
-	jp nz, SwitchSometimes
+	jr nz, SwitchSometimes
 	; fallthrough
 
 DontSwitch:
@@ -57,14 +57,14 @@ SwitchOften:
 	callfar CheckAbleToSwitch
 	ld a, [wEnemySwitchMonParam]
 	and $f0
-	jp z, DontSwitch
+	jr z, DontSwitch
 
 	cp $10
 	jr nz, .not_10
 	call Random
 	cp 50 percent + 1
 	jr c, .switch
-	jp DontSwitch
+	jr DontSwitch
 .not_10
 
 	cp $20
@@ -72,13 +72,13 @@ SwitchOften:
 	call Random
 	cp 79 percent - 1
 	jr c, .switch
-	jp DontSwitch
+	jr DontSwitch
 .not_20
 
 	; $30
 	call Random
 	cp 4 percent
-	jp c, DontSwitch
+	jr c, DontSwitch
 
 .switch
 	ld a, [wEnemySwitchMonParam]
@@ -92,14 +92,14 @@ SwitchRarely:
 	callfar CheckAbleToSwitch
 	ld a, [wEnemySwitchMonParam]
 	and $f0
-	jp z, DontSwitch
+	jr z, DontSwitch
 
 	cp $10
 	jr nz, .not_10
 	call Random
 	cp 8 percent
 	jr c, .switch
-	jp DontSwitch
+	jr DontSwitch
 .not_10
 
 	cp $20
@@ -107,13 +107,13 @@ SwitchRarely:
 	call Random
 	cp 12 percent
 	jr c, .switch
-	jp DontSwitch
+	jr DontSwitch
 .not_20
 
 	; $30
 	call Random
 	cp 79 percent - 1
-	jp c, DontSwitch
+	jr c, DontSwitch
 
 .switch
 	ld a, [wEnemySwitchMonParam]
@@ -177,7 +177,7 @@ SwitchSmogon:
 	ld a, [wEnemyPerishCount]
 	cp 1
 	jr nz, .no_perish
-	farcall AISmogon_FindBestSwitchIn
+	call AISmogon_FindBestSwitchIn
 	jp c, DontSwitch
 	jp .switch
 .no_perish
@@ -218,8 +218,14 @@ SwitchSmogon:
 	jp c, DontSwitch
 .no_rest
 
-	farcall AISmogon_ScoreActive
-	farcall AISmogon_FindBestSwitchIn
+; A Pokemon that can phaze, Haze or Explode deals with a boosted player itself.
+	ld a, [wCurOTMon]
+	ld [wSmogonAIMon], a
+	call AISmogon_CanStopSetup
+	jp c, DontSwitch
+
+	call AISmogon_ScoreActive
+	call AISmogon_FindBestSwitchIn
 	jp c, DontSwitch
 
 ; Reasons to switch out even without a bad matchup:
@@ -239,7 +245,7 @@ SwitchSmogon:
 	ld a, [wEnemySubStatus1]
 	bit SUBSTATUS_CURSE, a
 	jr nz, .escape
-	farcall AISmogon_EncoredIntoStatusMove
+	call AISmogon_EncoredIntoStatusMove
 	jr nc, .matchup
 
 .escape
@@ -516,7 +522,7 @@ AI_Items:
 
 .FullRestore:
 	call .HealItem
-	jp nc, .UseFullRestore
+	jr nc, .UseFullRestore
 	ld a, [bc]
 	bit CONTEXT_USE_F, a
 	jp z, .DontUse
@@ -541,12 +547,12 @@ AI_Items:
 	jp c, .DontUse
 	ld a, [bc]
 	bit UNKNOWN_USE_F, a
-	jp nz, .CheckQuarterHP
+	jr nz, .CheckQuarterHP
 	callfar AICheckEnemyQuarterHP
-	jp nc, .UseHealItem
+	jr nc, .UseHealItem
 	call Random
 	cp 50 percent + 1
-	jp c, .UseHealItem
+	jr c, .UseHealItem
 	jp .DontUse
 
 .CheckQuarterHP:
@@ -561,7 +567,7 @@ AI_Items:
 	callfar AICheckEnemyHalfHP
 	jp c, .DontUse
 	callfar AICheckEnemyQuarterHP
-	jp nc, .UseHealItem
+	jr nc, .UseHealItem
 	call Random
 	cp 20 percent - 1
 	jp nc, .DontUse
@@ -610,7 +616,7 @@ AI_Items:
 	jr nz, .check_40_percent
 	ld a, c
 	cp b
-	jp c, .check_50_percent
+	jr c, .check_50_percent
 	callfar AICheckEnemyQuarterHP
 	jr c, .check_40_percent
 
@@ -630,55 +636,55 @@ AI_Items:
 	pop bc
 	ld a, [bc]
 	bit UNKNOWN_USE_F, a
-	jp z, .DontUse
+	jr z, .DontUse
 	call Random
 	cp 39 percent + 1
-	jp c, .Use
-	jp .DontUse
+	jr c, .Use
+	jr .DontUse
 
 ; End unused
 
 .XAccuracy:
 	call .XItem
-	jp c, .DontUse
+	jr c, .DontUse
 	call EnemyUsedXAccuracy
-	jp .Use
+	jr .Use
 
 .GuardSpec:
 	call .XItem
-	jp c, .DontUse
+	jr c, .DontUse
 	call EnemyUsedGuardSpec
-	jp .Use
+	jr .Use
 
 .DireHit:
 	call .XItem
-	jp c, .DontUse
+	jr c, .DontUse
 	call EnemyUsedDireHit
-	jp .Use
+	jr .Use
 
 .XAttack:
 	call .XItem
-	jp c, .DontUse
+	jr c, .DontUse
 	call EnemyUsedXAttack
-	jp .Use
+	jr .Use
 
 .XDefend:
 	call .XItem
-	jp c, .DontUse
+	jr c, .DontUse
 	call EnemyUsedXDefend
-	jp .Use
+	jr .Use
 
 .XSpeed:
 	call .XItem
-	jp c, .DontUse
+	jr c, .DontUse
 	call EnemyUsedXSpeed
-	jp .Use
+	jr .Use
 
 .XSpecial:
 	call .XItem
-	jp c, .DontUse
+	jr c, .DontUse
 	call EnemyUsedXSpecial
-	jp .Use
+	jr .Use
 
 .XItem:
 	ld a, [wEnemyTurnsTaken]
@@ -686,25 +692,25 @@ AI_Items:
 	jr nz, .notfirstturnout
 	ld a, [bc]
 	bit ALWAYS_USE_F, a
-	jp nz, .Use
+	jr nz, .Use
 	call Random
 	cp 50 percent + 1
-	jp c, .DontUse
+	jr c, .DontUse
 	ld a, [bc]
 	bit CONTEXT_USE_F, a
-	jp nz, .Use
+	jr nz, .Use
 	call Random
 	cp 50 percent + 1
-	jp c, .DontUse
-	jp .Use
+	jr c, .DontUse
+	jr .Use
 .notfirstturnout
 	ld a, [bc]
 	bit ALWAYS_USE_F, a
-	jp z, .DontUse
+	jr z, .DontUse
 	call Random
 	cp 20 percent - 1
-	jp nc, .DontUse
-	jp .Use
+	jr nc, .DontUse
+	jr .Use
 
 .DontUse:
 	scf
@@ -855,7 +861,7 @@ AI_TrySwitch:
 
 	ld a, d
 	cp 2
-	jp nc, AI_Switch
+	jr nc, AI_Switch
 	and a
 	ret
 
@@ -935,21 +941,21 @@ EnemyUsedXAccuracy:
 	ld hl, wEnemySubStatus4
 	set SUBSTATUS_X_ACCURACY, [hl]
 	ld a, X_ACCURACY
-	jp PrintText_UsedItemOn_AND_AIUpdateHUD
+	jr PrintText_UsedItemOn_AND_AIUpdateHUD
 
 EnemyUsedGuardSpec:
 	call AIUsedItemSound
 	ld hl, wEnemySubStatus4
 	set SUBSTATUS_MIST, [hl]
 	ld a, GUARD_SPEC
-	jp PrintText_UsedItemOn_AND_AIUpdateHUD
+	jr PrintText_UsedItemOn_AND_AIUpdateHUD
 
 EnemyUsedDireHit:
 	call AIUsedItemSound
 	ld hl, wEnemySubStatus4
 	set SUBSTATUS_FOCUS_ENERGY, [hl]
 	ld a, DIRE_HIT
-	jp PrintText_UsedItemOn_AND_AIUpdateHUD
+	jr PrintText_UsedItemOn_AND_AIUpdateHUD
 
 AICheckEnemyFractionMaxHP: ; unreferenced
 ; Input: a = divisor

@@ -67,8 +67,9 @@ AISmogon_ScoreActive:
 
 AISmogon_FindBestSwitchIn:
 ; Find the healthy, non-active Pokemon with the best matchup, discounting
-; low HP and status. Return its party index in b and wSmogonAIBestMon, and
-; its score in wSmogonAIBestScore. Return carry if there is none.
+; low HP and status, and favoring answers to a boosted player. Return its
+; party index in b and wSmogonAIBestMon, and its score in wSmogonAIBestScore.
+; Return carry if there is none.
 	ld a, -1
 	ld [wSmogonAIBestMon], a
 	xor a
@@ -103,6 +104,15 @@ AISmogon_FindBestSwitchIn:
 	ld a, 1
 .compare
 	ld c, a
+	call AISmogon_CanStopSetup
+	jr nc, .no_bonus
+	ld a, c
+	add SMOGON_ANTI_SETUP_BONUS
+	jr nc, .got_bonus
+	ld a, $ff
+.got_bonus
+	ld c, a
+.no_bonus
 	ld a, [wSmogonAIBestScore]
 	cp c
 	jr nc, .next
@@ -126,6 +136,33 @@ AISmogon_FindBestSwitchIn:
 .none
 	scf
 	ret
+
+AISmogon_CanStopSetup:
+; Return carry if the player's Pokemon has boosted and wOTPartyMon
+; [wSmogonAIMon] can undo it with phazing or Haze, or Explode on it.
+	push bc
+	push hl
+	call AISmogon_PlayerBoosted
+	jr nc, .done
+	ld hl, .Moves
+.loop
+	ld a, [hli]
+	cp -1
+	jr z, .done ; no carry
+	call AISmogon_OTMonHasMove
+	jr nc, .loop
+.done
+	pop hl
+	pop bc
+	ret
+
+.Moves:
+	db ROAR
+	db WHIRLWIND
+	db HAZE
+	db EXPLOSION
+	db SELFDESTRUCT
+	db -1 ; end
 
 AISmogon_SwitchInPenalty:
 ; Return in a how much worse a switch-in is because of its HP and status.
