@@ -525,7 +525,7 @@ PokeBallEffect:
 
 	ld hl, wStatusFlags2
 	bit STATUSFLAGS2_SAFARI_GAME_F, [hl]
-	jp nz, .safari_zone ;check if we are in a safari game and if so, don't grant exp on capture.
+	jr nz, .safari_zone ;check if we are in a safari game and if so, don't grant exp on capture.
 
 	ld a, [wTempSpecies]
 	ld l, a
@@ -1185,7 +1185,7 @@ EvoStoneEffect:
 	ld b, PARTYMENUACTION_EVO_STONE
 	call UseItem_SelectMon
 
-	jp c, .DecidedNotToUse
+	jr c, .DecidedNotToUse
 
 	ld a, MON_ITEM
 	call GetPartyParamLocation
@@ -1216,7 +1216,7 @@ VitaminEffect:
 	ld b, PARTYMENUACTION_HEALING_ITEM
 	call UseItem_SelectMon
 
-	jp c, RareCandy_StatBooster_ExitMenu
+	jr c, RareCandy_StatBooster_ExitMenu
 
 	call RareCandy_StatBooster_GetParameters
 
@@ -1326,14 +1326,13 @@ RareCandy_StatBooster_GetParameters:
 	call GetBaseData
 	ld a, [wCurPartyMon]
 	ld hl, wPartyMonNicknames
-	call GetNickname
-	ret
+	jp GetNickname
 
 RareCandyEffect:
 	ld b, PARTYMENUACTION_HEALING_ITEM
 	call UseItem_SelectMon
 
-	jp c, RareCandy_StatBooster_ExitMenu
+	jr c, RareCandy_StatBooster_ExitMenu
 
 	call RareCandy_StatBooster_GetParameters
 
@@ -1570,7 +1569,7 @@ RevivalHerbEffect:
 	ld a, $0
 
 .not_used
-	jp StatusHealer_Jumptable
+	jr StatusHealer_Jumptable
 
 ReviveEffect:
 	ld b, PARTYMENUACTION_HEALING_ITEM
@@ -1578,7 +1577,7 @@ ReviveEffect:
 	jp c, StatusHealer_ExitMenu
 
 	call RevivePokemon
-	jp StatusHealer_Jumptable
+	jr StatusHealer_Jumptable
 
 RevivePokemon:
 	call IsMonFainted
@@ -1696,7 +1695,7 @@ EnergypowderEnergyRootCommon:
 	push bc
 	call ItemRestoreHP
 	pop bc
-	cp 0
+	and a
 	jr nz, .skip_happiness
 
 	farcall ChangeHappiness
@@ -1833,8 +1832,7 @@ StatusHealer_ExitMenu:
 	xor a
 	ld [wItemEffectSucceeded], a
 StatusHealer_ClearPalettes:
-	call ClearPalettes
-	ret
+	jp ClearPalettes
 
 IsItemUsedOnBattleMon:
 	ld a, [wBattleMode]
@@ -1867,7 +1865,7 @@ ContinueRevive:
 	ld [hl], d
 	inc hl
 	ld [hl], e
-	jp LoadCurHPIntoBuffer3
+	jr LoadCurHPIntoBuffer3
 
 RestoreHealth:
 	ld a, MON_HP + 1
@@ -2511,7 +2509,7 @@ endr
 Not_PP_Up:
 	call RestorePP
 	jr nz, BattleRestorePP
-	jp PPRestoreItem_NoEffect
+	jr PPRestoreItem_NoEffect
 
 Elixer_RestorePPofAllMoves:
 	xor a
@@ -2649,14 +2647,14 @@ OpenBox:
 	ld hl, .SentTrophyHomeText
 	call PrintText
 
-	jp UseDisposableItem
+	jr UseDisposableItem
 
 .SentTrophyHomeText:
 	text_far _SentTrophyHomeText
 	text_end
 
 NoEffect:
-	jp IsntTheTimeMessage
+	jr IsntTheTimeMessage
 
 Play_SFX_FULL_HEAL:
 	push de

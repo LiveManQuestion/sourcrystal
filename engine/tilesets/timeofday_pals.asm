@@ -110,8 +110,7 @@ _TimeOfDayPals::
 _UpdateTimePals::
 	ld c, $9 ; normal
 	call GetTimePalFade
-	call DmgToCgbTimePals
-	ret
+	jp DmgToCgbTimePals
 
 FadeInPalettes_EnableDynNoApply::
 	farcall EnableDynPalUpdatesNoApply
@@ -120,16 +119,14 @@ FadeInFromWhite::
 	ld c, $12
 	call GetTimePalFade
 	ld b, $4
-	call ConvertTimePalsDecHL
-	ret
+	jp ConvertTimePalsDecHL
 
 FadeOutToWhite::
 	call FillWhiteBGColor
 	ld c, $9
 	call GetTimePalFade
 	ld b, $4
-	call ConvertTimePalsIncHL
-	ret
+	jp ConvertTimePalsIncHL
 
 BattleTowerFade:
 	call FillWhiteBGColor
@@ -151,15 +148,13 @@ FadeInFromBlack:
 	ld c, $0
 	call GetTimePalFade
 	ld b, $4
-	call ConvertTimePalsIncHL
-	ret
+	jp ConvertTimePalsIncHL
 
 FadeOutToBlack:
 	ld c, $9
 	call GetTimePalFade
 	ld b, $4
-	call ConvertTimePalsDecHL
-	ret
+	jp ConvertTimePalsDecHL
 
 FillWhiteBGColor:
 ; Copy white palette of wBGPals1 Pal0 into white palette of wBGPals1 Pal1-Pal6

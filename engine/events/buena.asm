@@ -141,8 +141,7 @@ BuenaPrize:
 	ld hl, .BuenaComeAgainText
 	call PrintText
 	call JoyWaitAorB
-	call PlayClickSFX
-	ret
+	jp PlayClickSFX
 
 .BuenaAskWhichPrizeText:
 	text_far _BuenaAskWhichPrizeText
@@ -175,8 +174,7 @@ Buena_DisplayBlueCardBalance:
 
 PrintBlueCardBalance:
 	ld de, wBlueCardBalance
-	call .DrawBox
-	ret
+	jr .DrawBox
 
 .DrawBox:
 	push de
@@ -199,8 +197,7 @@ PrintBlueCardBalance:
 	ld [hld], a
 	pop de
 	lb bc, 1, 2
-	call PrintNum
-	ret
+	jp PrintNum
 
 .Points_string:
 	db "Points@"

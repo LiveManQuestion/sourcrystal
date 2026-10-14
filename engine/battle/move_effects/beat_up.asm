@@ -2,7 +2,7 @@ BattleCommand_BeatUp:
 	call ResetDamage
 	ldh a, [hBattleTurn]
 	and a
-	jp nz, .enemy_beats_up
+	jr nz, .enemy_beats_up
 
 	ld a, [wPlayerSubStatus3]
 	bit SUBSTATUS_IN_LOOP, a

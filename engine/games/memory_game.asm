@@ -39,8 +39,7 @@ _MemoryGame:
 	ld a, $e4
 	call DmgToCgbBGPals
 	ld a, $e0
-	call DmgToCgbObjPal0
-	ret
+	jp DmgToCgbObjPal0
 
 .JumptableLoop:
 	ld a, [wJumptableIndex]
@@ -104,8 +103,7 @@ endr
 	call MemoryGame_Card2Coord
 	xor a
 	ld [wMemoryGameLastCardPicked], a
-	call MemoryGame_PlaceCard
-	ret
+	jp MemoryGame_PlaceCard
 
 .spawn_object
 	depixel 6, 3, 4, 4
@@ -430,8 +428,7 @@ MemoryGame_PlaceCard:
 	inc a
 	ld [hl], a
 	ld c, 3
-	call DelayFrames
-	ret
+	jp DelayFrames
 
 MemoryGame_DeleteCard:
 	ld a, $1
@@ -442,8 +439,7 @@ MemoryGame_DeleteCard:
 	ld [hli], a
 	ld [hl], a
 	ld c, 3
-	call DelayFrames
-	ret
+	jp DelayFrames
 
 MemoryGame_InitStrings:
 	hlcoord 0, 0

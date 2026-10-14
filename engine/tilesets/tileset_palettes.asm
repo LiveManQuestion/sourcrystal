@@ -122,28 +122,28 @@ MapSpecificPalettes:
 
 .LavaOverRedCoalOverBrownBGPalette:
 	ld hl, LavaOverRedCoalOverBrown
-	jp .next
+	jr .next
 .SandOverBrownBGPalette:
 	ld hl, SandOverRock
 	ld a, [wTimeOfDayPal]
 	maskbits NUM_DAYTIMES
 	ld bc, 8 palettes
 	call AddNTimes
-	jp .next_TimeOfDay
+	jr .next_TimeOfDay
 .SwampBGPalettes:
 	ld hl, SwampPals
 	ld a, [wTimeOfDayPal]
 	maskbits NUM_DAYTIMES
 	ld bc, 8 palettes
 	call AddNTimes
-	jp .next_TimeOfDay
+	jr .next_TimeOfDay
 .MountainSideSnowBGPalettes:
 	ld hl, MountainSideSnowPals
 	ld a, [wTimeOfDayPal]
 	maskbits NUM_DAYTIMES
 	ld bc, 8 palettes
 	call AddNTimes
-	jp .next_TimeOfDay
+	jr .next_TimeOfDay
 .SundriedBGPalettes:
 	ld hl, SundriedPals
 	ld a, [wTimeOfDayPal]
@@ -157,16 +157,16 @@ MapSpecificPalettes:
 	ret
 .BlackThornGymBGPalettes:
 	ld hl, BlackThornGymPals
-	jp .next
+	jr .next
 .KarensRoomBGPalettes:
 	ld hl, KarensRoomPals
-	jp .next
+	jr .next
 .KogasRoomBGPalettes:
 	ld hl, KogasRoomPals
-	jp .next
+	jr .next
 .WillsRoomBGPalettes:
 	ld hl, WillsRoomPals
-	jp .next
+	jr .next
 .MuseumBGPalettes
 	call LoadMuseumPalette
 	scf
@@ -187,8 +187,7 @@ LoadMuseumPalette:
 	ld de, wBGPals1
 	ld hl, MuseumPalette
 	ld bc, 8 palettes
-	call FarCopyWRAM
-	ret
+	jp FarCopyWRAM
 
 MuseumPalette:
 INCLUDE "gfx/tilesets/museum.pal"
@@ -208,8 +207,7 @@ LoadPokeComPalette:
 	ld de, wBGPals1
 	ld hl, PokeComPalette
 	ld bc, 8 palettes
-	call FarCopyWRAM
-	ret
+	jp FarCopyWRAM
 
 PokeComPalette:
 INCLUDE "gfx/tilesets/pokecom_center.pal"
@@ -219,8 +217,7 @@ LoadBattleTowerInsidePalette:
 	ld de, wBGPals1
 	ld hl, BattleTowerInsidePalette
 	ld bc, 8 palettes
-	call FarCopyWRAM
-	ret
+	jp FarCopyWRAM
 
 BattleTowerInsidePalette:
 INCLUDE "gfx/tilesets/battle_tower_inside.pal"
@@ -230,8 +227,7 @@ LoadIcePathPalette:
 	ld de, wBGPals1
 	ld hl, IcePathPalette
 	ld bc, 8 palettes
-	call FarCopyWRAM
-	ret
+	jp FarCopyWRAM
 
 IcePathPalette:
 INCLUDE "gfx/tilesets/ice_path.pal"
@@ -241,8 +237,7 @@ LoadHousePalette:
 	ld de, wBGPals1
 	ld hl, HousePalette
 	ld bc, 8 palettes
-	call FarCopyWRAM
-	ret
+	jp FarCopyWRAM
 
 HousePalette:
 INCLUDE "gfx/tilesets/house.pal"
@@ -252,8 +247,7 @@ LoadRadioTowerPalette:
 	ld de, wBGPals1
 	ld hl, RadioTowerPalette
 	ld bc, 8 palettes
-	call FarCopyWRAM
-	ret
+	jp FarCopyWRAM
 
 RadioTowerPalette:
 INCLUDE "gfx/tilesets/radio_tower.pal"
@@ -281,8 +275,7 @@ LoadMansionPalette:
 	ld de, wBGPals1 palette PAL_BG_ROOF
 	ld hl, MansionPalette1 palette 8
 	ld bc, 1 palettes
-	call FarCopyWRAM
-	ret
+	jp FarCopyWRAM
 
 MansionPalette2:
 INCLUDE "gfx/tilesets/mansion_2.pal"

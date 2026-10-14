@@ -199,38 +199,38 @@ OaksPKMNTalk3:
 OaksPKMNTalkSwarm1:
 	ld hl, wSwarmFlags
 	bit SWARMFLAGS_SWARM_ACTIVE, [hl]
-	jp nz, .done
+	jr nz, .done
 
 	ld hl, wDailyFlags1
 	bit DAILYFLAGS1_SWARM_F, [hl]
-	jp nz, .check_alt_swarm
-	jp .generate_flag
+	jr nz, .check_alt_swarm
+	jr .generate_flag
 
 .check_alt_swarm
 	ld hl, wSwarmFlags
 	bit SWARMFLAGS_ALT_SWARM_F, [hl]
-	jp nz, .done
+	jr nz, .done
 
 .generate_flag
 	call Random ; generate a random number below 8
 	and %11 ; '3' in bit  (increase bit number with each new added swarm)
-	cp 0
-	jp z, .normal_swarm
+	and a
+	jr z, .normal_swarm
 	cp 1
-	jp z, .alternate_swarm
-	jp .generate_flag
+	jr z, .alternate_swarm
+	jr .generate_flag
 
 .normal_swarm
 	ld hl, wDailyFlags1
 	bit DAILYFLAGS1_SWARM_F, [hl]
-	jp z, .generate_number
-	jp .done
+	jr z, .generate_number
+	jr .done
 	
 .alternate_swarm
 	ld hl, wSwarmFlags
 	bit SWARMFLAGS_ALT_SWARM_F, [hl]
-	jp z, .generate_alt_number
-	jp .done
+	jr z, .generate_alt_number
+	jr .done
 	
 .done
 	jp OaksPKMNTalk4
@@ -239,7 +239,7 @@ OaksPKMNTalkSwarm1:
 	ld hl, wSwarmFlags
 	set SWARMFLAGS_SWARM_ACTIVE, [hl]
 	call .InJohto
-	jp nc, .generate_number_kanto
+	jr nc, .generate_number_kanto
 	ld a, (SwarmLocationDataJohtoEnd - SwarmLocationDataJohto) / 5
 	call RandomRange ; genrate a random number between 0 and a
 	ld hl, SwarmLocationDataJohto
@@ -270,7 +270,7 @@ OaksPKMNTalkSwarm1:
 	ld hl, wSwarmFlags
 	set SWARMFLAGS_SWARM_ACTIVE, [hl]
 	call .InJohto
-	jp nc, .generate_alt_number_kanto
+	jr nc, .generate_alt_number_kanto
 	ld a, (SwarmLocationDataJohtoAltEnd - SwarmLocationDataJohtoAlt) / 5
 	call RandomRange ; genrate a random number between 0 and a
 	ld hl, SwarmLocationDataJohtoAlt
@@ -357,8 +357,7 @@ OaksPKMNTalkSwarm1:
 	ld hl, wStringBuffer1
 	ld de, wMonOrItemNameBuffer
 	ld bc, MON_NAME_LENGTH
-	call CopyBytes
-	ret
+	jp CopyBytes
 
 .finish
 	farcall GetLandmarkName
@@ -877,7 +876,7 @@ OaksPKMNTalk11:
 	hlcoord 9, 14
 	ld de, .pokemon_string
 	ld a, OAKS_POKEMON_TALK_12
-	jp PlaceRadioString
+	jr PlaceRadioString
 
 .pokemon_string
 	db "#MON@"
@@ -889,7 +888,7 @@ OaksPKMNTalk12:
 	hlcoord 1, 16
 	ld de, .pokemon_channel_string
 	ld a, OAKS_POKEMON_TALK_13
-	jp PlaceRadioString
+	jr PlaceRadioString
 
 .pokemon_channel_string
 	db "#MON Channel@"
@@ -901,7 +900,7 @@ OaksPKMNTalk13:
 	hlcoord 12, 16
 	ld de, .terminator
 	ld a, OAKS_POKEMON_TALK_14
-	jp PlaceRadioString
+	jr PlaceRadioString
 
 .terminator
 	db "@"
@@ -1590,7 +1589,7 @@ EvolutionRadio:
 BuenasPassword1:
 ; Determine if we need to be here
 	call BuenasPasswordCheckTime
-	jp nc, .PlayPassword
+	jr nc, .PlayPassword
 	ld a, [wNumRadioLinesPrinted]
 	and a
 	jp z, BuenasPassword20
@@ -1707,18 +1706,15 @@ GetBuenasPassword:
 
 .Mon:
 	call .GetTheIndex
-	call GetPokemonName
-	ret
+	jp GetPokemonName
 
 .Item:
 	call .GetTheIndex
-	call GetItemName
-	ret
+	jp GetItemName
 
 .Move:
 	call .GetTheIndex
-	call GetMoveName
-	ret
+	jp GetMoveName
 
 .GetTheIndex:
 	ld h, 0

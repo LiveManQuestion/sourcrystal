@@ -61,8 +61,7 @@ Rate:
 	call .UpdateRatingBuffer
 	ld hl, wStringBuffer4
 	ld de, wTempPokedexCaughtCount
-	call .UpdateRatingBuffer
-	ret
+	jr .UpdateRatingBuffer
 
 .UpdateRatingBuffer:
 	push hl
@@ -71,8 +70,7 @@ Rate:
 	call ByteFill
 	pop hl
 	lb bc, PRINTNUM_LEFTALIGN | 1, 3
-	call PrintNum
-	ret
+	jp PrintNum
 
 FindOakRating:
 ; return sound effect in de

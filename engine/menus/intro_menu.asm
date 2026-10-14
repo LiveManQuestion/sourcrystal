@@ -45,8 +45,7 @@ NewGame_ClearTilemapEtc:
 	call ClearTilemap
 	call LoadFontsExtra
 	call LoadStandardFont
-	call ClearWindowData
-	ret
+	jp ClearWindowData
 
 MysteryGift:
 	call UpdateTime
@@ -219,8 +218,7 @@ endc
 
 	farcall ClearGSBallFlag
 
-	call ResetGameTime
-	ret
+	jp ResetGameTime
 
 .InitList:
 ; Loads 0 in the count and -1 in the first item or mon slot.
@@ -237,8 +235,7 @@ InitializeMagikarpHouse:
 	ld a, $6
 	ld [hli], a
 	ld de, .Ralph
-	call CopyName2
-	ret
+	jp CopyName2
 
 .Ralph:
 	db "RALPH@"
@@ -261,8 +258,7 @@ InitializeNPCNames:
 
 .Copy:
 	ld bc, NAME_LENGTH
-	call CopyBytes
-	ret
+	jp CopyBytes
 
 .Rival:  db "???@"
 .Red:    db "RED@"
@@ -353,7 +349,7 @@ Continue:
 	ld a, SPAWN_NEW_BARK
 	ld [wDefaultSpawnpoint], a
 	call PostCreditsSpawn
-	jp FinishContinueFunction
+	jr FinishContinueFunction
 
 SpawnAfterRed:
 	ld a, SPAWN_MT_SILVER
@@ -390,8 +386,7 @@ Continue_MobileAdapterMenu: ; unused
 	ld a, HIGH(MUSIC_NONE)
 	ld [wMusicFadeID + 1], a
 	ld c, 35
-	call DelayFrames
-	ret
+	jp DelayFrames
 
 ConfirmContinue:
 .loop
@@ -465,16 +460,14 @@ DisplayNormalContinueData:
 	call Continue_DisplayBadgesDexPlayerName
 	call Continue_PrintGameTime
 	call LoadFontsExtra
-	call UpdateSprites
-	ret
+	jp UpdateSprites
 
 DisplayContinueDataWithRTCError:
 	call Continue_LoadMenuHeader
 	call Continue_DisplayBadgesDexPlayerName
 	call Continue_UnknownGameTime
 	call LoadFontsExtra
-	call UpdateSprites
-	ret
+	jp UpdateSprites
 
 Continue_LoadMenuHeader:
 	xor a
@@ -769,8 +762,7 @@ StorePlayerName:
 	call ByteFill
 	ld hl, wPlayerName
 	ld de, wStringBuffer2
-	call CopyName2
-	ret
+	jp CopyName2
 
 ShrinkPlayer:
 	ldh a, [hROMBank]
@@ -1025,8 +1017,7 @@ UnusedTitlePerspectiveScroll: ; unreferenced
 	ld a, [hl]
 	dec a
 	ld bc, 2 * SCREEN_WIDTH
-	call ByteFill
-	ret
+	jp ByteFill
 
 TitleScreenScene:
 	ld e, a

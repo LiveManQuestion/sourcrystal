@@ -39,7 +39,7 @@ EvolveAfterBattle_MasterLoop:
 	call EvoFlagAction
 	ld a, c
 	and a
-	jp z, EvolveAfterBattle_MasterLoop
+	jr z, EvolveAfterBattle_MasterLoop
 
 	ld a, [wEvolutionOldSpecies]
 	dec a
@@ -504,11 +504,11 @@ FillMoves:
 .GetLevel:
 	ld a, [hli]
 	and a
-	jp z, .done
+	jr z, .done
 	ld b, a
 	ld a, [wCurPartyLevel]
 	cp b
-	jp c, .done
+	jr c, .done
 	ld a, [wSkipMovesBeforeLevelUp]
 	and a
 	jr z, .CheckMove

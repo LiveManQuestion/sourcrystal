@@ -36,14 +36,12 @@ GameCornerPrizeMonCheckDex:
 	ld a, [wScriptVar]
 	ld [wNamedObjectIndex], a
 	farcall NewPokedexEntry
-	call ExitAllMenus
-	ret
+	jp ExitAllMenus
 
 UnusedSetSeenMon:
 	ld a, [wScriptVar]
 	dec a
-	call SetSeenMon
-	ret
+	jp SetSeenMon
 
 FindPartyMonAboveLevel:
 	ld a, [wScriptVar]
@@ -102,20 +100,17 @@ NameRater:
 OverworldTownMap:
 	call FadeToMenu_BackupSprites
 	farcall _TownMap
-	call ExitAllMenus
-	ret
+	jp ExitAllMenus
 
 UnownPrinter:
 	call FadeToMenu_BackupSprites
 	farcall _UnownPrinter
-	call ExitAllMenus
-	ret
+	jp ExitAllMenus
 
 DisplayLinkRecord:
 	call FadeToMenu_BackupSprites
 	farcall _DisplayLinkRecord
-	call ExitAllMenus
-	ret
+	jp ExitAllMenus
 
 PlayersHousePC:
 	xor a
@@ -135,8 +130,7 @@ CheckMysteryGift:
 
 .no
 	ld [wScriptVar], a
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 GetMysteryGiftItem:
 	ld a, BANK(sMysteryGiftItem)
@@ -187,32 +181,28 @@ UnownPuzzle:
 	farcall _UnownPuzzle
 	ld a, [wSolvedUnownPuzzle]
 	ld [wScriptVar], a
-	call ExitAllMenus
-	ret
+	jp ExitAllMenus
 
 SlotMachine:
 	call CheckCoinsAndCoinCase
 	ret c
 	ld a, BANK(_SlotMachine)
 	ld hl, _SlotMachine
-	call StartGameCornerGame
-	ret
+	jr StartGameCornerGame
 
 CardFlip:
 	call CheckCoinsAndCoinCase
 	ret c
 	ld a, BANK(_CardFlip)
 	ld hl, _CardFlip
-	call StartGameCornerGame
-	ret
+	jr StartGameCornerGame
 
 UnusedMemoryGame:
 	call CheckCoinsAndCoinCase
 	ret c
 	ld a, BANK(_MemoryGame)
 	ld hl, _MemoryGame
-	call StartGameCornerGame
-	ret
+	jr StartGameCornerGame
 
 StartGameCornerGame:
 	call FarQueueScript
@@ -225,8 +215,7 @@ StartGameCornerGame:
 	ld l, a
 	pop af
 	rst FarCall
-	call ExitAllMenus
-	ret
+	jp ExitAllMenus
 
 CheckCoinsAndCoinCase:
 	ld hl, wCoins
@@ -333,7 +322,7 @@ CheckSwarmFlag::
 CheckPokerus:
 ; Check if a monster in your party has Pokerus
 	farcall _CheckPokerus
-	jp ScriptReturnCarry
+	jr ScriptReturnCarry
 
 ResetLuckyNumberShowFlag:
 	farcall LoadOrRegenerateLuckyIDNumber
@@ -437,14 +426,12 @@ FadeOutMusic:
 Diploma:
 	call FadeToMenu_BackupSprites
 	farcall _Diploma
-	call ExitAllMenus
-	ret
+	jp ExitAllMenus
 
 PrintDiploma:
 	call FadeToMenu_BackupSprites
 	farcall _PrintDiploma
-	call ExitAllMenus
-	ret
+	jp ExitAllMenus
 
 TrainerHouse:
 	ld a, BANK(sMysteryGiftTrainerHouseFlag)

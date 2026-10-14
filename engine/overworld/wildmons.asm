@@ -53,18 +53,18 @@ FindNest:
 	decoord 0, 0
 	ld a, [wChallengeMode]
 	bit GAME_CHALLENGE_MODE_F, a
-	jp nz, .ChallengeModeGrass
+	jr nz, .ChallengeModeGrass
 	ld hl, JohtoGrassWildMons
-	jp .LoadedGrassMons
+	jr .LoadedGrassMons
 .ChallengeModeGrass
 	ld hl, JohtoGrassWildMonsChallenge
 .LoadedGrassMons
 	call .FindGrass
 	ld a, [wChallengeMode]
 	bit GAME_CHALLENGE_MODE_F, a
-	jp nz, .ChallengeModeWater
+	jr nz, .ChallengeModeWater
 	ld hl, JohtoWaterWildMons
-	jp .LoadedWaterMons
+	jr .LoadedWaterMons
 .ChallengeModeWater
 	ld hl, JohtoWaterWildMonsChallenge
 .LoadedWaterMons
@@ -77,22 +77,22 @@ FindNest:
 	decoord 0, 0
 	ld a, [wChallengeMode]
 	bit GAME_CHALLENGE_MODE_F, a
-	jp nz, .KantoChallengeModeGrass
+	jr nz, .KantoChallengeModeGrass
 	ld hl, KantoGrassWildMons
-	jp .LoadedKantoGrassMons
+	jr .LoadedKantoGrassMons
 .KantoChallengeModeGrass
 	ld hl, KantoGrassWildMonsChallenge
 .LoadedKantoGrassMons
 	call .FindGrass
 	ld a, [wChallengeMode]
 	bit GAME_CHALLENGE_MODE_F, a
-	jp nz, .KantoChallengeModeWater
+	jr nz, .KantoChallengeModeWater
 	ld hl, KantoWaterWildMons
-	jp .LoadedKantoWaterMons
+	jr .LoadedKantoWaterMons
 .KantoChallengeModeWater
 	ld hl, KantoWaterWildMonsChallenge
 .LoadedKantoWaterMons
-	jp .FindWater
+	jr .FindWater
 
 .FindGrass:
 	call GetNextWildMonDataByte
@@ -159,7 +159,7 @@ FindNest:
 
 .found
 	pop af
-	jp .AppendNest
+	jr .AppendNest
 
 .AppendNest:
 	push de
@@ -302,9 +302,9 @@ ApplyCleanseTagEffectOnEncounterRate::
 ChooseWildEncounter:
 	call InitWildMonBank
 	call LoadWildMonDataPointer
-	jp nc, .nowildbattle
+	jr nc, .nowildbattle
 	call CheckEncounterRoamMon
-	jp c, .startwildbattle
+	jr c, .startwildbattle
 
 	inc hl
 	inc hl
@@ -438,21 +438,21 @@ _GrassWildmonLookup:
 	jr z, .check_normal_flag ;if not, then check for the alt swarm flag too
 	ld a, [wChallengeMode]
 	bit GAME_CHALLENGE_MODE_F, a
-	jp nz, .ChallengeModeSwarmGrassAlt
+	jr nz, .ChallengeModeSwarmGrassAlt
 	ld hl, SwarmGrassWildMonsAlt
-	jp .cont 
+	jr .cont
 .ChallengeModeSwarmGrassAlt
 	ld hl, SwarmGrassWildMonsAltChallenge
-	jp .cont 
+	jr .cont
 .check_normal_flag
 	ld hl, wDailyFlags1
 	bit DAILYFLAGS1_SWARM_F, [hl]
 	jr z, .no_swarm ; if not, then skip generating a swarm
 	ld a, [wChallengeMode]
 	bit GAME_CHALLENGE_MODE_F, a
-	jp nz, .ChallengeModeSwarmGrass
+	jr nz, .ChallengeModeSwarmGrass
 	ld hl, SwarmGrassWildMons
-	jp .cont 
+	jr .cont
 .ChallengeModeSwarmGrass
 	ld hl, SwarmGrassWildMonsChallenge
 .cont
@@ -478,21 +478,21 @@ _WaterWildmonLookup:
 	jr z, .check_normal_flag ;if not, then check for the alt swarm flag too
 	ld a, [wChallengeMode]
 	bit GAME_CHALLENGE_MODE_F, a
-	jp nz, .ChallengeModeSwarmWaterAlt
+	jr nz, .ChallengeModeSwarmWaterAlt
 	ld hl, SwarmWaterWildMonsAlt
-	jp .cont 
+	jr .cont
 .ChallengeModeSwarmWaterAlt
 	ld hl, SwarmWaterWildMonsAltChallenge
-	jp .cont 
+	jr .cont
 .check_normal_flag
 	ld hl, wDailyFlags1
 	bit DAILYFLAGS1_SWARM_F, [hl]
 	jr z, .no_swarm ; if not, then skip generating a swarm
 	ld a, [wChallengeMode]
 	bit GAME_CHALLENGE_MODE_F, a
-	jp nz, .ChallengeModeSwarmWater
+	jr nz, .ChallengeModeSwarmWater
 	ld hl, SwarmWaterWildMons
-	jp .cont 
+	jr .cont
 .ChallengeModeSwarmWater
 	ld hl, SwarmWaterWildMonsChallenge
 .cont
@@ -800,7 +800,7 @@ JumpRoamMons:
 	ld [wRoamMon3MapNumber], a
 
 .Finished:
-	jp _BackUpMapIndices
+	jr _BackUpMapIndices
 
 JumpRoamMon:
 .loop
@@ -873,9 +873,9 @@ RandomUnseenWildMon:
 	ld e, c
 	ld a, [wChallengeMode]
 	bit GAME_CHALLENGE_MODE_F, a
-	jp nz, .ChallengeModeGrass
+	jr nz, .ChallengeModeGrass
 	ld hl, JohtoGrassWildMons
-	jp .LoadedGrassMons
+	jr .LoadedGrassMons
 .ChallengeModeGrass
 	ld hl, JohtoGrassWildMonsChallenge
 .LoadedGrassMons
@@ -884,9 +884,9 @@ RandomUnseenWildMon:
 	jr c, .GetGrassmon
 	ld a, [wChallengeMode]
 	bit GAME_CHALLENGE_MODE_F, a
-	jp nz, .KantoChallengeModeGrass
+	jr nz, .KantoChallengeModeGrass
 	ld hl, KantoGrassWildMons
-	jp .LoadedKantoGrassMons
+	jr .LoadedKantoGrassMons
 .KantoChallengeModeGrass
 	ld hl, KantoGrassWildMonsChallenge
 .LoadedKantoGrassMons
@@ -960,9 +960,9 @@ RandomPhoneWildMon:
 	ld e, c
 	ld a, [wChallengeMode]
 	bit GAME_CHALLENGE_MODE_F, a
-	jp nz, .ChallengeModeGrass
+	jr nz, .ChallengeModeGrass
 	ld hl, JohtoGrassWildMons
-	jp .LoadedGrassMons
+	jr .LoadedGrassMons
 .ChallengeModeGrass
 	ld hl, JohtoGrassWildMonsChallenge
 .LoadedGrassMons
@@ -971,9 +971,9 @@ RandomPhoneWildMon:
 	jr c, .ok
 	ld a, [wChallengeMode]
 	bit GAME_CHALLENGE_MODE_F, a
-	jp nz, .KantoChallengeModeGrass
+	jr nz, .KantoChallengeModeGrass
 	ld hl, KantoGrassWildMons
-	jp .LoadedKantoGrassMons
+	jr .LoadedKantoGrassMons
 .KantoChallengeModeGrass
 	ld hl, KantoGrassWildMonsChallenge
 .LoadedKantoGrassMons

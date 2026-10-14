@@ -530,7 +530,7 @@ CheckEnemyTurn:
 	call DoEnemyDamage
 	call BattleCommand_RaiseSub
 	call CantMove
-	jp EndTurn
+	jr EndTurn
 
 .not_confused
 
@@ -553,7 +553,7 @@ CheckEnemyTurn:
 	ld hl, InfatuationText
 	call StdBattleTextbox
 	call CantMove
-	jp EndTurn
+	jr EndTurn
 
 .not_infatuated
 
@@ -570,7 +570,7 @@ CheckEnemyTurn:
 	call MoveDisabled
 
 	call CantMove
-	jp EndTurn
+	jr EndTurn
 
 .no_disabled_move
 
@@ -813,7 +813,7 @@ BattleCommand_CheckObedience:
 
 .Print:
 	call StdBattleTextbox
-	jp .EndDisobedience
+	jr .EndDisobedience
 
 .UseInstead:
 ; Can't use another move if the monster only has one!
@@ -1065,7 +1065,7 @@ BattleCommand_DoTurn:
 
 .mimic
 	ld hl, wWildMonPP
-	jp .consume_pp
+	jr .consume_pp
 
 .out_of_pp
 	call BattleCommand_MoveDelay
@@ -1556,19 +1556,19 @@ BattleCommand_DamageVariation:
 
 BattleCommand_CheckHit:
 	call .DreamEater
-	jp z, .Miss
+	jr z, .Miss
 
 	call .Protect
-	jp nz, .Miss
+	jr nz, .Miss
 
 	call .DrainSub
-	jp z, .Miss
+	jr z, .Miss
 
 	call .LockOn
 	ret nz
 
 	call .FlyDigMoves
-	jp nz, .Miss
+	jr nz, .Miss
 
 	call .ThunderRain
 	ret z
@@ -2502,10 +2502,10 @@ BattleCommand_CheckFaint:
 	call BattleCommand_RaiseSub
 
 .finish
-	jp EndMoveEffect
+	jr EndMoveEffect
 
 BattleCommand_BuildOpponentRage:
-	jp .start
+	jr .start
 
 .start
 	ld a, [wAttackMissed]
@@ -3480,7 +3480,7 @@ DealDamage:
 	ld a, BATTLE_VARS_SUBSTATUS4
 	call GetBattleVar
 	bit SUBSTATUS_SUBSTITUTE, a
-	jp nz, DoSubstituteDamage
+	jr nz, DoSubstituteDamage
 
 .ignore_substitute
 ; debug tool to allow quick KO of all opponents. Uncomment to activate for debug rom
@@ -3691,22 +3691,22 @@ BattleCommand_Poison:
 	ld hl, DoesntAffectText
 	ld a, [wTypeModifier]
 	and EFFECTIVENESS_MASK
-	jp z, .failed
+	jr z, .failed
 
 	ld a, POISON
 	call CheckIfTargetIsGivenType
-	jp z, .failed
+	jr z, .failed
 
 	ld a, STEEL
 	call CheckIfTargetIsGivenType
-	jp z, .failed
+	jr z, .failed
 
 	ld a, BATTLE_VARS_STATUS_OPP
 	call GetBattleVar
 	ld b, a
 	ld hl, AlreadyPoisonedText
 	and 1 << PSN
-	jp nz, .failed
+	jr nz, .failed
 
 	call GetOpponentItem
 	ld a, b
@@ -3909,7 +3909,7 @@ BattleCommand_BurnTarget:
 	ld a, BATTLE_VARS_STATUS_OPP
 	call GetBattleVarAddr
 	and a
-	jp nz, Defrost
+	jr nz, Defrost
 	ld a, [wTypeModifier]
 	and EFFECTIVENESS_MASK
 	ret z
@@ -4126,10 +4126,10 @@ RaiseStat:
 .got_stat_levels
 	ld a, [wAttackMissed]
 	and a
-	jp nz, .stat_raise_failed
+	jr nz, .stat_raise_failed
 	ld a, [wEffectFailed]
 	and a
-	jp nz, .stat_raise_failed
+	jr nz, .stat_raise_failed
 	ld a, [wLoweredStat]
 	and $f
 	ld c, a
@@ -4139,7 +4139,7 @@ RaiseStat:
 	inc b
 	ld a, MAX_STAT_LEVEL
 	cp b
-	jp c, .cant_raise_stat
+	jr c, .cant_raise_stat
 	ld a, [wLoweredStat]
 	and $f0
 	jr z, .got_num_stages
@@ -4178,7 +4178,7 @@ RaiseStat:
 	jr nz, .not_already_max
 	ld a, [hl]
 	sbc HIGH(MAX_STAT_VALUE)
-	jp z, .stats_already_max
+	jr z, .stats_already_max
 .not_already_max
 	ldh a, [hBattleTurn]
 	and a
@@ -4297,7 +4297,7 @@ BattleCommand_StatDown:
 	ld [wLoweredStat], a
 
 	call CheckMist
-	jp nz, .Mist
+	jr nz, .Mist
 
 	ld hl, wEnemyStatLevels
 	ldh a, [hBattleTurn]
@@ -4314,7 +4314,7 @@ BattleCommand_StatDown:
 	add hl, bc
 	ld b, [hl]
 	dec b
-	jp z, .CantLower
+	jr z, .CantLower
 
 ; Sharply lower the stat if applicable.
 	ld a, [wLoweredStat]
@@ -5162,7 +5162,7 @@ BattleCommand_EndLoop:
 	ld a, BATTLE_VARS_SUBSTATUS3
 	call GetBattleVarAddr
 	bit SUBSTATUS_IN_LOOP, [hl]
-	jp nz, .in_loop
+	jr nz, .in_loop
 	set SUBSTATUS_IN_LOOP, [hl]
 	ld a, BATTLE_VARS_MOVE_EFFECT
 	call GetBattleVarAddr
@@ -5186,17 +5186,17 @@ BattleCommand_EndLoop:
 	jr nz, .check_ot_beat_up
 	ld a, [wPartyCount]
 	cp 1
-	jp z, .done_loop
+	jr z, .done_loop
 	dec a
 	jr .double_hit
 
 .check_ot_beat_up
 	ld a, [wBattleMode]
 	cp WILD_BATTLE
-	jp z, .done_loop
+	jr z, .done_loop
 	ld a, [wOTPartyCount]
 	cp 1
-	jp z, .done_loop
+	jr z, .done_loop
 	dec a
 	jr .double_hit
 
@@ -5950,7 +5950,7 @@ BattleCommand_Heal:
 	pop bc
 	pop de
 	pop hl
-	jp z, .hp_full
+	jr z, .hp_full
 	ld a, b
 	cp REST
 	jr nz, .not_rest
@@ -6014,7 +6014,7 @@ INCLUDE "engine/battle/move_effects/transform.asm"
 
 BattleEffect_ButItFailed:
 	call AnimateFailedMove
-	jp PrintButItFailed
+	jr PrintButItFailed
 
 ClearLastMove:
 	ld a, BATTLE_VARS_LAST_COUNTER_MOVE
@@ -6085,7 +6085,7 @@ BattleCommand_Screen:
 
 .failed
 	call AnimateFailedMove
-	jp PrintButItFailed
+	jr PrintButItFailed
 
 PrintDoesntAffect:
 	ld hl, DoesntAffectText
@@ -6460,7 +6460,7 @@ GetUserItem:
 	ld hl, wEnemyMonItem
 .go
 	ld b, [hl]
-	jp GetItemHeldEffect
+	jr GetItemHeldEffect
 
 GetOpponentItem:
 ; Return the effect of the opponent's item in bc, and its id at hl.
@@ -6471,7 +6471,7 @@ GetOpponentItem:
 	ld hl, wBattleMonItem
 .go
 	ld b, [hl]
-	jp GetItemHeldEffect
+	jr GetItemHeldEffect
 
 GetItemHeldEffect:
 ; Return the effect of item b in bc.
@@ -6583,7 +6583,7 @@ PlayDamageAnim:
 .player
 	ld [wNumHits], a
 
-	jp PlayUserBattleAnim
+	jr PlayUserBattleAnim
 
 LoadMoveAnim:
 	xor a

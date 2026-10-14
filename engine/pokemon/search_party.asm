@@ -1,16 +1,14 @@
 _FindPartyMonAboveLevel:
 	ld hl, wPartyMon1Level
-	call FindAboveLevel
-	ret
+	jr FindAboveLevel
 
 _FindPartyMonAtLeastThatHappy:
 	ld hl, wPartyMon1Happiness
-	call FindAtLeastThatHappy
-	ret
+	jr FindAtLeastThatHappy
 
 _FindPartyMonThatSpecies:
 	ld hl, wPartyMon1Species
-	jp FindThatSpecies
+	jr FindThatSpecies
 
 _FindPartyMonThatSpeciesYourTrainerID:
 	ld hl, wPartyMon1Species

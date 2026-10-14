@@ -636,8 +636,7 @@ SpriteAnimFunc_TradePokeBall:
 	ld hl, SPRITEANIMSTRUCT_YOFFSET
 	add hl, bc
 	ld [hl], a
-	call AnimSeqs_IncAnonJumptableIndex
-	ret
+	jp AnimSeqs_IncAnonJumptableIndex
 
 .delete
 	call DeinitializeSprite
@@ -975,12 +974,10 @@ AnimSeqs_IncAnonJumptableIndex:
 	ret
 
 AnimSeqs_Sine:
-	call Sprites_Sine
-	ret
+	jp Sprites_Sine
 
 AnimSeqs_Cosine:
-	call Sprites_Cosine
-	ret
+	jp Sprites_Cosine
 
 SpriteAnimFunc_PcCursor:
 	; Switch frameset ID depending on item mode setting.

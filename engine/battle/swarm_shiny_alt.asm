@@ -203,75 +203,75 @@ GenerateAltSwarmShiny:
 .rhyhorn
 	ld a, [wCurPartySpecies]
 	cp RHYHORN
-	jp .next
+	jr .next
 .mr_mime
 	ld a, [wCurPartySpecies]
 	cp MR__MIME
-	jp .next
+	jr .next
 .raticate
 	ld a, [wCurPartySpecies]
 	cp RATICATE
-	jp .next
+	jr .next
 .bulbasaur
 	ld a, [wCurPartySpecies]
 	cp BULBASAUR
-	jp .next
+	jr .next
 .charmander
 	ld a, [wCurPartySpecies]
 	cp CHARMANDER
-	jp .next
+	jr .next
 .clefairy
 	ld a, [wCurPartySpecies]
 	cp CLEFAIRY
-	jp .next
+	jr .next
 .noctowl
 	ld a, [wCurPartySpecies]
 	cp NOCTOWL
-	jp .next
+	jr .next
 .abra
 	ld a, [wCurPartySpecies]
 	cp ABRA
-	jp .next
+	jr .next
 .pidgeotto
 	ld a, [wCurPartySpecies]
 	cp PIDGEOTTO
-	jp .next
+	jr .next
 .squirtle
 	ld a, [wCurPartySpecies]
 	cp SQUIRTLE
-	jp .next
+	jr .next
 .kangaskhan
 	ld a, [wCurPartySpecies]
 	cp KANGASKHAN
-	jp .next
+	jr .next
 .electabuzz
 	ld a, [wCurPartySpecies]
 	cp ELECTABUZZ
-	jp .next
+	jr .next
 .tyrogue
 	ld a, [wCurPartySpecies]
 	cp TYROGUE
-	jp .next
+	jr .next
 .grimer
 	ld a, [wCurPartySpecies]
 	cp GRIMER
-	jp .next
+	jr .next
 .exeggcute
 	ld a, [wCurPartySpecies]
 	cp EXEGGCUTE
-	jp .next
+	jr .next
 .nidorina
 	ld a, [wCurPartySpecies]
 	cp NIDORINA
-	jp .next
+	jr .next
 .chansey
 	ld a, [wCurPartySpecies]
 	cp CHANSEY
-	jp .next
+	jr .next
 .shellder
 	ld a, [wCurPartySpecies]
 	cp SHELLDER
-	jp .next
+	jr .next
 .jynx
 	ld a, [wCurPartySpecies]
 	cp JYNX

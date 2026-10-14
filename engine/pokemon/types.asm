@@ -171,13 +171,13 @@ PrintBattleMoveType:
 	pop hl
 
 	ld b, a
-	jp PrintType
+	jr PrintType
 
 .print_hidden_power
 	call GetHiddenPowerBattleType
 	pop hl
 	ld b, a
-	jp PrintType
+	jr PrintType
 
 PrintMoveType:
 ; Print the type of move b at hl.

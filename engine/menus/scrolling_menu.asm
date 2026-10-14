@@ -16,7 +16,7 @@ _InitScrollingMenu::
 _ScrollingMenu::
 .loop
 	call ScrollingMenuJoyAction
-	jp c, .exit
+	jr c, .exit
 	call z, .zero
 	jr .loop
 
@@ -61,17 +61,17 @@ ScrollingMenuJoyAction:
 	and BUTTONS
 	or b
 	bit A_BUTTON_F, a
-	jp nz, .a_button
+	jr nz, .a_button
 	bit B_BUTTON_F, a
-	jp nz, .b_button
+	jr nz, .b_button
 	bit SELECT_F, a
-	jp nz, .select
+	jr nz, .select
 	bit START_F, a
-	jp nz, .start
+	jr nz, .start
 	bit D_RIGHT_F, a
 	jp nz, .d_right
 	bit D_LEFT_F, a
-	jp nz, .d_left
+	jr nz, .d_left
 	bit D_UP_F, a
 	jp nz, .d_up
 	bit D_DOWN_F, a

@@ -338,8 +338,7 @@ ClearPCItemScreen:
 	lb bc, 4, 18
 	call Textbox
 	call WaitBGMap2
-	call SetDefaultBGPAndOBP ; load regular palettes?
-	ret
+	jp SetDefaultBGPAndOBP ; load regular palettes?
 
 PlayersPCAskWhatDoText:
 	text_far _PlayersPCAskWhatDoText
@@ -656,7 +655,7 @@ PCItemsJoypad:
 .select_1
 	farcall SwitchItemsInBag
 .next
-	jp .loop
+	jr .loop
 
 .a_1
 	farcall ScrollingMenu_ClearLeftColumn

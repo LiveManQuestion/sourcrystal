@@ -126,8 +126,7 @@ StatsScreen_WaitAnim:
 	jr nz, .try_anim
 	bit STATS_SCREEN_ANIMATE_MON, [hl]
 	jr nz, .finish
-	call DelayFrame
-	ret
+	jp DelayFrame
 
 .try_anim
 	farcall SetUpPokeAnim
@@ -224,7 +223,7 @@ if DEF(_DEBUG)
 	pop bc
 .skip
 	xor a
-	jp StatsScreen_JoypadAction
+	jr StatsScreen_JoypadAction
 
 .HatchSoonString:
 	db "▶HATCH SOON!@"
@@ -248,7 +247,7 @@ MonStatsJoypad:
 
 .next
 	and D_DOWN | D_UP | D_LEFT | D_RIGHT | A_BUTTON | B_BUTTON
-	jp StatsScreen_JoypadAction
+	jr StatsScreen_JoypadAction
 
 StatsScreenWaitCry:
 	call IsSFXPlaying
@@ -455,8 +454,7 @@ StatsScreen_InitUpperHalf:
 	call SetHPPal
 	ld b, SCGB_STATS_SCREEN_HP_PALS
 	call GetSGBLayout
-	call DelayFrame
-	ret
+	jp DelayFrame
 
 .PlaceGenderChar:
 	push hl
@@ -528,8 +526,7 @@ StatsScreen_LoadGFX:
 	ld hl, wStatsScreenFlags
 	bit STATS_SCREEN_PLACE_FRONTPIC, [hl]
 	jr nz, .place_frontpic
-	call SetDefaultBGPAndOBP
-	ret
+	jp SetDefaultBGPAndOBP
 
 .place_frontpic
 	call StatsScreen_PlaceFrontpic
@@ -746,8 +743,7 @@ LoadGreenPage:
 	farcall TimeCapsule_ReplaceTeruSama
 	ld a, b
 	ld [wNamedObjectIndex], a
-	call GetItemName
-	ret
+	jp GetItemName
 
 .Item:
 	db "ITEM@"
@@ -831,20 +827,17 @@ StatsScreen_PlaceFrontpic:
 
 .egg
 	call .AnimateEgg
-	call SetDefaultBGPAndOBP
-	ret
+	jp SetDefaultBGPAndOBP
 
 .no_cry
 	call .AnimateMon
-	call SetDefaultBGPAndOBP
-	ret
+	jp SetDefaultBGPAndOBP
 
 .cry
 	call SetDefaultBGPAndOBP
 	call .AnimateMon
 	ld a, [wCurPartySpecies]
-	call PlayMonCry2
-	ret
+	jp PlayMonCry2
 
 .AnimateMon:
 	ld hl, wStatsScreenFlags
@@ -853,15 +846,13 @@ StatsScreen_PlaceFrontpic:
 	cp UNOWN
 	jr z, .unown
 	hlcoord 0, 0
-	call PrepMonFrontpic
-	ret
+	jp PrepMonFrontpic
 
 .unown
 	xor a
 	ld [wBoxAlignment], a
 	hlcoord 0, 0
-	call _PrepMonFrontpic
-	ret
+	jp _PrepMonFrontpic
 
 .AnimateEgg:
 	ld a, [wCurPartySpecies]

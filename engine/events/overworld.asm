@@ -2,8 +2,7 @@ FieldMoveJumptableReset:
 	xor a
 	ld hl, wFieldMoveData
 	ld bc, wFieldMoveDataEnd - wFieldMoveData
-	call ByteFill
-	ret
+	jp ByteFill
 
 FieldMoveJumptable:
 	ld a, [wFieldMoveJumptableIndex]
@@ -30,8 +29,7 @@ GetPartyNickname:
 ; copy text from wStringBuffer2 to wStringBuffer3
 	ld de, wStringBuffer2
 	ld hl, wStringBuffer3
-	call CopyName2
-	ret
+	jp CopyName2
 
 CheckEngineFlag:
 ; Check engine flag de
@@ -269,8 +267,7 @@ CutDownTreeOrGrass:
 	call GetMovementPermissions
 	call UpdateSprites
 	call DelayFrame
-	call LoadStandardFont
-	ret
+	jp LoadStandardFont
 
 CheckOverworldTileArrays:
 	; Input: c contains the tile you're facing
@@ -708,7 +705,7 @@ FlyFunction:
 	jp c, FlyPagerFunction.nostormbadge
 	call GetMapEnvironment
 	call CheckOutdoorMap
-	jp z, .outdoors
+	jr z, .outdoors
 	jp FlyPagerFunction.indoors
 
 .outdoors
@@ -2121,8 +2118,7 @@ PutTheRodAway:
 	ld a, $1
 	ld [wPlayerAction], a
 	call UpdateSprites
-	call UpdatePlayerSprite
-	ret
+	jp UpdatePlayerSprite
 
 RodBiteText:
 	text_far _RodBiteText

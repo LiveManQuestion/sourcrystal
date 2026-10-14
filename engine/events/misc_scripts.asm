@@ -64,8 +64,7 @@ FindItemInBallScript::
 	ld de, SFX_ITEM
 	call PlaySFX
 	ld c, 120
-	call DelayFrames
-	ret
+	jp DelayFrames
 
 .TMSound
 	call PlaySFX

@@ -351,8 +351,7 @@ CardFlip_ShuffleDeck:
 	ld [wCardFlipNumCardsPlayed], a
 	ld hl, wDiscardPile
 	ld bc, CARDFLIP_DECK_SIZE
-	call ByteFill
-	ret
+	jp ByteFill
 
 CollapseCursorPosition:
 	ld hl, 0
@@ -497,8 +496,7 @@ CardFlip_PrintCoinBalance:
 	hlcoord 15, 16
 	ld de, wCoins
 	lb bc, PRINTNUM_LEADINGZEROS | 2, 4
-	call PrintNum
-	ret
+	jp PrintNum
 
 .CoinStr:
 	db "COIN@"
@@ -951,19 +949,19 @@ CardFlip_CheckWinCondition:
 	and $1c
 	cp $10
 	jr z, .WinEighteen
-	jp .Lose
+	jr .Lose
 
 .Six:
 	ld a, [wCardFlipFaceUpCard]
 	and $1c
 	cp $14
 	jr z, .WinEighteen
-	jp .Lose
+	jr .Lose
 
 .WinEighteen:
 	ld c, $12
 	ld de, SFX_2ND_PLACE
-	jp .Payout
+	jr .Payout
 
 .PikaOne:
 	ld e, $0
@@ -1178,13 +1176,13 @@ ChooseCard_HandleJoypad:
 	ld hl, hJoyLast
 	ld a, [hl]
 	and D_LEFT
-	jp nz, .d_left
+	jr nz, .d_left
 	ld a, [hl]
 	and D_RIGHT
-	jp nz, .d_right
+	jr nz, .d_right
 	ld a, [hl]
 	and D_UP
-	jp nz, .d_up
+	jr nz, .d_up
 	ld a, [hl]
 	and D_DOWN
 	jp nz, .d_down
@@ -1218,14 +1216,14 @@ ChooseCard_HandleJoypad:
 	jr c, .left_to_number_gp
 	dec [hl]
 	dec [hl]
-	jp .play_sound
+	jr .play_sound
 
 .left_to_number_gp
 	ld a, $2
 	ld [wCardFlipCursorY], a
 	ld a, $1
 	ld [wCardFlipCursorX], a
-	jp .play_sound
+	jr .play_sound
 
 .d_right
 	ld hl, wCardFlipCursorX

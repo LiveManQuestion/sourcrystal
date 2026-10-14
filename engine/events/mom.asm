@@ -443,8 +443,7 @@ Mom_ContinueMenuSetup:
 
 Mom_Wait10Frames:
 	ld c, 10
-	call DelayFrames
-	ret
+	jp DelayFrames
 
 Mom_WithdrawDepositMenuJoypad:
 .loop

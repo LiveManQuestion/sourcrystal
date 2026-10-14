@@ -99,8 +99,7 @@ StartMenu::
 	call ExitMenu
 .ReturnEnd2:
 	call CloseText
-	call UpdateTimePals
-	ret
+	jp UpdateTimePals
 
 .GetInput:
 ; Return carry on exit, and no-carry on selection.
@@ -390,7 +389,7 @@ endr
 	ret
 
 .DrawMenuAccount:
-	jp ._DrawMenuAccount
+	jr ._DrawMenuAccount
 
 .PrintMenuAccount:
 	call .IsMenuAccountOn
@@ -607,7 +606,7 @@ StartMenu_Pokemon:
 	call PokemonActionSubmenu
 	cp 3
 	jr z, .menu
-	cp 0
+	and a
 	jr z, .choosemenu
 	cp 1
 	jr z, .menunoreload

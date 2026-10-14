@@ -319,7 +319,7 @@ Battle_GetTrainerName::
 	ld hl, wOTPlayerName
 	ld a, BANK(Battle_GetTrainerName)
 	ld [wTrainerGroupBank], a
-	jp nz, CopyTrainerName
+	jr nz, CopyTrainerName
 
 	ld a, [wOtherTrainerID]
 	ld b, a

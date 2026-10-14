@@ -1874,8 +1874,7 @@ GetPlayerNextMovementIndex:
 
 GetMovementIndex:
 	ld hl, wMovementDataBank
-	call _GetMovementIndex
-	ret
+	jp _GetMovementIndex
 
 GetIndexedMovementIndex1:
 	ld hl, OBJECT_MOVEMENT_INDEX
@@ -1907,7 +1906,7 @@ GetIndexedMovementIndex2:
 
 _GetMovementObject:
 	ld hl, GetMovementObject
-	jp HandleMovementData
+	jr HandleMovementData
 
 GetMovementObject:
 	ld a, [wMovementObject]
@@ -2537,8 +2536,7 @@ SpawnInFacingDown:
 	ld a, DOWN
 _ContinueSpawnFacing:
 	ld bc, wPlayerStruct
-	call SetSpriteDirection
-	ret
+	jp SetSpriteDirection
 
 StartFollow::
 	ld hl, wPlayerFlags + 1
@@ -2700,7 +2698,7 @@ ResetObject:
 	cp UNASSOCIATED_OBJECT
 	jr z, .set_standing
 	cp TEMP_OBJECT
-	jp z, .set_standing
+	jr z, .set_standing
 	push bc
 	call GetMapObject
 	ld hl, MAPOBJECT_MOVEMENT
@@ -2849,8 +2847,7 @@ InitSprites:
 	ld c, PRIORITY_NORM
 	call .InitSpritesByPriority
 	ld c, PRIORITY_HIGH
-	call .InitSpritesByPriority
-	ret
+	jr .InitSpritesByPriority
 
 .DeterminePriorities:
 	xor a
@@ -2986,9 +2983,9 @@ InitSprites:
 	add hl, bc
 	ld a, [hl]
 	cp STANDING
-	jp z, .done
+	jr z, .done
 	cp NUM_FACINGS
-	jp nc, .done
+	jr nc, .done
 	ld l, a
 	ld h, 0
 	add hl, hl

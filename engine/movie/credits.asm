@@ -190,7 +190,7 @@ Credits_LoopBack:
 Credits_PrepBGMapUpdate:
 	xor a
 	ldh [hBGMapMode], a
-	jp Credits_Next
+	jr Credits_Next
 
 Credits_UpdateGFXRequestPath:
 	call Credits_LoadBorderGFX
@@ -209,7 +209,7 @@ Credits_RequestGFX:
 	ldh [hBGMapMode], a
 	ld a, 8
 	ld [wRequested2bppSize], a
-	jp Credits_Next
+	jr Credits_Next
 
 Credits_LYOverride:
 	ldh a, [rLY]
@@ -223,7 +223,7 @@ Credits_LYOverride:
 	call .Fill
 	ld hl, wLYOverrides + $87
 	call .Fill
-	jp Credits_Next
+	jr Credits_Next
 
 .Fill:
 	ld c, $8
@@ -341,7 +341,7 @@ ParseCredits:
 	call DelayFrame
 	pop de
 	call PlayMusic
-	jp .loop
+	jr .loop
 
 .wait2
 ; Wait for some amount of ticks.
@@ -530,8 +530,7 @@ GetCreditsPalette:
 	adc HIGH(wBGPals2)
 	ld d, a
 	ld bc, 24
-	call CopyBytes
-	ret
+	jp CopyBytes
 
 CreditsPalettes:
 INCLUDE "gfx/credits/credits.pal"

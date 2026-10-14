@@ -28,9 +28,9 @@ EnterMapConnection:
 	cp UP
 	jp z, .north
 	cp LEFT
-	jp z, .west
+	jr z, .west
 	cp RIGHT
-	jp z, .east
+	jr z, .east
 	ret
 
 .west
@@ -109,7 +109,7 @@ EnterMapConnection:
 	ld [wOverworldMapAnchor], a
 	ld a, h
 	ld [wOverworldMapAnchor + 1], a
-	jp .done
+	jr .done
 
 .north
 	ld a, [wNorthConnectedMapGroup]
@@ -138,7 +138,7 @@ EnterMapConnection:
 	ld [wOverworldMapAnchor], a
 	ld a, h
 	ld [wOverworldMapAnchor + 1], a
-	jp .done
+	jr .done
 
 .south
 	ld a, [wSouthConnectedMapGroup]
@@ -256,8 +256,7 @@ LoadMapTimeOfDay:
 	farcall UpdateTimeOfDayPal
 	call LoadOverworldTilemapAndAttrmapPals
 	call .ClearBGMap
-	call .PushAttrmap
-	ret
+	jr .PushAttrmap
 
 .ClearBGMap:
 	ld a, HIGH(vBGMap0)
@@ -284,8 +283,7 @@ LoadMapTimeOfDay:
 	ld a, "■"
 	ld bc, vBGMap1 - vBGMap0
 	hlbgcoord 0, 0
-	call ByteFill
-	ret
+	jp ByteFill
 
 .PushAttrmap:
 	decoord 0, 0

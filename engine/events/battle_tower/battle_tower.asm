@@ -163,8 +163,7 @@ Function170139: ; unreferenced
 	ld de, s5_a948
 	ld bc, 246
 	call CopyBytes
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 .DecToBin:
 	ld a, [de]
@@ -595,8 +594,7 @@ Function1704e1:
 	call FadeToMenu
 	call InitBattleTowerChallengeRAM
 	call .JumptableLoop
-	call CloseSubmenu
-	ret
+	jp CloseSubmenu
 
 .JumptableLoop:
 	call ClearBGPalettes
@@ -899,9 +897,8 @@ ResetBattleTowerTrainersSRAM:
 	xor a
 	ld [sNrOfBeatenBattleTowerTrainers], a
 
-	call CloseSRAM
+	jp CloseSRAM
 
-	ret
 
 BattleTower_GiveReward:
 	ld a, BANK(sBattleTowerReward)
@@ -937,16 +934,14 @@ BattleTowerAction_1C:
 	call OpenSRAM
 	ld a, BATTLETOWER_WON_CHALLENGE
 	ld [sBattleTowerChallengeState], a
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 BattleTowerAction_1D:
 	ld a, BANK(sBattleTowerChallengeState)
 	call OpenSRAM
 	ld a, BATTLETOWER_RECEIVED_REWARD
 	ld [sBattleTowerChallengeState], a
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 BattleTower_SaveOptions:
 	farcall SaveOptions
@@ -970,8 +965,7 @@ BattleTower_RandomlyChooseReward:
 	call OpenSRAM
 	pop af
 	ld [sBattleTowerReward], a
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 BattleTowerAction_CheckExplanationRead:
 	call BattleTower_CheckSaveFileExistsAndIsYours
@@ -984,8 +978,7 @@ BattleTowerAction_CheckExplanationRead:
 	ld a, [sBattleTowerSaveFileFlags]
 	and 2
 	ld [wScriptVar], a
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 BattleTowerAction_GetChallengeState:
 	ld hl, sBattleTowerChallengeState
@@ -993,8 +986,7 @@ BattleTowerAction_GetChallengeState:
 	call OpenSRAM
 	ld a, [hl]
 	ld [wScriptVar], a
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 BattleTowerAction_SetExplanationRead:
 	ld a, BANK(sBattleTowerSaveFileFlags)
@@ -1002,8 +994,7 @@ BattleTowerAction_SetExplanationRead:
 	ld a, [sBattleTowerSaveFileFlags]
 	or 2
 	ld [sBattleTowerSaveFileFlags], a
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 BattleTowerAction_SetByteToQuickSaveChallenge:
 	ld c, BATTLETOWER_SAVED_AND_LEFT
@@ -1016,8 +1007,7 @@ SetBattleTowerChallengeState:
 	call OpenSRAM
 	ld a, c
 	ld [sBattleTowerChallengeState], a
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 BattleTowerAction_05:
 	ld a, BANK(s5_aa8c) ; aka BANK(s5_be46)
@@ -1067,8 +1057,7 @@ BattleTowerAction_06:
 	ld [s5_be46], a
 	ld [s5_aa8b], a
 	ld [s5_aa8c], a
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 BattleTowerAction_16:
 	call UpdateTime
@@ -1078,8 +1067,7 @@ BattleTowerAction_16:
 	ld [s5_b2f9], a
 	xor a
 	ld [s5_b2fa], a
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 BattleTowerAction_17:
 	xor a
@@ -1121,8 +1109,7 @@ BattleTowerAction_17:
 	xor a
 	ld [s5_b2f9], a
 	ld [s5_b2fa], a
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 SaveBattleTowerLevelGroup:
 	ld a, BANK(sBTChoiceOfLevelGroup)
@@ -1135,8 +1122,7 @@ SaveBattleTowerLevelGroup:
 	ld [sBTChoiceOfLevelGroup], a
 	pop af
 	ldh [rSVBK], a
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 LoadBattleTowerLevelGroup: ; Load level group choice
 	ld a, BANK(sBTChoiceOfLevelGroup)
@@ -1149,8 +1135,7 @@ LoadBattleTowerLevelGroup: ; Load level group choice
 	ld [wBTChoiceOfLvlGroup], a
 	pop af
 	ldh [rSVBK], a
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 BattleTower_CheckSaveFileExistsAndIsYours:
 	ld a, [wSaveFileExists]
@@ -1171,16 +1156,14 @@ BattleTower_CheckSaveFileExistsAndIsYours:
 BattleTowerAction_0A:
 	xor a
 	ld [wMusicFade], a
-	call MaxVolume
-	ret
+	jp MaxVolume
 
 BattleTowerAction_GSBall:
 	ld a, BANK(sGSBallFlag)
 	call OpenSRAM
 	ld a, [sGSBallFlag]
 	ld [wScriptVar], a
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 BattleTowerAction_0C:
 	call UpdateTime
@@ -1198,8 +1181,7 @@ BattleTowerAction_0C:
 	ld a, 1
 	ld [s5_aa47], a
 .asm_1708ec
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 BattleTowerAction_0D:
 	xor a ; FALSE
@@ -1236,8 +1218,7 @@ Function170923:
 	ld hl, s5_aa5d
 	ld bc, MOBILE_LOGIN_PASSWORD_LENGTH
 	call ByteFill
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 BattleTowerAction_EggTicket:
 	xor a ; FALSE
@@ -1344,8 +1325,7 @@ BattleTowerAction_10:
 	call OpenSRAM
 	xor a
 	ld [s5_a800], a
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 .Jumptable:
 	dw .NoAction
@@ -1455,16 +1435,14 @@ Set_s5_aa8d:
 	call OpenSRAM
 	ld a, c
 	ld [s5_aa8d], a
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 BattleTowerAction_13:
 	ld a, BANK(s5_aa8d)
 	call OpenSRAM
 	ld a, [s5_aa8d]
 	ld [wScriptVar], a
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 BattleTowerAction_14:
 	call BattleTower_CheckSaveFileExistsAndIsYours
@@ -1477,8 +1455,7 @@ BattleTowerAction_14:
 	ld a, [sBattleTowerSaveFileFlags]
 	and 1
 	ld [wScriptVar], a
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 BattleTowerAction_15:
 	ld a, BANK(sBattleTowerSaveFileFlags)
@@ -1486,8 +1463,7 @@ BattleTowerAction_15:
 	ld a, [sBattleTowerSaveFileFlags]
 	or 1
 	ld [sBattleTowerSaveFileFlags], a
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 BattleTowerAction_LevelCheck:
 	ld a, BANK(s5_b2fb)

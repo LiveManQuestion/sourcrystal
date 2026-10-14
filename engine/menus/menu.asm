@@ -408,7 +408,7 @@ _2DMenuInterpretJoypad:
 	bit _2DMENU_WRAP_UP_DOWN_F, a
 	jr nz, .wrap_around_down
 	bit _2DMENU_EXIT_DOWN_F, a
-	jp nz, .set_bit_7
+	jr nz, .set_bit_7
 	xor a
 	ret
 
@@ -431,7 +431,7 @@ _2DMenuInterpretJoypad:
 	bit _2DMENU_WRAP_UP_DOWN_F, a
 	jr nz, .wrap_around_up
 	bit _2DMENU_EXIT_UP_F, a
-	jp nz, .set_bit_7
+	jr nz, .set_bit_7
 	xor a
 	ret
 
@@ -455,7 +455,7 @@ _2DMenuInterpretJoypad:
 	bit _2DMENU_WRAP_LEFT_RIGHT_F, a
 	jr nz, .wrap_around_left
 	bit _2DMENU_EXIT_LEFT_F, a
-	jp nz, .set_bit_7
+	jr nz, .set_bit_7
 	xor a
 	ret
 
@@ -479,7 +479,7 @@ _2DMenuInterpretJoypad:
 	bit _2DMENU_WRAP_LEFT_RIGHT_F, a
 	jr nz, .wrap_around_right
 	bit _2DMENU_EXIT_RIGHT_F, a
-	jp nz, .set_bit_7
+	jr nz, .set_bit_7
 	xor a
 	ret
 
@@ -666,7 +666,7 @@ _ExitMenu::
 	call GetWindowStackTop
 	ld a, l
 	or h
-	jp z, Error_Cant_ExitMenu
+	jr z, Error_Cant_ExitMenu
 	ld a, l
 	ld [wWindowStackPointer], a
 	ld a, h
@@ -722,8 +722,7 @@ RestoreOverworldMapTiles: ; unreferenced
 	ld a, c
 	or b
 	jr nz, .loop
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 Error_Cant_ExitMenu:
 	ld hl, .WindowPoppingErrorText

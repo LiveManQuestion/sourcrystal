@@ -111,8 +111,7 @@ PokeGear:
 	and a
 	ret z
 	ld a, %11100100
-	call DmgToCgbObjPal0
-	ret
+	jp DmgToCgbObjPal0
 
 Pokegear_LoadGFX:
 	call ClearVBank1
@@ -229,8 +228,7 @@ TownMap_GetCurrentLandmark:
 	ld b, a
 	ld a, [wBackupMapNumber]
 	ld c, a
-	call GetWorldMapLocation
-	ret
+	jp GetWorldMapLocation
 
 TownMap_InitCursorAndPlayerIconPositions:
 	ld a, [wMapGroup]
@@ -1826,8 +1824,7 @@ PokegearPhone_UpdateDisplayList:
 	cp PHONE_DISPLAY_HEIGHT
 	jr c, .loop
 	call PokegearPhone_UpdateCursor
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 ; wPhoneList is now a bitflag to essentially allow for every phone contact
 ; to be obtained. However, if we use it directly, it would end up being like
@@ -2296,7 +2293,7 @@ RadioChannels:
 	ld a, [wPokegearFlags]
 	bit POKEGEAR_EXPN_CARD_F, a
 	jr z, .NoSignal
-	jp LoadStation_OaksPokemonTalk
+	jr LoadStation_OaksPokemonTalk
 
 .PokemonMusic:
 	call .InJohto
@@ -2826,13 +2823,11 @@ PokegearMap:
 	and a
 	jr nz, .kanto
 	call LoadTownMapGFX
-	call FillJohtoMap
-	ret
+	jp FillJohtoMap
 
 .kanto
 	call LoadTownMapGFX
-	call FillKantoMap
-	ret
+	jp FillKantoMap
 
 _FlyMap:
 	call ClearBGPalettes
@@ -3090,8 +3085,7 @@ FlyMap:
 	call FillJohtoMap
 	call .MapHud
 	pop af
-	call TownMapPlayerIcon
-	ret
+	jp TownMapPlayerIcon
 
 .KantoFlyMap:
 ; The event that there are no flypoints enabled in a map is not
@@ -3117,8 +3111,7 @@ FlyMap:
 	call FillKantoMap
 	call .MapHud
 	pop af
-	call TownMapPlayerIcon
-	ret
+	jp TownMapPlayerIcon
 
 .NoKanto:
 ; If Indigo Plateau hasn't been visited, we use Johto's map instead
@@ -3224,8 +3217,7 @@ Pokedex_GetArea:
 	ld a, SCREEN_HEIGHT_PX
 	ldh [hWY], a
 	xor a ; JOHTO_REGION
-	call .GetAndPlaceNest
-	ret
+	jr .GetAndPlaceNest
 
 .right
 	ld a, [wStatusFlags]
@@ -3238,8 +3230,7 @@ Pokedex_GetArea:
 	xor a
 	ldh [hWY], a
 	ld a, KANTO_REGION
-	call .GetAndPlaceNest
-	ret
+	jr .GetAndPlaceNest
 
 .BlinkNestIcons:
 	ldh a, [hVBlankCounter]
@@ -3249,15 +3240,13 @@ Pokedex_GetArea:
 	ld a, e
 	and $10
 	jr nz, .copy_sprites
-	call ClearSprites
-	ret
+	jp ClearSprites
 
 .copy_sprites
 	hlcoord 0, 0
 	ld de, wShadowOAM
 	ld bc, wShadowOAMEnd - wShadowOAM
-	call CopyBytes
-	ret
+	jp CopyBytes
 
 .PlaceString_MonsNest:
 	hlcoord 0, 0
@@ -3318,8 +3307,7 @@ Pokedex_GetArea:
 	ld hl, wShadowOAM
 	decoord 0, 0
 	ld bc, wShadowOAMEnd - wShadowOAM
-	call CopyBytes
-	ret
+	jp CopyBytes
 
 .HideNestsShowPlayer:
 	call .CheckPlayerLocation
@@ -3363,8 +3351,7 @@ Pokedex_GetArea:
 	ld hl, wShadowOAMSprite04
 	ld bc, wShadowOAMEnd - wShadowOAMSprite04
 	xor a
-	call ByteFill
-	ret
+	jp ByteFill
 
 .PlayerOAM:
 	; y pxl, x pxl, tile offset
@@ -3585,8 +3572,7 @@ LoadTownMapGFX:
 	ld hl, TownMapGFX
 	ld de, vTiles2
 	lb bc, BANK(TownMapGFX), 48
-	call DecompressRequest2bpp
-	ret
+	jp DecompressRequest2bpp
 
 JohtoMap:
 INCBIN "gfx/pokegear/johto.bin"

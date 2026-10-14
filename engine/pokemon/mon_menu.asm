@@ -87,8 +87,7 @@ TossItemFromPC:
 
 CantUseItem:
 	ld hl, ItemsOakWarningText
-	call MenuTextboxWaitButton
-	ret
+	jp MenuTextboxWaitButton
 
 ItemsOakWarningText:
 	text_far _ItemsOakWarningText
@@ -98,8 +97,7 @@ PartyMonItemName:
 	ld a, [wCurItem]
 	ld [wNamedObjectIndex], a
 	call GetItemName
-	call CopyName1
-	ret
+	jp CopyName1
 
 CancelPokemonAction:
 	farcall InitPartyMenuWithCancel
@@ -533,8 +531,7 @@ ComposeMailMessage:
 	ld a, BANK(sPartyMail)
 	call OpenSRAM
 	call CopyBytes
-	call CloseSRAM
-	ret
+	jp CloseSRAM
 
 MonMailAction:
 ; If in the time capsule or trade center,
@@ -676,7 +673,7 @@ MonMenu_CutPager:
 
 MonMenu_FlyPager:
 	farcall FlyPagerFunction
-	jp MonMenu_Fly.continue
+	jr MonMenu_Fly.continue
 MonMenu_Fly:
 	farcall FlyFunction
 .continue
@@ -732,7 +729,7 @@ MonMenu_Surf:
 
 MonMenu_SurfPager:
 	farcall PagerSurfFunction
-	jp MonMenu_FieldMoveSuccess_TeleportSurf
+	jr MonMenu_FieldMoveSuccess_TeleportSurf
 
 MonMenu_Dig:
 	farcall DigFunction
@@ -848,14 +845,14 @@ ChooseMoveToDelete:
 .loop
 	call ScrollingMenuJoypad
 	bit B_BUTTON_F, a
-	jp nz, .b_button
+	jr nz, .b_button
 	bit A_BUTTON_F, a
-	jp nz, .a_button
+	jr nz, .a_button
 
 .enter_loop
 	call PrepareToPlaceMoveData
 	call PlaceMoveData
-	jp .loop
+	jr .loop
 
 .a_button
 	and a
@@ -917,13 +914,13 @@ MoveScreenLoop:
 .joy_loop
 	call ScrollingMenuJoypad
 	bit B_BUTTON_F, a
-	jp nz, .b_button
+	jr nz, .b_button
 	bit A_BUTTON_F, a
 	jp nz, .a_button
 	bit D_RIGHT_F, a
-	jp nz, .d_right
+	jr nz, .d_right
 	bit D_LEFT_F, a
-	jp nz, .d_left
+	jr nz, .d_left
 
 .skip_joy
 	call PrepareToPlaceMoveData
@@ -931,7 +928,7 @@ MoveScreenLoop:
 	and a
 	jr nz, .moving_move
 	call PlaceMoveData
-	jp .joy_loop
+	jr .joy_loop
 
 .moving_move
 	ld a, " "
@@ -944,7 +941,7 @@ MoveScreenLoop:
 	hlcoord 1, 12
 	ld de, String_MoveWhere
 	call PlaceString
-	jp .joy_loop
+	jr .joy_loop
 .b_button
 	call PlayClickSFX
 	call WaitSFX
@@ -959,12 +956,12 @@ MoveScreenLoop:
 	hlcoord 1, 2
 	lb bc, 8, SCREEN_WIDTH - 2
 	call ClearBox
-	jp .loop
+	jr .loop
 
 .d_right
 	ld a, [wSwappingMove]
 	and a
-	jp nz, .joy_loop
+	jr nz, .joy_loop
 
 	ld a, [wCurPartyMon]
 	ld b, a
@@ -973,7 +970,7 @@ MoveScreenLoop:
 	pop bc
 	ld a, [wCurPartyMon]
 	cp b
-	jp z, .joy_loop
+	jr z, .joy_loop
 	jp MoveScreenLoop
 
 .d_left
@@ -1315,8 +1312,7 @@ String_MoveNoPower:
 
 PlaceMoveScreenArrows:
 	call PlaceMoveScreenLeftArrow
-	call PlaceMoveScreenRightArrow
-	ret
+	jr PlaceMoveScreenRightArrow
 
 PlaceMoveScreenLeftArrow:
 	ld a, [wCurPartyMon]

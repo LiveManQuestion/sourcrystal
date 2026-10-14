@@ -1,7 +1,7 @@
 BattleCommand_Spite:
 	ld a, [wAttackMissed]
 	and a
-	jp nz, .failed
+	jr nz, .failed
 	ld bc, PARTYMON_STRUCT_LENGTH ; unused
 	ld hl, wEnemyMonMoves
 	ldh a, [hBattleTurn]

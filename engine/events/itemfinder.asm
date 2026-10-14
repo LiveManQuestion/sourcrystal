@@ -152,8 +152,7 @@ ItemFinderAnimation:
 	call .FinishSprites
 	call BufferScreen
 	call DelayFrame
-	call LoadStandardFont
-	ret
+	jp LoadStandardFont
 
 .NormalPalette:
 	RGB 31,31,31

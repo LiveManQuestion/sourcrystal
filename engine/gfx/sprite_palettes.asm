@@ -162,8 +162,7 @@ CopyGenericPals::
 	ld de, wOBPals1
 	ld bc, 8 palettes
 	ld a, BANK(wOBPals2)
-	call FarCopyWRAM
-	ret
+	jp FarCopyWRAM
 
 ApplyWeatherPal:
 	ld hl, wOBPals1 palette 6

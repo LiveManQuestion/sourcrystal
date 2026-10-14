@@ -664,7 +664,7 @@ GetIconBank:
 GetGFXUnlessMobile:
 	ld a, [wLinkMode]
 	cp LINK_MOBILE
-	jp nz, .not_mobile
+	jr nz, .not_mobile
 	jp Get2bppViaHDMA
 .not_mobile
 	ld a, [wSwarmFlags]

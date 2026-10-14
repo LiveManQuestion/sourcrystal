@@ -47,7 +47,7 @@ BattleCommand_Teleport:
 
 	; Need something to switch to
 	call CheckAnyOtherAlivePartyMons
-	jp z, .failed
+	jr z, .failed
 
 	call UpdateBattleMonInParty
 	call BattleCommand_LowerSub
@@ -89,7 +89,7 @@ BattleCommand_Teleport:
 
 .enemy_trainer
 	call CheckAnyOtherAliveEnemyMons
-	jp z, .failed
+	jr z, .failed
 
 	call UpdateEnemyMonInParty
 	call BattleCommand_LowerSub

@@ -11,5 +11,4 @@ endr
 	ld bc, SIZEOF(SRAM)
 	xor a
 	call ByteFill
-	call CloseSRAM
-	ret
+	jp CloseSRAM

@@ -2,7 +2,7 @@ BattleCommand_Protect:
 	ld a, BATTLE_VARS_MOVE_EFFECT
 	call GetBattleVar
 	cp EFFECT_FUTURE_SIGHT
-	jp z, ProtectChance.failed
+	jr z, ProtectChance.failed
 
 	call ProtectChance
 	ret c

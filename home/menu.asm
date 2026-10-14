@@ -551,8 +551,7 @@ DoNthMenu::
 	call InitMenuCursorAndButtonPermissions
 	call GetStaticMenuJoypad
 	call GetMenuJoypad
-	call MenuClickSound
-	ret
+	jp MenuClickSound
 
 SetUpMenu::
 	call DrawVariableLengthMenuBox
@@ -812,8 +811,7 @@ ClearWindowData::
 	assert wMenuMetadataEnd - wMenuMetadata == wMenuDataEnd - wMenuData
 	assert wMenuMetadataEnd - wMenuMetadata == wMoreMenuDataEnd - wMoreMenuData
 	xor a
-	call ByteFill
-	ret
+	jp ByteFill
 
 MenuClickSound::
 	push af

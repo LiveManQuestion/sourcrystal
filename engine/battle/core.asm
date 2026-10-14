@@ -541,8 +541,8 @@ DetermineMoveOrder:
 	jp nz, .player_first
 	call CompareMovePriority
 	jr z, .equal_priority
-	jp c, .player_first ; player goes first
-	jp .enemy_first
+	jr c, .player_first ; player goes first
+	jr .enemy_first
 
 .equal_priority
 	call SetPlayerTurn
@@ -559,7 +559,7 @@ DetermineMoveOrder:
 	call BattleRandom
 	cp e
 	jr nc, .speed_check
-	jp .player_first
+	jr .player_first
 
 .player_no_quick_claw
 	ld a, b
@@ -568,7 +568,7 @@ DetermineMoveOrder:
 	call BattleRandom
 	cp c
 	jr nc, .speed_check
-	jp .enemy_first
+	jr .enemy_first
 
 .both_have_quick_claw
 	ldh a, [hSerialConnectionStatus]
@@ -576,19 +576,19 @@ DetermineMoveOrder:
 	jr z, .player_2b
 	call BattleRandom
 	cp c
-	jp c, .enemy_first
+	jr c, .enemy_first
 	call BattleRandom
 	cp e
-	jp c, .player_first
+	jr c, .player_first
 	jr .speed_check
 
 .player_2b
 	call BattleRandom
 	cp e
-	jp c, .player_first
+	jr c, .player_first
 	call BattleRandom
 	cp c
-	jp c, .enemy_first
+	jr c, .enemy_first
 	jr .speed_check
 
 .speed_check
@@ -597,8 +597,8 @@ DetermineMoveOrder:
 	ld c, 2
 	call CompareBytes
 	jr z, .speed_tie
-	jp nc, .player_first
-	jp .enemy_first
+	jr nc, .player_first
+	jr .enemy_first
 
 .speed_tie
 	ldh a, [hSerialConnectionStatus]
@@ -606,13 +606,13 @@ DetermineMoveOrder:
 	jr z, .player_2c
 	call BattleRandom
 	cp 50 percent + 1
-	jp c, .player_first
-	jp .enemy_first
+	jr c, .player_first
+	jr .enemy_first
 
 .player_2c
 	call BattleRandom
 	cp 50 percent + 1
-	jp c, .enemy_first
+	jr c, .enemy_first
 .player_first
 	scf
 	ret
@@ -642,7 +642,7 @@ CheckContestBattleOver:
 CheckPlayerLockedIn:
 	ld a, [wPlayerSubStatus4]
 	and 1 << SUBSTATUS_RECHARGE
-	jp nz, .quit
+	jr nz, .quit
 
 	ld hl, wEnemySubStatus3
 	res SUBSTATUS_FLINCHED, [hl]
@@ -651,11 +651,11 @@ CheckPlayerLockedIn:
 
 	ld a, [hl]
 	and 1 << SUBSTATUS_CHARGED | 1 << SUBSTATUS_RAMPAGE
-	jp nz, .quit
+	jr nz, .quit
 
 	ld hl, wPlayerSubStatus1
 	bit SUBSTATUS_ROLLOUT, [hl]
-	jp nz, .quit
+	jr nz, .quit
 
 	and a
 	ret
@@ -1023,13 +1023,13 @@ PlayerTurn_EndOpponentProtectEndureDestinyBond:
 	call SetPlayerTurn
 	call EndUserDestinyBond
 	callfar DoPlayerTurn
-	jp EndOpponentProtectEndureDestinyBond
+	jr EndOpponentProtectEndureDestinyBond
 
 EnemyTurn_EndOpponentProtectEndureDestinyBond:
 	call SetEnemyTurn
 	call EndUserDestinyBond
 	callfar DoEnemyTurn
-	jp EndOpponentProtectEndureDestinyBond
+	jr EndOpponentProtectEndureDestinyBond
 
 EndOpponentProtectEndureDestinyBond:
 	ld a, BATTLE_VARS_SUBSTATUS1_OPP
@@ -1206,7 +1206,7 @@ HandlePerishSong:
 	call SetPlayerTurn
 	call .do_it
 	call SetEnemyTurn
-	jp .do_it
+	jr .do_it
 
 .EnemyFirst:
 	call SetEnemyTurn
@@ -1274,7 +1274,7 @@ HandleWrap:
 	call SetPlayerTurn
 	call .do_it
 	call SetEnemyTurn
-	jp .do_it
+	jr .do_it
 
 .EnemyFirst:
 	call SetEnemyTurn
@@ -1345,7 +1345,7 @@ HandleLeftovers:
 	call SetPlayerTurn
 	call .do_it
 	call SetEnemyTurn
-	jp .do_it
+	jr .do_it
 
 .DoEnemyFirst:
 	call SetEnemyTurn
@@ -1394,7 +1394,7 @@ HandleLeppaberry:
 	call SetPlayerTurn
 	call .do_it
 	call SetEnemyTurn
-	jp .do_it
+	jr .do_it
 
 .DoEnemyFirst:
 	call SetEnemyTurn
@@ -1557,7 +1557,7 @@ HandleFutureSight:
 	call SetPlayerTurn
 	call .do_it
 	call SetEnemyTurn
-	jp .do_it
+	jr .do_it
 
 .enemy_first
 	call SetEnemyTurn
@@ -2448,7 +2448,7 @@ WinTrainerBattle:
 	call PrintWinLossText
 .skip_win_loss_text
 
-	jp .give_money
+	jr .give_money
 
 .mobile
 	call BattleWinSlideInEnemyTrainerFrontpic
@@ -3075,12 +3075,12 @@ LostBattle:
 EnemyMonFaintedAnimation:
 	hlcoord 12, 5
 	decoord 12, 6
-	jp MonFaintedAnimation
+	jr MonFaintedAnimation
 
 PlayerMonFaintedAnimation:
 	hlcoord 1, 10
 	decoord 1, 11
-	jp MonFaintedAnimation
+	jr MonFaintedAnimation
 
 MonFaintedAnimation:
 	ld a, [wJoypadDisable]
@@ -3525,13 +3525,13 @@ LoadEnemyMonToSwitchTo:
 CheckWhetherToAskSwitch:
 	ld a, [wBattleHasJustStarted]
 	dec a
-	jp z, .return_nc
+	jr z, .return_nc
 	ld a, [wPartyCount]
 	dec a
-	jp z, .return_nc
+	jr z, .return_nc
 	ld a, [wLinkMode]
 	and a
-	jp nz, .return_nc
+	jr nz, .return_nc
 	ld a, [wOptions]
 	bit BATTLE_SHIFT, a
 	jr nz, .return_nc
@@ -4251,7 +4251,7 @@ PursuitSwitch:
 	call GetMoveEffect
 	ld a, b
 	cp EFFECT_PURSUIT
-	jp nz, .done
+	jr nz, .done
 
 	ld a, [wCurBattleMon]
 	push af
@@ -4559,16 +4559,16 @@ HandleStatBoostingHeldItems:
 	cp USING_EXTERNAL_CLOCK
 	jr z, .player_1
 	call .DoPlayer
-	jp .DoEnemy
+	jr .DoEnemy
 
 .player_1
 	call .DoEnemy
-	jp .DoPlayer
+	jr .DoPlayer
 
 .DoPlayer:
 	call GetPartymonItem
 	ld a, $0
-	jp .HandleItem
+	jr .HandleItem
 
 .DoEnemy:
 	call GetOTPartymonItem
@@ -4876,7 +4876,7 @@ DrawEnemyHUD:
 	ld c, a
 	ld e, a
 	ld d, HP_BAR_LENGTH
-	jp .draw_bar
+	jr .draw_bar
 
 .not_fainted
 	xor a
@@ -4932,7 +4932,7 @@ DrawEnemyHUD:
 
 UpdateEnemyHPPal:
 	ld hl, wEnemyHPPal
-	jp UpdateHPPal
+	jr UpdateHPPal
 
 UpdateHPPal:
 	ld b, [hl]
@@ -5013,7 +5013,7 @@ BattleMenu:
 	cp $1
 	jp z, BattleMenu_Pack
 	cp $3
-	jp z, BattleMenu_Rock
+	jr z, BattleMenu_Rock
 	cp $2
 	jp z, BattleMenu_PKMN
 	cp $4
@@ -5125,11 +5125,11 @@ LoadBattleMenu2:
 BattleMenu_Pack:
 	ld a, [wLinkMode]
 	and a
-	jp nz, .ItemsCantBeUsed
+	jr nz, .ItemsCantBeUsed
 
 	ld a, [wInBattleTowerBattle]
 	and a
-	jp nz, .ItemsCantBeUsed
+	jr nz, .ItemsCantBeUsed
 
 	call LoadStandardMenuHeader
 
@@ -5170,7 +5170,7 @@ BattleMenu_Pack:
 	call DoItemEffect
 
 .got_item
-	jp .UseItem
+	jr .UseItem
 
 .didnt_use_item
 	call ClearPalettes
@@ -5253,9 +5253,9 @@ BattleMenu_PKMN:
 	cp BATTLETYPE_SAFARI
 	jp z, BattleMenu_Bait
 	cp BATTLETYPE_SAFARI_FISH
-	jp z, BattleMenu_Bait
+	jr z, BattleMenu_Bait
 	cp BATTLETYPE_SAFARI_TREE
-	jp z, BattleMenu_Bait
+	jr z, BattleMenu_Bait
 
 	call LoadStandardMenuHeader
 BattleMenuPKMN_ReturnFromStats:
@@ -5292,7 +5292,7 @@ BattleMenuPKMN_Loop:
 	call Battle_StatsScreen
 	call CheckMobileBattleError
 	jr c, .Cancel
-	jp BattleMenuPKMN_ReturnFromStats
+	jr BattleMenuPKMN_ReturnFromStats
 
 .Cancel:
 	call ClearSprites
@@ -5425,11 +5425,11 @@ PlayerSwitch:
 .linked
 	ld a, [wBattleAction]
 	cp BATTLEACTION_STRUGGLE
-	jp z, .switch
+	jr z, .switch
 	cp BATTLEACTION_SKIPTURN
-	jp z, .switch
+	jr z, .switch
 	cp BATTLEACTION_SWITCH1
-	jp c, .switch
+	jr c, .switch
 	cp BATTLEACTION_FORFEIT
 	jr nz, .dont_run
 	jp WildFled_EnemyFled_LinkBattleCanceled
@@ -5692,9 +5692,9 @@ MoveSelectionScreen:
 	ldh [hBGMapMode], a
 	call ScrollingMenuJoypad
 	bit D_UP_F, a
-	jp nz, .pressed_up
+	jr nz, .pressed_up
 	bit D_DOWN_F, a
-	jp nz, .pressed_down
+	jr nz, .pressed_down
 	bit SELECT_F, a
 	jp nz, .pressed_select
 	bit B_BUTTON_F, a
@@ -6035,7 +6035,7 @@ ParseEnemyAction:
 	cp BATTLEACTION_STRUGGLE
 	jp z, .struggle
 	cp BATTLEACTION_SKIPTURN
-	jp z, .skip_turn
+	jr z, .skip_turn
 	cp BATTLEACTION_SWITCH1
 	jp nc, ResetVarsForSubstatusRage
 	ld [wCurEnemyMoveNum], a
@@ -6045,24 +6045,24 @@ ParseEnemyAction:
 	jp nz, .skip_load
 	ld a, [wEnemySubStatus3]
 	and 1 << SUBSTATUS_CHARGED | 1 << SUBSTATUS_RAMPAGE | 1 << SUBSTATUS_BIDE
-	jp nz, .skip_load
+	jr nz, .skip_load
 
 	ld hl, wEnemySubStatus5
 	bit SUBSTATUS_ENCORED, [hl]
 	ld a, [wLastEnemyMove]
-	jp nz, .finish
+	jr nz, .finish
 	ld hl, wEnemyMonMoves
 	ld b, 0
 	add hl, bc
 	ld a, [hl]
-	jp .finish
+	jr .finish
 
 .not_linked
 	ld hl, wEnemySubStatus5
 	bit SUBSTATUS_ENCORED, [hl]
 	jr z, .skip_encore
 	ld a, [wLastEnemyMove]
-	jp .finish
+	jr .finish
 
 .skip_encore
 	call CheckEnemyLockedIn
@@ -6554,7 +6554,7 @@ endc
 
 	ld a, [wEnemySubStatus5]
 	bit SUBSTATUS_TRANSFORMED, a
-	jp nz, .Moves
+	jr nz, .Moves
 
 .TreeMon:
 ; If we're headbutting trees, some monsters enter battle asleep
@@ -6737,7 +6737,7 @@ CheckSleepingTreeMon:
 	jr nc, .NotSleeping
 	cp BATTLETYPE_TREE
 	jr nz, .NotSleeping
-	jp .next
+	jr .next
 
 .next
 ; Get list for the time of day
@@ -6881,7 +6881,7 @@ ApplyStatusEffectOnEnemyStats:
 ApplyStatusEffectOnStats:
 	ldh [hBattleTurn], a
 	call ApplyPrzEffectOnSpeed
-	jp ApplyBrnEffectOnAttack
+	jr ApplyBrnEffectOnAttack
 
 ApplyPrzEffectOnSpeed:
 	ldh a, [hBattleTurn]
@@ -7042,7 +7042,7 @@ ApplyStatLevelMultiplier:
 	sub LOW(MAX_STAT_VALUE)
 	ldh a, [hQuotient + 2]
 	sbc HIGH(MAX_STAT_VALUE)
-	jp c, .okay3
+	jr c, .okay3
 
 	ld a, HIGH(MAX_STAT_VALUE)
 	ldh [hQuotient + 2], a
@@ -8483,7 +8483,7 @@ LoadTrainerOrWildMonPic:
 InitEnemy:
 	ld a, [wOtherTrainerClass]
 	and a
-	jp nz, InitEnemyTrainer ; trainer
+	jr nz, InitEnemyTrainer ; trainer
 	jp InitEnemyWildmon ; wild
 
 BackUpBGMap2:
@@ -8651,7 +8651,7 @@ FillEnemyMovesFromMoveIndicesBuffer: ; unreferenced
 ExitBattle:
 	call RestoreBattleItems
 	call .HandleEndOfBattle
-	jp CleanUpBattleRAM
+	jr CleanUpBattleRAM
 
 .HandleEndOfBattle:
 	ld a, [wLinkMode]
@@ -9132,7 +9132,7 @@ AddLastLinkBattleToLinkRecord:
 
 .done
 	call .StoreResult
-	jp .FindOpponentAndAppendRecord
+	jr .FindOpponentAndAppendRecord
 
 .StoreResult:
 	ld a, [wBattleResult]
@@ -9349,7 +9349,7 @@ InitBattleDisplay:
 
 .InitBackPic:
 	call GetTrainerBackpic
-	jp CopyBackpic
+	jr CopyBackpic
 
 MobileTextBorder::
 	; For mobile link battles only.

@@ -322,7 +322,7 @@ MainMenu_PrintCurrentTimeAndDay:
 	ret z
 	call CheckRTCStatus
 	and RTC_RESET
-	jp nz, .PrintTimeNotSet
+	jr nz, .PrintTimeNotSet
 	call UpdateTime
 	call GetWeekday
 	ld b, a
@@ -336,8 +336,7 @@ MainMenu_PrintCurrentTimeAndDay:
 	inc hl
 	ld de, hMinutes
 	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
-	call PrintNum
-	ret
+	jp PrintNum
 
 .minString: ; unreferenced
 	db "min.@"
@@ -387,8 +386,7 @@ ClearTilemapEtc:
 	call ClearTilemap
 	call LoadFontsExtra
 	call LoadStandardFont
-	call ClearWindowData
-	ret
+	jp ClearWindowData
 
 MainMenu_NewGame:
 	farcall NewGame

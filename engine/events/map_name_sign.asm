@@ -173,8 +173,7 @@ InitMapNameFrame:
 	ld b, 2
 	ld c, 18
 	call InitMapSignAttrmap
-	call PlaceMapNameFrame
-	ret
+	jr PlaceMapNameFrame
 
 PlaceMapNameCenterAlign:
 	ld a, [wCurLandmark]

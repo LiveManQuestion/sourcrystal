@@ -1956,7 +1956,7 @@ AI_Smart_Curse:
 
 .ghost_continue
 	call AICheckEnemyQuarterHP
-	jp nc, .highly_discourage
+	jr nc, .highly_discourage
 
 	call AICheckEnemyHalfHP
 	jr nc, .greatly_discourage

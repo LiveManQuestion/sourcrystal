@@ -76,8 +76,7 @@ LoadFonts_NoOAMUpdate::
 	ld a, $90
 	ldh [hWY], a
 	call SafeUpdateSprites
-	call LoadStandardFont
-	ret
+	jp LoadStandardFont
 
 HDMATransfer_FillBGMap0WithBlack:
 	ldh a, [rSVBK]

@@ -141,5 +141,4 @@ _SwitchPartyMons:
 
 .CopyName:
 	ld bc, NAME_LENGTH
-	call CopyBytes
-	ret
+	jp CopyBytes

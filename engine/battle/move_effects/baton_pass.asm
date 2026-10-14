@@ -8,7 +8,7 @@ BattleCommand_BatonPass:
 
 	ldh a, [hBattleTurn]
 	and a
-	jp nz, .Enemy
+	jr nz, .Enemy
 
 ; Need something to switch to
 	call CheckAnyOtherAlivePartyMons
@@ -46,7 +46,7 @@ BattleCommand_BatonPass:
 
 ; Mobile link battles handle entrances differently
 	farcall CheckMobileBattleError
-	jp c, .BatonPass_EndMoveEffect
+	jr c, .BatonPass_EndMoveEffect
 
 	ld hl, PassedBattleMonEntrance
 	call CallBattleCore
@@ -58,10 +58,10 @@ BattleCommand_BatonPass:
 ; Wildmons don't have anything to switch to
 	ld a, [wBattleMode]
 	dec a ; WILDMON
-	jp z, .FailedBatonPass
+	jr z, .FailedBatonPass
 
 	call CheckAnyOtherAliveEnemyMons
-	jp z, .FailedBatonPass
+	jr z, .FailedBatonPass
 
 	call UpdateEnemyMonInParty
 	call BattleCommand_LowerSub
@@ -74,7 +74,7 @@ BattleCommand_BatonPass:
 
 ; Mobile link battles handle entrances differently
 	farcall CheckMobileBattleError
-	jp c, .BatonPass_EndMoveEffect
+	jr c, .BatonPass_EndMoveEffect
 
 ; Passed enemy PartyMon entrance
 	xor a

@@ -111,8 +111,7 @@ ClosePokepic::
 	farcall EnableDynPalUpdates
 	call RestoreSprites
 	call UpdateSprites
-	call LoadStandardFont
-	ret
+	jp LoadStandardFont
 
 PokepicMenuHeader:
 	db MENU_BACKUP_TILES ; flags

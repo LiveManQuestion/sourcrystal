@@ -327,8 +327,7 @@ ReloadSpritesNoPalettes::
 	ldh [rSVBK], a
 	ld a, TRUE
 	ldh [hCGBPalUpdate], a
-	call DelayFrame
-	ret
+	jp DelayFrame
 
 LoadOverworldAttrmapPals::
 	homecall _LoadOverworldAttrmapPals

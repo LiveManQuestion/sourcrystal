@@ -203,75 +203,75 @@ GenerateSwarmShiny:
 .golbat
 	ld a, [wCurPartySpecies]
 	cp GOLBAT
-	jp .next
+	jr .next
 .doduo
 	ld a, [wCurPartySpecies]
 	cp DODUO
-	jp .next
+	jr .next
 .furret
 	ld a, [wCurPartySpecies]
 	cp FURRET
-	jp .next
+	jr .next
 .pikachu
 	ld a, [wCurPartySpecies]
 	cp PIKACHU
-	jp .next
+	jr .next
 .magmar
 	ld a, [wCurPartySpecies]
 	cp MAGMAR
-	jp .next
+	jr .next
 .geodude
 	ld a, [wCurPartySpecies]
 	cp GEODUDE
-	jp .next
+	jr .next
 .jigglypuff
 	ld a, [wCurPartySpecies]
 	cp JIGGLYPUFF
-	jp .next
+	jr .next
 .poliwag
 	ld a, [wCurPartySpecies]
 	cp POLIWAG
-	jp .next
+	jr .next
 .meowth
 	ld a, [wCurPartySpecies]
 	cp MEOWTH
-	jp .next
+	jr .next
 .fearow
 	ld a, [wCurPartySpecies]
 	cp FEAROW
-	jp .next
+	jr .next
 .cubone
 	ld a, [wCurPartySpecies]
 	cp CUBONE
-	jp .next
+	jr .next
 .murkrow
 	ld a, [wCurPartySpecies]
 	cp MURKROW
-	jp .next
+	jr .next
 .haunter
 	ld a, [wCurPartySpecies]
 	cp HAUNTER
-	jp .next
+	jr .next
 .slugma
 	ld a, [wCurPartySpecies]
 	cp SLUGMA
-	jp .next
+	jr .next
 .voltorb
 	ld a, [wCurPartySpecies]
 	cp VOLTORB
-	jp .next
+	jr .next
 .nidorino
 	ld a, [wCurPartySpecies]
 	cp NIDORINO
-	jp .next
+	jr .next
 .farfetch_d
 	ld a, [wCurPartySpecies]
 	cp FARFETCH_D
-	jp .next
+	jr .next
 .staryu
 	ld a, [wCurPartySpecies]
 	cp STARYU
-	jp .next
+	jr .next
 .seel
 	ld a, [wCurPartySpecies]
 	cp SEEL

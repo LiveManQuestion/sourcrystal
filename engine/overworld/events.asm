@@ -134,8 +134,7 @@ EnterMap:
 
 UnusedWait30Frames: ; unreferenced
 	ld c, 30
-	call DelayFrames
-	ret
+	jp DelayFrames
 
 HandleMap:
 	call ResetOverworldDelay
@@ -188,8 +187,7 @@ NextOverworldFrame:
 	and a
 	ret z
 	ld c, a
-	call DelayFrames
-	ret
+	jp DelayFrames
 
 HandleMapTimeAndJoypad:
 	ld a, [wMapEventStatus]
@@ -198,8 +196,7 @@ HandleMapTimeAndJoypad:
 
 	call UpdateTime
 	call GetJoypad
-	call TimeOfDayPals
-	ret
+	jp TimeOfDayPals
 
 HandleMapObjects::
 	farcall HandleNPCStep
@@ -395,8 +392,7 @@ SetMinTwoStepWildEncounterCooldown:
 Dummy_CheckEnabledMapEventsBit5:
 	call CheckEnabledMapEventsBit5
 	ret z
-	call SetXYCompareFlags
-	ret
+	jp SetXYCompareFlags
 
 RunSceneScript:
 	ld a, [wCurMapSceneScriptCount]
@@ -671,7 +667,7 @@ BGEventJumptable:
 	ld a, [wPlayerDirection]
 	and %1100
 	cp b
-	jp nz, .dontread
+	jr nz, .dontread
 .read:
 	call PlayTalkObject
 	ld hl, wCurBGEventScriptAddr
@@ -685,7 +681,7 @@ BGEventJumptable:
 
 .itemifset:
 	call CheckBGEventFlag
-	jp nz, .dontread
+	jr nz, .dontread
 	call PlayTalkObject
 	call GetMapScriptsBank
 	ld de, wHiddenItemData

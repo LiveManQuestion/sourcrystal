@@ -288,8 +288,7 @@ PrintTwoDigitNumberLeftAlign:
 	ld [hl], a
 	pop hl
 	lb bc, PRINTNUM_LEFTALIGN | 1, 2
-	call PrintNum
-	ret
+	jp PrintNum
 
 OakTimeWokeUpText:
 	text_far _OakTimeWokeUpText
@@ -680,8 +679,7 @@ MrChrono: ; unreferenced
 	inc hl
 	inc de
 	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
-	call PrintNum
-	ret
+	jp PrintNum
 
 PrintHour:
 	ld l, e
@@ -696,8 +694,7 @@ PrintHour:
 	call AdjustHourForAMorPM
 	ld [wTextDecimalByte], a
 	ld de, wTextDecimalByte
-	call PrintTwoDigitNumberLeftAlign
-	ret
+	jp PrintTwoDigitNumberLeftAlign
 
 GetTimeOfDayString:
 	ld a, c

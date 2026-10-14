@@ -229,16 +229,16 @@ TMHM_JoypadLoop:
 	ld a, b
 	ld [wMenuJoypad], a
 	bit A_BUTTON_F, a
-	jp nz, TMHM_ChooseTMorHM
+	jr nz, TMHM_ChooseTMorHM
 	bit B_BUTTON_F, a
-	jp nz, TMHM_ExitPack
+	jr nz, TMHM_ExitPack
 	bit D_RIGHT_F, a
-	jp nz, TMHM_ExitPocket
+	jr nz, TMHM_ExitPocket
 	bit D_LEFT_F, a
-	jp nz, TMHM_ExitPocket
+	jr nz, TMHM_ExitPocket
 TMHM_ShowTMMoveDescription:
 	call TMHM_CheckHoveringOverCancel
-	jp nc, TMHM_ExitPocket
+	jr nc, TMHM_ExitPocket
 	hlcoord 0, 12
 	ld b, 4
 	ld c, SCREEN_WIDTH - 2
@@ -254,7 +254,7 @@ TMHM_ShowTMMoveDescription:
 	call PrintMoveDescriptionToScratch
 	call PlaceString
 	call CloseSRAM
-	jp TMHM_JoypadLoop
+	jr TMHM_JoypadLoop
 
 TMHM_ChooseTMorHM:
 	call TMHM_PlaySFX_ReadText2

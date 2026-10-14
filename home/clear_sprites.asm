@@ -20,8 +20,7 @@ ClearNormalSprites::
 	ld l, a
 	xor a
 	ld b, a
-	call ByteFill
-	ret
+	jp ByteFill
 
 HideSprites::
 ; Set all OAM y-positions to 160 to hide them offscreen

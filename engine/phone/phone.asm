@@ -265,8 +265,7 @@ CheckSpecialPhoneCall::
 	ld b, 0
 	ld hl, SpecialPhoneCallList
 	ld a, SPECIALCALL_SIZE
-	call AddNTimes
-	ret
+	jp AddNTimes
 
 SpecialCallOnlyWhenOutside:
 	ld a, [wEnvironment]
@@ -378,8 +377,7 @@ LoadCallerScript:
 .proceed
 	ld de, wCallerContact
 	ld bc, PHONE_CONTACT_SIZE
-	call FarCopyBytes
-	ret
+	jp FarCopyBytes
 
 WrongNumber:
 	db TRAINER_NONE, PHONE_00
@@ -419,7 +417,7 @@ Script_SpecialBillCall::
 
 .LoadBillScript:
 	ld e, PHONE_BILL
-	jp LoadCallerScript
+	jr LoadCallerScript
 
 ; As this is used by ScriptReceivePhoneCall--and the actual
 ; jump to the phone dialog is governed by said script--this
@@ -588,7 +586,7 @@ PhoneCall::
 	; call PlaceFarString
 	ld a, [wCurCaller]
 	ld b, a
-	jp Phone_TextboxWithName
+	jr Phone_TextboxWithName
 
 Phone_NoSignal:
 	ld de, SFX_NO_SIGNAL

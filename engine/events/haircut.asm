@@ -5,7 +5,7 @@ BillsGrandfather:
 	ld [wScriptVar], a
 	ld [wNamedObjectIndex], a
 	call GetPokemonName
-	jp CopyPokemonName_Buffer1_Buffer3
+	jr CopyPokemonName_Buffer1_Buffer3
 
 .cancel
 	xor a
@@ -50,8 +50,7 @@ HaircutOrGrooming:
 	ld a, [hli]
 	ld [wScriptVar], a
 	ld c, [hl]
-	call ChangeHappiness
-	ret
+	jp ChangeHappiness
 
 .nope
 	xor a

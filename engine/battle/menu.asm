@@ -70,8 +70,7 @@ SafariBattleMenuHeader:
 	hlcoord 7, 14
 	ld de, wSafariBallsRemaining
 	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
-	call PrintNum
-	ret
+	jp PrintNum
 
 ContestBattleMenuHeader:
 	db MENU_BACKUP_TILES ; flags
@@ -96,5 +95,4 @@ ContestBattleMenuHeader:
 	hlcoord 11, 16
 	ld de, wParkBallsRemaining
 	lb bc, PRINTNUM_LEADINGZEROS | 1, 2
-	call PrintNum
-	ret
+	jp PrintNum

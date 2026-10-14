@@ -38,8 +38,7 @@ HerbShop:
 	call MartTextbox
 	call BuyMenu
 	ld hl, HerbalLadyComeAgainText
-	call MartTextbox
-	ret
+	jp MartTextbox
 
 BargainShop:
 	ld b, BANK(BargainShopData)
@@ -59,8 +58,7 @@ BargainShop:
 
 .skip_set
 	ld hl, BargainShopComeAgainText
-	call MartTextbox
-	ret
+	jp MartTextbox
 
 Pharmacist:
 	call FarReadMart
@@ -69,8 +67,7 @@ Pharmacist:
 	call MartTextbox
 	call BuyMenu
 	ld hl, PharmacyComeAgainText
-	call MartTextbox
-	ret
+	jp MartTextbox
 
 RooftopSale:
 	ld b, BANK(RooftopSaleMart1)
@@ -89,8 +86,7 @@ RooftopSale:
 	call MartTextbox
 	call BuyMenu
 	ld hl, MartComeAgainText
-	call MartTextbox
-	ret
+	jp MartTextbox
 
 INCLUDE "data/items/rooftop_sale.asm"
 
@@ -344,8 +340,7 @@ BuyMenu:
 .loop
 	call BuyMenuLoop ; menu loop
 	jr nc, .loop
-	call CloseSubmenu
-	ret
+	jp CloseSubmenu
 
 LoadBuyMenuText:
 ; load text from a nested table
@@ -386,7 +381,7 @@ MartAskPurchaseQuantity:
 	ld hl, wNumItems
 	call CheckItem
 	pop de
-	jp c, .AlreadyHaveTM
+	jr c, .AlreadyHaveTM
 	farcall GetItemPrice
 	ld a, d
 	ld [wBuySellItemPrice + 0], a
@@ -661,8 +656,7 @@ MenuHeader_Buy:
 	ld bc, SCREEN_WIDTH
 	add hl, bc
 	ld c, PRINTNUM_LEADINGZEROS | PRINTNUM_MONEY | 3
-	call PrintBCDNumber
-	ret
+	jp PrintBCDNumber
 
 HerbShopLadyIntroText:
 	text_far _HerbShopLadyIntroText
@@ -755,7 +749,7 @@ SellMenu:
 	farcall DepositSellPack
 	ld a, [wPackUsedItem]
 	and a
-	jp z, .quit
+	jr z, .quit
 	call .TryToSellItem
 	jr .loop
 

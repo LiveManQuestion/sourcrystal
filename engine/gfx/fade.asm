@@ -96,14 +96,14 @@ _DoFadePalettes::
 	call .FadeDelay
 	ld hl, wPalFadeDelayFrames
 	dec [hl]
-	jp nz, .outer_loop
+	jr nz, .outer_loop
 .done
 	pop bc
 	ld a, [wPalFadeMode]
 	bit PALFADE_FLASH_F, a
 	res PALFADE_FLASH_F, a
 	ld [wPalFadeMode], a
-	jp nz, .restart_dofade
+	jr nz, .restart_dofade
 	pop de
 	pop hl
 	pop af
