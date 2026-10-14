@@ -102,6 +102,8 @@ AI_Smogon_EffectHandlers:
 	dbw EFFECT_BATON_PASS,   AI_Smogon_BatonPass
 	dbw EFFECT_ENCORE,       AI_Smogon_Encore
 	dbw EFFECT_HEAL_BELL,    AI_Smogon_HealBell
+	dbw EFFECT_COUNTER,      AI_Smogon_Counter
+	dbw EFFECT_MIRROR_COAT,  AI_Smogon_Counter
 	db -1 ; end
 
 AI_Smogon_Sleep:
@@ -606,6 +608,43 @@ AI_Smogon_Screens:
 	inc [hl]
 	ret
 
+AI_Smogon_Counter:
+; Counter and Mirror Coat hit back for double the damage of a physical or
+; special attack. Ghosts are immune to Counter, Dark types to Mirror Coat.
+	push hl
+	ld a, 1
+	ldh [hBattleTurn], a
+	callfar BattleCheckTypeMatchup
+	pop hl
+	ld a, [wTypeMatchup]
+	and a
+	jp z, AIDiscourageMove
+; A sleeping or frozen Pokemon won't attack.
+	ld a, [wBattleMonStatus]
+	and SLP_MASK | 1 << FRZ
+	jr nz, .discourage
+; Use the one that matches the player's attacks, going by the attacks it
+; has revealed, or else by its Attack and Sp.Atk stats.
+	call AISmogon_PlayerIsCounterable
+	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
+	jr nc, .special
+	cp EFFECT_COUNTER
+	jr .check
+
+.special
+	cp EFFECT_MIRROR_COAT
+.check
+	jr nz, .discourage
+; It moves last, so it has to survive the hit first.
+	call AICheckEnemyHalfHP
+	ret nc
+	jr AISmogon_EncourageNear
+
+.discourage
+	inc [hl]
+	inc [hl]
+	ret
+
 AI_Smogon_BatonPass:
 ; Baton Pass fails without a teammate to pass to.
 	push hl
@@ -734,23 +773,53 @@ AISmogon_PlayerCanPhaze:
 	db HAZE
 	db -1 ; end
 
+AISmogon_PlayerIsCounterable:
+; Same as AISmogon_PlayerIsPhysical, but the way Counter and Mirror Coat
+; see attacks: Hidden Power is physical (Normal in the move data), and
+; fixed-damage attacks like Seismic Toss and Night Shade count.
+	push bc
+	push de
+	push hl
+	ld hl, 0
+	jr AISmogon_PlayerIsPhysical.start
+
 AISmogon_PlayerIsPhysical:
 ; Return carry if the player's Pokemon attacks mainly physically, going by
 ; the attacks it has revealed, or else by its Attack and Sp.Atk stats.
 	push bc
 	push de
 	push hl
+	ld hl, wBattleMonDVs
+.start
+	push hl ; DVs for Hidden Power's type, or 0 for Normal
 	ld bc, 0 ; b = physical attacks, c = special attacks
 	ld hl, wPlayerUsedMoves
 .loop
 	ld a, [hli]
 	and a
 	jr z, .counted
+	pop de
+	push de
 	push hl
-	ld hl, wBattleMonDVs
+	ld h, d
+	ld l, e
+	ld e, a
+	ld a, h
+	or l
+	ld a, e
+	jr z, .no_dvs
 	call AISmogon_GetAttack
+	jr .got_attack
+
+.no_dvs
+	call AISmogon_GetMovePowerAndType
+	ld a, d
+	dec a
+	jr nz, .got_attack
+	inc d ; count fixed-damage attacks
+.got_attack
 	pop hl
-	; skip status moves and fixed-damage moves, which screens don't stop
+	; skip status moves, and fixed-damage moves, which screens don't stop
 	ld a, d
 	cp 2
 	jr c, .next
@@ -769,6 +838,7 @@ AISmogon_PlayerIsPhysical:
 	jr nz, .loop
 
 .counted
+	pop de
 	; carry if more physical attacks than special ones
 	ld a, c
 	cp b

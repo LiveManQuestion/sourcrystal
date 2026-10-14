@@ -121,8 +121,6 @@ Add an entry here when making notable changes.
   - Switching favors a phazer, Haze user or exploder against a boosted
     player.
   - Verified with 108 headless battles (no crashes; same timeout rate as before).
-  - Ideas not done yet:
-    - choose Counter/Mirror Coat by the player's stats
 - **2026-10-13**: Sleep absorbing. When the player's Pokemon has revealed a
   sleep move (and isn't asleep or frozen, with no enemy Safeguard), Sleep Talk
   users get `SMOGON_SLEEP_ABSORB_BONUS` as switch-ins (`AISmogon_SwitchInBonus`),
@@ -139,3 +137,14 @@ Add an entry here when making notable changes.
   a sleeping/frozen Pokemon. Checked with 12 headless battles (enemy given
   Protect, player kept badly poisoned vs. not): no crashes, Protect used
   alternately with attacks.
+- **2026-10-14**: Counter/Mirror Coat (`AI_Smogon_Counter`, both effects).
+  Encourages the one matching `AISmogon_PlayerIsCounterable` (revealed
+  attacks, else Attack vs. Sp.Atk; like `AISmogon_PlayerIsPhysical` but
+  Hidden Power counts as physical, since Counter goes by its Normal type in
+  the move data, and fixed-damage attacks count) while the enemy has half HP
+  or more; discourages the other one and both against a sleeping/frozen
+  Pokemon; never used into a type immunity (Ghost/Dark). Checked with 36
+  headless battles (enemy given both moves; player physical, special, or
+  high Sp.Atk with Dark Hidden Power or Seismic Toss): no crashes; Counter
+  dominated against physical attackers and once HP/Seismic Toss was revealed,
+  Mirror Coat otherwise.
