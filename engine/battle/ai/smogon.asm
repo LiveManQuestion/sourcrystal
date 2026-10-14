@@ -8,8 +8,9 @@ AI_Smogon:
 ;   Explosion for a healthy threat, steal Leftovers with Thief, Toxic walls
 ;   that can't Rest it off (especially into Spikes), Pursuit fleeing Ghosts
 ;   and Psychics, put up the screen that blocks the player's attacks, Baton
-;   Pass boosts out of trouble, Encore a setup or status move, and Heal Bell
-;   a team weighed down by status.
+;   Pass boosts out of trouble, Encore a setup or status move, Heal Bell
+;   a team weighed down by status, and Protect to stall out the player's
+;   residual damage.
 ; Only uses information a human player could have: the player's active
 ; Pokemon, its types, stats, HP, status and stat changes, the moves it has
 ; revealed since it came in, and how that species is usually played in GSC OU
@@ -87,6 +88,7 @@ AI_Smogon_EffectHandlers:
 	dbw EFFECT_PARALYZE,     AI_Smogon_Paralyze
 	dbw EFFECT_PURSUIT,      AI_Smogon_Pursuit
 	dbw EFFECT_PERISH_SONG,  AI_Smogon_PerishSong
+	dbw EFFECT_PROTECT,      AI_Smogon_Protect
 	dbw EFFECT_SUBSTITUTE,   AI_Smogon_Substitute
 	dbw EFFECT_CURSE,        AI_Smogon_Setup
 	dbw EFFECT_ATTACK_UP_2,  AI_Smogon_Setup ; Swords Dance
@@ -359,6 +361,118 @@ AI_Smogon_PerishSong:
 	bit SUBSTATUS_CANT_RUN, a
 	ret z
 	jp AISmogon_Encourage
+
+MACRO smogon_residual_points
+; Add to c how much residual damage the Pokemon with these SubStatus1,
+; SubStatus4, SubStatus5, Status, Type1, Type2, WrapCount and ToxicCount
+; takes each turn: 2 points for Toxic (3 once it does 3/16), Leech Seed and
+; Curse, and 1 for poison, burn, Sandstorm and trapping moves.
+	ld a, [\3]
+	bit SUBSTATUS_TOXIC, a
+	jr z, .no_toxic\@
+	inc c
+	inc c
+	ld a, [\8]
+	cp 2
+	jr c, .status_done\@
+	inc c
+	jr .status_done\@
+
+.no_toxic\@
+	ld a, [\4]
+	and 1 << PSN | 1 << BRN
+	jr z, .status_done\@
+	inc c
+.status_done\@
+	ld a, [\2]
+	bit SUBSTATUS_LEECH_SEED, a
+	jr z, .no_leech_seed\@
+	inc c
+	inc c
+.no_leech_seed\@
+	ld a, [\1]
+	bit SUBSTATUS_CURSE, a
+	jr z, .no_curse\@
+	inc c
+	inc c
+.no_curse\@
+	ld a, [\7]
+	and a
+	jr z, .no_wrap\@
+	inc c
+.no_wrap\@
+	ld a, [wBattleWeather]
+	cp WEATHER_SANDSTORM
+	jr nz, .no_sand\@
+	ld a, [\5]
+	call AISmogon_SandstormImmune
+	jr z, .no_sand\@
+	ld a, [\6]
+	call AISmogon_SandstormImmune
+	jr z, .no_sand\@
+	inc c
+.no_sand\@
+ENDM
+
+AI_Smogon_Protect:
+; Protect (and Detect) stalls a turn while residual damage wears down the
+; player: Toxic, Leech Seed, Curse, Perish Song, poison, burn, Sandstorm,
+; and trapping moves. AI_Smart already discourages using it twice in a row.
+	ld a, [wEnemyProtectCount]
+	and a
+	ret nz
+; A sleeping or frozen Pokemon can't hurt us: attack it instead of stalling.
+	ld a, [wBattleMonStatus]
+	and SLP_MASK | 1 << FRZ
+	ret nz
+
+; Stall out the player's Perish Song count if ours runs out later.
+	ld a, [wPlayerSubStatus1]
+	bit SUBSTATUS_PERISH, a
+	jr z, .no_perish
+	ld a, [wEnemySubStatus1]
+	bit SUBSTATUS_PERISH, a
+	jp z, AISmogon_GreatlyEncourage
+	ld a, [wEnemyPerishCount]
+	ld b, a
+	ld a, [wPlayerPerishCount]
+	cp b
+	jp c, AISmogon_GreatlyEncourage
+.no_perish
+
+; Stalling only helps if the player takes more residual damage than we do.
+	ld c, 0
+	smogon_residual_points wEnemySubStatus1, wEnemySubStatus4, wEnemySubStatus5, \
+		wEnemyMonStatus, wEnemyMonType1, wEnemyMonType2, wEnemyWrapCount, wEnemyToxicCount
+	ld b, c
+	ld c, 0
+	smogon_residual_points wPlayerSubStatus1, wPlayerSubStatus4, wPlayerSubStatus5, \
+		wBattleMonStatus, wBattleMonType1, wBattleMonType2, wPlayerWrapCount, wPlayerToxicCount
+; Leftovers recovers while we stall.
+	ld a, [wEnemyMonItem]
+	cp LEFTOVERS
+	jr nz, .no_leftovers
+	call AICheckEnemyMaxHP
+	jr c, .no_leftovers
+	inc c
+.no_leftovers
+	ld a, c
+	sub b
+	ret c
+	cp 2
+	ret c
+	cp 4
+	jp c, AISmogon_Encourage
+	jp AISmogon_GreatlyEncourage
+
+AISmogon_SandstormImmune:
+; Return z if type a takes no Sandstorm damage.
+	cp ROCK
+	ret z
+	cp GROUND
+	ret z
+	cp STEEL
+	ret
 
 AI_Smogon_Substitute:
 ; A sleeping or frozen Pokemon can't break a Substitute.

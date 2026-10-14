@@ -122,7 +122,6 @@ Add an entry here when making notable changes.
     player.
   - Verified with 108 headless battles (no crashes; same timeout rate as before).
   - Ideas not done yet:
-    - Protect to stall out the player's residual damage
     - choose Counter/Mirror Coat by the player's stats
 - **2026-10-13**: Sleep absorbing. When the player's Pokemon has revealed a
   sleep move (and isn't asleep or frozen, with no enemy Safeguard), Sleep Talk
@@ -131,3 +130,12 @@ Add an entry here when making notable changes.
   awake without Sleep Talk and the best switch-in has it
   (`AISmogon_ShouldAbsorbSleep`). Checked headlessly by giving the player
   Spore (`$93`; the constants' comments are hex).
+- **2026-10-14**: Protect stalling (`AI_Smogon_Protect`). Protect/Detect is
+  encouraged when the player takes more residual damage per turn than the
+  enemy (`smogon_residual_points` macro: Toxic, Leech Seed, Curse 2 points,
+  3/16+ Toxic 3; poison, burn, Sandstorm, trapping 1; enemy Leftovers +1).
+  Net 2 encourages, 4 greatly encourages; a Perish Song count that runs out
+  before ours always greatly encourages. Never right after Protect or against
+  a sleeping/frozen Pokemon. Checked with 12 headless battles (enemy given
+  Protect, player kept badly poisoned vs. not): no crashes, Protect used
+  alternately with attacks.
