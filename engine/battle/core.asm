@@ -1991,32 +1991,6 @@ GetHalfMaxHP:
 .end
 	ret
 
-GetTwoThirdsMaxHP:
-	call GetMaxHP
-
-	sla c
-	rl b
-
-	ld a, b
-	ld [hDividend + 0], a
-	ld a, c
-	ld [hDividend + 1], a
-	ld a, 3
-	ld [hDivisor], a
-	ld b, 2
-	call Divide
-GetTwoThirdsMaxHP_end:
-	ld a, [hQuotient + 2]
-	ld b, a
-	ld a, [hQuotient + 3]
-	ld c, a
-
-	and b
-	jr nz, .ok
-	inc c
-.ok
-	ret
-
 GetOneSixthMaxHP:
 	call GetMaxHP
 
@@ -2028,7 +2002,16 @@ GetOneSixthMaxHP:
 	ld [hDivisor], a
 	ld b, 2
 	call Divide
-	jr GetTwoThirdsMaxHP_end
+	ld a, [hQuotient + 2]
+	ld b, a
+	ld a, [hQuotient + 3]
+	ld c, a
+
+	and b
+	jr nz, .ok
+	inc c
+.ok
+	ret
 
 GetMaxHP:
 ; output: bc, wHPBuffer1

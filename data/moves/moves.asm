@@ -47,7 +47,7 @@ Moves:
 	move FURY_ATTACK,  EFFECT_MULTI_HIT,          15, NORMAL,        85, 20,   0
 	move HORN_DRILL,   EFFECT_OHKO,                1, NORMAL,        30,  5,   0
 	move TACKLE,       EFFECT_NORMAL_HIT,         40, NORMAL,       100, 35,   0 ; OLD POWER: 35, OLD ACCURACY: 95
-	move BODY_SLAM,    EFFECT_BODY_SLAM,          85, NORMAL,       100, 15,  30 ; OLD EFFECT: EFFECT_PARALYZE_HIT
+	move BODY_SLAM,    EFFECT_PARALYZE_HIT,       85, NORMAL,       100, 15,  30
 	move WRAP,         EFFECT_TRAP_TARGET,        15, NORMAL,        90, 20, 100 ; OLD ACCURACY: 85
 	move TAKE_DOWN,    EFFECT_RECOIL_1_4,         90, NORMAL,        85, 20,   0
 	move THRASH,       EFFECT_RAMPAGE,           120, NORMAL,       100, 10,   0 ; OLD POWER: 90, OLD PP: 20

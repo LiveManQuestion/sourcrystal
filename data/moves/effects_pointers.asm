@@ -154,7 +154,6 @@ MoveEffectsPointers:
 	dw FutureSight
 	dw Gust
 	dw Stomp
-	dw BodySlam
 	dw Solarbeam
 	dw Thunder
 	dw Teleport

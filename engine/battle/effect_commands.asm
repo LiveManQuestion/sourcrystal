@@ -1576,15 +1576,11 @@ BattleCommand_CheckHit:
 	call .XAccuracy
 	ret nz
 
-	call .AntiMinimize
-	ret z
-
 	; Perfect-accuracy moves
 	ld a, BATTLE_VARS_MOVE_EFFECT
 	call GetBattleVar
 	cp EFFECT_ALWAYS_HIT
 	ret z
-	cp EFFECT_STOMP
 
 	call .StatModifiers
 
@@ -1758,22 +1754,6 @@ BattleCommand_CheckHit:
 	ld a, BATTLE_VARS_SUBSTATUS4
 	call GetBattleVar
 	bit SUBSTATUS_X_ACCURACY, a
-	ret
-
-.AntiMinimize:
-; Returns z if Stomp or Body Slam is used against a minimized target
-	ld hl, wEnemyMinimized
-	ld a, [hl]
-	and a
-	jr z, .no_minimize
-	ld a, BATTLE_VARS_MOVE_EFFECT
-	call GetBattleVar
-	cp EFFECT_BODY_SLAM
-	ret z
-	cp EFFECT_STOMP
-	ret z
-.no_minimize
-	or 1
 	ret
 
 .StatModifiers:
@@ -6307,8 +6287,17 @@ INCLUDE "engine/battle/move_effects/pursuit.asm"
 INCLUDE "engine/battle/move_effects/rapid_spin.asm"
 
 BattleCommand_HealMorn:
+	ld b, MORN_F
+	jr BattleCommand_TimeBasedHealContinue
+
 BattleCommand_HealDay:
+	ld b, DAY_F
+	jr BattleCommand_TimeBasedHealContinue
+
 BattleCommand_HealNite:
+	ld b, NITE_F
+	; fallthrough
+
 BattleCommand_TimeBasedHealContinue:
 ; Time- and weather-sensitive heal.
 
@@ -6321,22 +6310,43 @@ BattleCommand_TimeBasedHealContinue:
 	ld de, wEnemyMonHP
 
 .start
-; Don't bother healing if HP is already full.
-	ld c, 2
-	call CompareBytes
-	jr z, .Full
-
 ; Index for .Multipliers
 ; Default restores half max HP.
-	ld c, 1
+	ld c, 2
 
+; Don't bother healing if HP is already full.
+	push bc
+	call CompareBytes
+	pop bc
+	jr z, .Full
+
+; Don't factor in time of day in link battles.
+	ld a, [wLinkMode]
+	and a
+	jr nz, .Weather
+
+; Evening isn't in the original game: it was day until 6 PM, then night.
+	ld a, [wTimeOfDay]
+	cp EVE_F
+	jr nz, .got_time_of_day
+	ldh a, [hHours]
+	cp VANILLA_NITE_HOUR
+	ld a, DAY_F
+	jr c, .got_time_of_day
+	ld a, NITE_F
+.got_time_of_day
+	cp b
+	jr z, .Weather
+	dec c ; double
+
+.Weather:
 	ld a, [wBattleWeather]
 	ld [wBattleAnimParam], a
 	and a
 	jr z, .Heal
 
-; x2 in sun (2/3 max)
-; /2 in rain/sandstorm (1/4 max)
+; x2 in sun
+; /2 in rain/sandstorm
 	inc c
 	cp WEATHER_SUN
 	jr z, .Heal
@@ -6375,9 +6385,10 @@ BattleCommand_TimeBasedHealContinue:
 	jp StdBattleTextbox
 
 .Multipliers:
-	dw GetQuarterMaxHP ; WEATHER_NONE
-	dw GetHalfMaxHP ; WEATHER_RAIN
-	dw GetTwoThirdsMaxHP ; WEATHER_SUN
+	dw GetEighthMaxHP
+	dw GetQuarterMaxHP
+	dw GetHalfMaxHP
+	dw GetMaxHP
 
 INCLUDE "engine/battle/move_effects/hidden_power.asm"
 
