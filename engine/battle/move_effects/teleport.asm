@@ -13,12 +13,69 @@ BattleCommand_Teleport:
 	call GetBattleVar
 	bit SUBSTATUS_CANT_RUN, a
 	jr nz, .failed
+	ldh a, [hBattleTurn]
+	and a
+	jr nz, .enemy_turn
 
-; Switch, don't run, in trainer battles
+	; Can't teleport from a trainer battle
 	ld a, [wBattleMode]
 	dec a
-	jr nz, .trainer_battle
-; fallthrough
+	jr nz, .failed
+	; b = player level
+	ld a, [wCurPartyLevel]
+	ld b, a
+	; If player level >= enemy level, Teleport will succeed
+	ld a, [wBattleMonLevel]
+	cp b
+	jr nc, .run_away
+	; c = player level + enemy level + 1
+	add b
+	ld c, a
+	inc c
+	; Generate a number less than c
+.loop_player
+	call BattleRandom
+	cp c
+	jr nc, .loop_player
+	; b = enemy level / 4
+	srl b
+	srl b
+	; If the random number >= enemy level / 4, Teleport will succeed
+	cp b
+	jr nc, .run_away
+
+.failed
+	call AnimateFailedMove
+	jp PrintButItFailed
+
+.enemy_turn
+	; Can't teleport from a trainer battle
+	ld a, [wBattleMode]
+	dec a
+	jr nz, .failed
+	; b = enemy level
+	ld a, [wBattleMonLevel]
+	ld b, a
+	; If enemy level >= player level, Teleport will succeed
+	ld a, [wCurPartyLevel]
+	cp b
+	jr nc, .run_away
+	; c = enemy level + player level + 1
+	add b
+	ld c, a
+	inc c
+	; Generate a number less than c
+.loop_enemy
+; BUG: Wild Pokémon can always Teleport regardless of level difference (see docs/bugs_and_glitches.md)
+	call BattleRandom
+	cp c
+	jr nc, .loop_enemy
+	; b = player level / 4
+	srl b
+	srl b
+	cp b
+	jr nc, .run_away
+
 .run_away
 	call UpdateBattleMonInParty
 	xor a
@@ -35,119 +92,3 @@ BattleCommand_Teleport:
 
 	ld hl, FledFromBattleText
 	jp StdBattleTextbox
-
-.failed
-	call AnimateFailedMove
-	jp PrintButItFailed
-
-.trainer_battle
-	ldh a, [hBattleTurn]
-	and a
-	jr nz, .enemy_trainer
-
-	; Need something to switch to
-	call CheckAnyOtherAlivePartyMons
-	jr z, .failed
-
-	call UpdateBattleMonInParty
-	call BattleCommand_LowerSub
-	call LoadMoveAnim
-
-	ld c, 32
-	call DelayFrames
-
-	; Transition into switchmon menu
-	call LoadStandardMenuHeader
-	farcall SetUpBattlePartyMenu
-
-	farcall ForcePickSwitchMonInBattle
-
-	; Return to battle scene
-	call ClearPalettes
-	farcall _LoadBattleFontsHPBar
-	call CloseWindow
-	call ClearSprites
-	hlcoord 9, 7
-	lb bc, 5, 11
-	call ClearBox
-	ld b, SCGB_BATTLE_COLORS
-	call GetSGBLayout
-	call SetDefaultBGPAndOBP
-	call Teleport_LinkPlayerSwitch
-	ld hl, TeleportBattleMonEntrance
-.end_return
-	call CallBattleCore
-
-	ld hl, SpikesDamage
-	call CallBattleCore
-
-	; New mon hasn't used a move yet.
-	ld a, BATTLE_VARS_LAST_MOVE
-	call GetBattleVarAddr
-	ld [hl], 0
-	ret
-
-.enemy_trainer
-	call CheckAnyOtherAliveEnemyMons
-	jr z, .failed
-
-	call UpdateEnemyMonInParty
-	call BattleCommand_LowerSub
-	call LoadMoveAnim
-	call Teleport_LinkEnemySwitch
-
-	farcall NewEnemyMonStatus
-
-	; teleport enemy PartyMon entrance
-	xor a
-	ld [wEnemySwitchMonIndex], a
-	ld hl, EnemySwitch_SetMode
-	call CallBattleCore
-	ld hl, ResetBattleParticipants
-	call CallBattleCore
-	ld a, 1
-	ld [wTypeMatchup], a
-	ld hl, ResetEnemyStatLevels
-	jr .end_return
-
-Teleport_LinkPlayerSwitch:
-	ld a, [wLinkMode]
-	and a
-	ret z
-
-	ld a, 1
-	ld [wBattlePlayerAction], a
-
-	call LoadStandardMenuHeader
-	ld hl, LinkBattleSendReceiveAction
-	call CallBattleCore
-	call CloseWindow
-
-	xor a
-	ld [wBattlePlayerAction], a
-	ret
-
-Teleport_LinkEnemySwitch:
-	ld a, [wLinkMode]
-	and a
-	ret z
-
-	call LoadStandardMenuHeader
-	ld hl, LinkBattleSendReceiveAction
-	call CallBattleCore
-
-	ld a, [wOTPartyCount]
-	add BATTLEACTION_SWITCH1
-	ld b, a
-	ld a, [wBattleAction]
-	cp BATTLEACTION_SWITCH1
-	jr c, .teleport
-	cp b
-	jr c, .switch
-
-.teleport
-	ld a, [wCurOTMon]
-	add BATTLEACTION_SWITCH1
-	ld [wBattleAction], a
-.switch
-	jp CloseWindow

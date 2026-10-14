@@ -8,21 +8,12 @@ BattleCommand_Spikes:
 
 ; Fails if spikes are already down!
 
-	ld a, [hl]
-	and 3
-	cp 3
-	jr nc, .failed
+	bit SCREENS_SPIKES, [hl]
+	jr nz, .failed
 
 ; Nothing else stops it from working.
 
-	push bc
-	inc a
-	ld b, a
-	ld a, [hl]
-	and $fc
-	or b
-	ld [hl], a
-	pop bc
+	set SCREENS_SPIKES, [hl]
 
 	call AnimateCurrentMove
 

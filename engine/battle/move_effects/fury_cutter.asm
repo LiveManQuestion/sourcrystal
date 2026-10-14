@@ -1,6 +1,6 @@
 BattleCommand_FuryCutter:
 	ld hl, wPlayerFuryCutterCount
-	ld a, [hBattleTurn]
+	ldh a, [hBattleTurn]
 	and a
 	jr z, .go
 	ld hl, wEnemyFuryCutterCount
@@ -8,16 +8,16 @@ BattleCommand_FuryCutter:
 .go
 	ld a, [wAttackMissed]
 	and a
-	jr nz, ResetFuryCutterCount
+	jp nz, ResetFuryCutterCount
 
 	inc [hl]
 
-; Damage capped at 4 turns' worth (16x).
+; Damage capped at 5 turns' worth (16x).
 	ld a, [hl]
 	ld b, a
-	cp 5
+	cp 6
 	jr c, .checkdouble
-	ld b, 4
+	ld b, 5
 
 .checkdouble
 	dec b

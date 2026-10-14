@@ -31,11 +31,11 @@ BattleCommand_Encore:
 	jp z, .failed
 	ld a, [wAttackMissed]
 	and a
-	jr nz, .failed
+	jp nz, .failed
 	ld a, BATTLE_VARS_SUBSTATUS5_OPP
 	call GetBattleVarAddr
 	bit SUBSTATUS_ENCORED, [hl]
-	jr nz, .failed
+	jp nz, .failed
 	set SUBSTATUS_ENCORED, [hl]
 	call BattleRandom
 	and $3

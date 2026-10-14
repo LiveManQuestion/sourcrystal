@@ -1,28 +1,16 @@
 BattleCommand_BatonPass:
-	; Store Substitute state
-	ld a, BATTLE_VARS_SUBSTATUS4
-	call GetBattleVarAddr
-	bit SUBSTATUS_SUBSTITUTE, [hl]
-	push af
-	push hl
-
 	ldh a, [hBattleTurn]
 	and a
-	jr nz, .Enemy
+	jp nz, .Enemy
 
 ; Need something to switch to
 	call CheckAnyOtherAlivePartyMons
-	jp z, .FailedBatonPass
+	jp z, FailedBatonPass
 
 	call UpdateBattleMonInParty
-	call BattleCommand_LowerSub
-	call LoadMoveAnim
+	call AnimateCurrentMove
 
-	pop hl
-	res SUBSTATUS_SUBSTITUTE, [hl]
-	push hl
-
-	ld c, 32
+	ld c, 50
 	call DelayFrames
 
 ; Transition into switchmon menu
@@ -46,35 +34,30 @@ BattleCommand_BatonPass:
 
 ; Mobile link battles handle entrances differently
 	farcall CheckMobileBattleError
-	jr c, .BatonPass_EndMoveEffect
+	jp c, EndMoveEffect
 
 	ld hl, PassedBattleMonEntrance
 	call CallBattleCore
 
 	call ResetBatonPassStatus
-	jr .RestoreSubstituteDoll
+	ret
 
 .Enemy:
 ; Wildmons don't have anything to switch to
 	ld a, [wBattleMode]
 	dec a ; WILDMON
-	jr z, .FailedBatonPass
+	jp z, FailedBatonPass
 
 	call CheckAnyOtherAliveEnemyMons
-	jr z, .FailedBatonPass
+	jp z, FailedBatonPass
 
 	call UpdateEnemyMonInParty
-	call BattleCommand_LowerSub
-	call LoadMoveAnim
+	call AnimateCurrentMove
 	call BatonPass_LinkEnemySwitch
-
-	pop hl
-	res SUBSTATUS_SUBSTITUTE, [hl]
-	push hl
 
 ; Mobile link battles handle entrances differently
 	farcall CheckMobileBattleError
-	jr c, .BatonPass_EndMoveEffect
+	jp c, EndMoveEffect
 
 ; Passed enemy PartyMon entrance
 	xor a
@@ -91,39 +74,7 @@ BattleCommand_BatonPass:
 	ld hl, SpikesDamage
 	call CallBattleCore
 
-	call ResetBatonPassStatus
-	; fallthrough
-.RestoreSubstituteDoll:
-	pop hl
-	pop af
-	ret z
-	set SUBSTATUS_SUBSTITUTE, [hl]
-
-	; Make the Substitute doll reappear.
-	call _CheckBattleScene
-	jr nc, .skip_fast_anims
-	call BattleCommand_MoveDelay
-	call BattleCommand_RaiseSubNoAnim
-	; Why not return early? Compare with transform.asm
-.skip_fast_anims
-	xor a
-	ld [wNumHits], a
-	ld [wFXAnimID + 1], a
-	ld a, $2
-	ld [wBattleAnimParam], a
-	ld a, SUBSTITUTE
-	jp LoadAnim
-
-.FailedBatonPass:
-	pop hl
-	pop af
-	call AnimateFailedMove
-	jp PrintButItFailed
-
-.BatonPass_EndMoveEffect:
-	pop hl
-	pop af
-	jp EndMoveEffect
+	jr ResetBatonPassStatus
 
 BatonPass_LinkPlayerSwitch:
 	ld a, [wLinkMode]
@@ -166,6 +117,10 @@ BatonPass_LinkEnemySwitch:
 	ld [wBattleAction], a
 .switch
 	jp CloseWindow
+
+FailedBatonPass:
+	call AnimateFailedMove
+	jp PrintButItFailed
 
 ResetBatonPassStatus:
 ; Reset status changes that aren't passed by Baton Pass.

@@ -43,9 +43,7 @@ BattleCommandPointers:
 	dw BattleCommand_EndLoop
 	dw BattleCommand_FlinchTarget
 	dw BattleCommand_OHKO
-	dw BattleCommand_Struggle
-	dw BattleCommand_Recoil_1_3
-	dw BattleCommand_Recoil_1_4
+	dw BattleCommand_Recoil
 	dw BattleCommand_Mist
 	dw BattleCommand_FocusEnergy
 	dw BattleCommand_Confuse
@@ -66,7 +64,7 @@ BattleCommandPointers:
 	dw BattleCommand_Charge
 	dw BattleCommand_CheckCharge
 	dw BattleCommand_TrapTarget
-	dw BattleCommand_Unused3C
+	dw BattleCommand_Dummy_SkipToTrapTarget
 	dw BattleCommand_Rampage
 	dw BattleCommand_CheckRampage
 	dw BattleCommand_ConstantDamage
@@ -99,7 +97,7 @@ BattleCommandPointers:
 	dw BattleCommand_Endure
 	dw BattleCommand_CheckRollout
 	dw BattleCommand_RolloutPower
-	dw BattleCommand_Unused5D
+	dw BattleCommand_Dummy_Swagger
 	dw BattleCommand_FuryCutter
 	dw BattleCommand_Attract
 	dw BattleCommand_HappinessPower
@@ -168,6 +166,7 @@ BattleCommandPointers:
 	dw BattleCommand_ThunderAccuracy
 	dw BattleCommand_Teleport
 	dw BattleCommand_BeatUp
+	dw BattleCommand_RageDamage
 	dw BattleCommand_ResetTypeMatchup
 	dw BattleCommand_AllStatsUp
 	dw BattleCommand_BideFailText
@@ -181,7 +180,4 @@ BattleCommandPointers:
 	dw BattleCommand_SuperEffectiveLoopText
 	dw BattleCommand_StartLoop
 	dw BattleCommand_Curl
-	dw BattleCommand_DefrostTarget
-	dw BattleCommand_WeightDamage
-	dw BattleCommand_Growth
 	assert_table_length NUM_EFFECT_COMMANDS

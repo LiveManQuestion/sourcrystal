@@ -344,20 +344,8 @@ HandleBetweenTurnEffects:
 	call LoadTilemapToTempTilemap
 	jp HandleEncore
 
-HasAnyoneFainted:
-	call HasPlayerFainted
-	jp nz, HasEnemyFainted
-	ret
-
 CheckFaint_PlayerThenEnemy:
-.faint_loop
-	call .Function
-	ret c
-	call HasAnyoneFainted
-	ret nz
-	jr .faint_loop
-
-.Function:
+; BUG: Perish Song and Spikes can leave a Pokemon with 0 HP and not faint (see docs/bugs_and_glitches.md)
 	call HasPlayerFainted
 	jr nz, .PlayerNotFainted
 	call HandlePlayerMonFaint
@@ -382,14 +370,7 @@ CheckFaint_PlayerThenEnemy:
 	ret
 
 CheckFaint_EnemyThenPlayer:
-.faint_loop
-	call .Function
-	ret c
-	call HasAnyoneFainted
-	ret nz
-	jr .faint_loop
-
-.Function
+; BUG: Perish Song and Spikes can leave a Pokemon with 0 HP and not faint (see docs/bugs_and_glitches.md)
 	call HasEnemyFainted
 	jr nz, .EnemyNotFainted
 	call HandleEnemyMonFaint
@@ -442,20 +423,11 @@ HandleBerserkGene:
 
 	call ConsumeUserItem
 
+; BUG: Berserk Gene's confusion lasts for 256 turns or the previous Pokémon's confusion count (see docs/bugs_and_glitches.md)
 	ld a, BATTLE_VARS_SUBSTATUS3
 	call GetBattleVarAddr
 	push af
 	set SUBSTATUS_CONFUSED, [hl]
-	ldh a, [hBattleTurn]
-	and a
-	ld hl, wPlayerConfuseCount
-	jr z, .set_confuse_count
-	ld hl, wEnemyConfuseCount
-.set_confuse_count
-	call BattleRandom
-	and %11
-	add 2
-	ld [hl], a
 	ld a, BATTLE_VARS_MOVE_ANIM
 	call GetBattleVarAddr
 	push hl
@@ -1320,7 +1292,7 @@ HandleWrap:
 	call SwitchTurnCore
 
 .skip_anim
-	call GetEighthMaxHP
+	call GetSixteenthMaxHP
 	call SubtractHPFromUser
 	ld hl, BattleText_UsersHurtByStringBuffer1
 	jr .print_text
@@ -1852,7 +1824,7 @@ HandleWeather:
 
 	call SwitchTurnCore
 	call SwitchTurnCore
-	call GetSixteenthMaxHP
+	call GetEighthMaxHP
 	call SubtractHPFromUser
 
 	ld hl, SandstormHitsText
@@ -1989,28 +1961,6 @@ GetHalfMaxHP:
 	jr nz, .end
 	inc c
 .end
-	ret
-
-GetOneSixthMaxHP:
-	call GetMaxHP
-
-	ld a, b
-	ld [hDividend + 0], a
-	ld a, c
-	ld [hDividend + 1], a
-	ld a, 6
-	ld [hDivisor], a
-	ld b, 2
-	call Divide
-	ld a, [hQuotient + 2]
-	ld b, a
-	ld a, [hQuotient + 3]
-	ld c, a
-
-	and b
-	jr nz, .ok
-	inc c
-.ok
 	ret
 
 GetMaxHP:
@@ -4168,19 +4118,6 @@ BreakAttraction:
 	res SUBSTATUS_IN_LOVE, [hl]
 	ret
 
-GetSpikesDamage:
-	dec a
-	jr z, .one ; one spikes set
-	dec a
-	jr z, .two ; two spikes set
-; assume three spikes set
-.three
-	jp GetQuarterMaxHP
-.two
-	jp GetOneSixthMaxHP
-.one
-	jp GetEighthMaxHP
-
 SpikesDamage:
 	ld hl, wPlayerScreens
 	ld de, wBattleMonType
@@ -4193,9 +4130,7 @@ SpikesDamage:
 	ld bc, UpdateEnemyHUD
 .ok
 
-	ld a, [hl]
-	and 3
-	; return if zero spikes set
+	bit SCREENS_SPIKES, [hl]
 	ret z
 
 	; Flying-types aren't affected by Spikes.
@@ -4208,15 +4143,11 @@ SpikesDamage:
 	ret z
 
 	push bc
-	push hl
 
 	ld hl, BattleText_UserHurtBySpikes ; "hurt by SPIKES!"
 	call StdBattleTextbox
 
-	pop hl
-	ld a, [hl]
-	and 3
-	call GetSpikesDamage
+	call GetEighthMaxHP
 	call SubtractHPFromTarget
 
 	pop hl
@@ -4252,7 +4183,7 @@ PursuitSwitch:
 
 	ld a, BATTLE_VARS_MOVE
 	call GetBattleVarAddr
-	ld a, $ff
+	ld a, CANNOT_MOVE
 	ld [hl], a
 
 	pop af
@@ -5473,33 +5404,6 @@ BattleMonEntrance:
 	ld [wMenuCursorY], a
 	ret
 
-TeleportBattleMonEntrance:
-	ld c, 50
-	call DelayFrames
-
-	hlcoord 9, 7
-	lb bc, 5, 11
-	call ClearBox
-
-	ld a, [wCurPartyMon]
-	ld [wCurBattleMon], a
-	call AddBattleParticipant
-	call InitBattleMon
-	xor a
-	ld [wTempSpecies], a
-	call ResetPlayerStatLevels
-	call SendOutMonText
-	call NewBattleMonStatus
-	call BreakAttraction
-	call SendOutPlayerMon
-	call EmptyBattleTextbox
-	call LoadTilemapToTempTilemap
-	call SetPlayerTurn
-	call SpikesDamage
-	ld a, $2
-	ld [wMenuCursorY], a
-	ret
-
 PassedBattleMonEntrance:
 	ld c, 50
 	call DelayFrames
@@ -5990,7 +5894,8 @@ CheckPlayerHasUsableMoves:
 	jr .loop
 
 .done
-	and PP_MASK
+; BUG: A Disabled but PP Up–enhanced move may not trigger Struggle (see docs/bugs_and_glitches.md)
+	and a
 	ret nz
 
 .force_struggle
@@ -6708,7 +6613,7 @@ endc
 	ld de, wEnemyStats
 	ld bc, NUM_BATTLE_STATS * 2
 	call CopyBytes
-	jp ApplyStatusEffectOnEnemyStats
+	ret
 
 CheckSleepingTreeMon:
 ; Return carry if species is in the list

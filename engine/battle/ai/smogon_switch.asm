@@ -720,12 +720,53 @@ AISmogon_Compare16:
 
 AISmogon_GetAttack:
 ; Return the power of move a in d and its type in e.
-; Hidden Power's type comes from the DVs at hl.
+; Hidden Power's power and type come from the DVs at hl.
 	cp HIDDEN_POWER
 	push af
 	call AISmogon_GetMovePowerAndType
 	pop af
 	ret nz
+	push hl
+	push bc
+	; power = (5 * (the top bit of each DV) + (Special DV & 3)) / 2 + 31,
+	; with the top bits in Attack, Defense, Speed, Special order
+	ld a, [hli]
+	ld c, [hl]
+	ld b, a
+	and %1000 << 4
+	swap a
+	ld d, a
+	ld a, b
+	and %1000
+	rrca
+	or d
+	ld d, a
+	ld a, c
+	and %1000 << 4
+	swap a
+	rrca
+	rrca
+	or d
+	ld d, a
+	ld a, c
+	and %1000
+	rrca
+	rrca
+	rrca
+	or d
+	ld d, a
+	add a
+	add a
+	add d
+	ld d, a
+	ld a, c
+	and %0011
+	add d
+	srl a
+	add 31
+	ld d, a
+	pop bc
+	pop hl
 	push hl
 	; type index = (Attack DV & 3) << 2 | (Defense DV & 3)
 	ld a, [hl]

@@ -575,6 +575,8 @@ DefenseDownHit:
 	supereffectivetext
 	checkfaint
 	buildopponentrage
+; BUG: Moves that lower Defense can do so after breaking a Substitute (see docs/bugs_and_glitches.md)
+	effectchance
 	defensedown
 	statdownmessage
 	endmove
@@ -705,10 +707,11 @@ DefenseUpHit:
 	applydamage
 	criticaltext
 	supereffectivetext
-	defenseup
-	statupmessage
+; BUG: Moves that do damage and increase your stats do not increase stats after a KO (see docs/bugs_and_glitches.md)
 	checkfaint
 	buildopponentrage
+	defenseup
+	statupmessage
 	endmove
 
 AttackUpHit:
@@ -727,10 +730,10 @@ AttackUpHit:
 	applydamage
 	criticaltext
 	supereffectivetext
-	attackup
-	statupmessage
 	checkfaint
 	buildopponentrage
+	attackup
+	statupmessage
 	endmove
 
 AllUpHit:
@@ -749,9 +752,9 @@ AllUpHit:
 	applydamage
 	criticaltext
 	supereffectivetext
-	allstatsup
 	checkfaint
 	buildopponentrage
+	allstatsup
 	endmove
 
 PayDay:
@@ -796,6 +799,7 @@ Bide:
 	usedmovetext
 	unleashenergy
 	resettypematchup
+	checkhit
 	moveanim
 	bidefailtext
 	applydamage
@@ -925,25 +929,7 @@ OHKOHit:
 	buildopponentrage
 	endmove
 
-Struggle:
-	checkobedience
-	usedmovetext
-	doturn
-	critical
-	damagestats
-	damagecalc
-	damagevariation
-	moveanim
-	failuretext
-	applydamage
-	criticaltext
-	struggle
-	checkfaint
-	buildopponentrage
-	kingsrock
-	endmove
-
-RecoilHit_1_3:
+RecoilHit:
 	checkobedience
 	usedmovetext
 	doturn
@@ -958,28 +944,7 @@ RecoilHit_1_3:
 	applydamage
 	criticaltext
 	supereffectivetext
-	recoil_1_3
-	checkfaint
-	buildopponentrage
-	kingsrock
-	endmove
-
-RecoilHit_1_4:
-	checkobedience
-	usedmovetext
-	doturn
-	critical
-	damagestats
-	damagecalc
-	stab
-	damagevariation
-	checkhit
-	moveanim
-	failuretext
-	applydamage
-	criticaltext
-	supereffectivetext
-	recoil_1_4
+	recoil
 	checkfaint
 	buildopponentrage
 	kingsrock
@@ -1152,6 +1117,7 @@ Rage:
 	damagecalc
 	stab
 	checkhit
+	ragedamage
 	damagevariation
 	moveanim
 	failuretext
@@ -1168,6 +1134,7 @@ Mimic:
 	checkobedience
 	usedmovetext
 	doturn
+	checkhit
 	mimic
 	endmove
 
@@ -1264,7 +1231,6 @@ TrapTarget:
 	supereffectivetext
 	checkfaint
 	buildopponentrage
-	defrosttarget
 	traptarget
 	endmove
 
@@ -1326,6 +1292,7 @@ PainSplit:
 	checkobedience
 	usedmovetext
 	doturn
+	checkhit
 	painsplit
 	endmove
 
@@ -1356,6 +1323,7 @@ Conversion2:
 	checkobedience
 	usedmovetext
 	doturn
+	checkhit
 	conversion2
 	endmove
 
@@ -1363,6 +1331,7 @@ LockOn:
 	checkobedience
 	usedmovetext
 	doturn
+	checkhit
 	lockon
 	endmove
 
@@ -1436,12 +1405,13 @@ TripleKick:
 	doturn
 	startloop
 	lowersub
+	checkhit
 	critical
-	triplekick
+	damagestats
 	damagecalc
+	triplekick
 	stab
 	damagevariation
-	checkhit
 	clearmissdamage
 	moveanimnosub
 	failuretext
@@ -1451,10 +1421,10 @@ TripleKick:
 	supereffectivelooptext
 	checkfaint
 	buildopponentrage
-	kingsrock
 	kickcounter
 	endloop
 	raisesub
+	kingsrock
 	endmove
 
 Thief:
@@ -1540,6 +1510,7 @@ Foresight:
 	checkobedience
 	usedmovetext
 	doturn
+	checkhit
 	foresight
 	endmove
 
@@ -1791,8 +1762,6 @@ RapidSpin:
 	criticaltext
 	supereffectivetext
 	clearhazards
-	speedup
-	statupmessage
 	checkfaint
 	buildopponentrage
 	kingsrock
@@ -1836,7 +1805,6 @@ HiddenPower:
 	supereffectivetext
 	checkfaint
 	buildopponentrage
-	defrosttarget
 	kingsrock
 	endmove
 
@@ -1964,18 +1932,14 @@ FutureSight:
 	checkobedience
 	usedmovetext
 	doturn
-	futuresight
-	critical
 	damagestats
 	damagecalc
-	stab
-	damagevariation
+	futuresight
+	damagevariation ; skip here if last turn
 	checkhit
 	moveanimnosub
 	failuretext
 	applydamage
-	criticaltext
-	supereffectivetext
 	checkfaint
 	buildopponentrage
 	endmove
@@ -2077,6 +2041,7 @@ Teleport:
 BeatUp:
 	checkobedience
 	usedmovetext
+	movedelay
 	doturn
 	startloop
 	lowersub
@@ -2084,7 +2049,6 @@ BeatUp:
 	critical
 	beatup
 	damagecalc
-	stab
 	damagevariation
 	clearmissdamage
 	moveanimnosub
@@ -2092,7 +2056,7 @@ BeatUp:
 	applydamage
 	criticaltext
 	cleartext
-	supereffectivelooptext
+	supereffectivetext
 	checkfaint
 	buildopponentrage
 	endloop
@@ -2112,31 +2076,4 @@ DefenseCurl:
 	raisesub
 	statupmessage
 	statupfailtext
-	endmove
-
-WeightDamage:
-	checkobedience
-	usedmovetext
-	doturn
-	critical
-	weightdamage
-	damagecalc
-	stab
-	damagevariation
-	checkhit
-	moveanim
-	failuretext
-	applydamage
-	criticaltext
-	supereffectivetext
-	checkfaint
-	buildopponentrage
-	kingsrock
-	endmove
-
-Growth:
-	checkobedience
-	usedmovetext
-	doturn
-	growth
 	endmove

@@ -183,3 +183,26 @@ Add an entry here when making notable changes.
     heals at half HP (`AISmogon_TimeBasedHealAmount`).
 
   Checked with `tools/claude/ai_scenarios.py` (32 AI scenarios plus 8 engine heal cases).
+- **2026-10-14**: Battles play exactly like vanilla Crystal / GSC on Smogon,
+  bugs included: anything that can matter in a link battle is vanilla (the user
+  wants this; don't reintroduce Sour Crystal's battle mechanics or battle bug
+  fixes). Single-player-only fixes and features stay. `pokecrystal-master/`
+  (untracked) is the vanilla reference.
+  - Data is byte-identical to vanilla: moves, effect scripts and commands, type
+    order (Ghost physical, Dark/Dragon special), base stats (Gen 2; learnsets
+    unchanged), type-boost items 10% (Dragon Scale boosts, Dragon Fang
+    doesn't). Held Sitrus Berry heals 30 HP in battle (1/4 from the bag).
+  - `effect_commands.asm` and `move_effects/` are vanilla, except: no 25% AI
+    status-move failure, Thief's wild-battle changes and stolen-item backup,
+    and cosmetics (freeze/paralysis anims, colored Hidden Power, anim params,
+    Future Sight anim, shorter delays).
+  - `core.asm` battle mechanics are vanilla (Spikes, trap 1/16, Sandstorm
+    1/8, Perish/Spikes 0 HP, Berserk Gene count, PRZ/BRN on switch-in,
+    Struggle with PP Ups, no Teleport switching).
+  - Kept single-player code: exp (Exp. Share split, catch exp), catching and
+    ball fixes, wild held items and flee list, Magikarp length, items stolen
+    by foes returned (`wPartyBackupItems`, `ConsumeUserItem`), Pursuit faint
+    status fix, Glacier Badge fix, max HP < 4 freeze fix, Safari, overworld
+    weather starting battle weather, Challenge Mode, trainer DVs/happiness.
+  - Smogon AI: Growth is `EFFECT_SP_ATK_UP`; Hidden Power's power comes from
+    the DVs (`AISmogon_GetAttack`).

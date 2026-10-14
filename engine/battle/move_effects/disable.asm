@@ -43,7 +43,10 @@ BattleCommand_Disable:
 	and a
 	jr z, .failed
 .loop2
-	ld a, 4
+	call BattleRandom
+	and 7
+	jr z, .loop2
+	inc a
 	inc c
 	swap c
 	add c

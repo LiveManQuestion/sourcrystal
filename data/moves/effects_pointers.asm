@@ -49,9 +49,7 @@ MoveEffectsPointers:
 	dw NormalHit
 	dw Mist
 	dw FocusEnergy
-	dw Struggle
-	dw RecoilHit_1_3
-	dw RecoilHit_1_4
+	dw RecoilHit
 	dw DoConfuse
 	dw AttackUp2
 	dw DefenseUp2
@@ -160,6 +158,4 @@ MoveEffectsPointers:
 	dw BeatUp
 	dw Fly
 	dw DefenseCurl
-	dw WeightDamage
-	dw Growth
 	assert_table_length NUM_MOVE_EFFECTS
