@@ -328,10 +328,11 @@ WRAM0
 	"Unused Map Buffer"
 	align 8
 	"Overworld Map"
+	; fits in the space left before "Video"
+	"Storage RAM"
 	align 4
 	"Video"
 	"Weather RAM"
-	"Storage RAM"
 WRAMX 1
 	"WRAM 1"
 	"Miscellaneous WRAM 1"

@@ -1938,11 +1938,14 @@ wBoxBufferBoxes:: ds NUM_BOX_BUFFERS
 wStorageNewGame:: db
 ; scratch for the storage system (see engine/pc/bills_pc.asm)
 wStorageSlotIndex:: db ; a list position in a box
+UNION
 wStorageEntryPointer:: dw ; a box entry
+NEXTU
+wStorageStagingPart:: dw ; a part of a staging area
+ENDU
 wStorageFoundSlot:: dw ; box, slot
 wStorageCopyMode:: db
 wStorageStagedBoxes:: db
-wStorageStagingPart:: dw
 
 
 SECTION "Fade System Ram", WRAM0
