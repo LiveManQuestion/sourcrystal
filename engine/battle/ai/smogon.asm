@@ -337,7 +337,8 @@ AI_Smogon_Endure:
 	ld a, [wEnemySubStatus5]
 	bit SUBSTATUS_TOXIC, a
 	jr nz, .toxic
-	ld a, 3 ; 1/8
+; Poison and burn: 1/8 of max HP.
+	ld a, 3
 	call .AddMaxHPFraction
 	jr .no_psn_brn
 
@@ -346,19 +347,22 @@ AI_Smogon_Endure:
 	inc a
 .toxic_loop
 	push af
-	ld a, 4 ; 1/16
+; Toxic: 1/16 of max HP per count.
+	ld a, 4
 	call .AddMaxHPFraction
 	pop af
 	dec a
 	jr nz, .toxic_loop
 .no_psn_brn
 	ld a, [wEnemySubStatus4]
+; Leech Seed: 1/8 of max HP.
 	bit SUBSTATUS_LEECH_SEED, a
-	ld a, 3 ; 1/8
+	ld a, 3
 	call nz, .AddMaxHPFraction
 	ld a, [wEnemySubStatus1]
+; Curse: 1/4 of max HP.
 	bit SUBSTATUS_CURSE, a
-	ld a, 2 ; 1/4
+	ld a, 2
 	call nz, .AddMaxHPFraction
 
 ; Discourage Endure if that's at least our HP.
@@ -799,8 +803,9 @@ AI_Smogon_Setup:
 	lb bc, ATTACK, DEFENSE
 	cp EFFECT_CURSE
 	jr z, .got_stats
+; Growth
 	lb bc, SP_ATTACK, SP_ATTACK
-	cp EFFECT_SP_ATK_UP ; Growth
+	cp EFFECT_SP_ATK_UP
 	jr z, .got_stats
 	lb bc, ATTACK, ATTACK
 	cp EFFECT_BELLY_DRUM
@@ -1036,8 +1041,10 @@ AISmogon_PlayerIsPhysical:
 	push hl
 	ld hl, wBattleMonDVs
 .start
-	push hl ; DVs for Hidden Power's type, or 0 for Normal
-	ld bc, 0 ; b = physical attacks, c = special attacks
+; hl = DVs for Hidden Power's type, or 0 for Normal
+	push hl
+; b = physical attacks, c = special attacks
+	ld bc, 0
 	ld hl, wPlayerUsedMoves
 .loop
 	ld a, [hli]
@@ -1061,7 +1068,8 @@ AISmogon_PlayerIsPhysical:
 	ld a, d
 	dec a
 	jr nz, .got_attack
-	inc d ; count fixed-damage attacks
+; Count fixed-damage attacks.
+	inc d
 .got_attack
 	pop hl
 	; skip status moves, and fixed-damage moves, which screens don't stop
@@ -1171,7 +1179,8 @@ AISmogon_ScanPlayerParty:
 	ld a, [wPartyCount]
 	ld b, a
 	ld c, 0
-	ld de, 0 ; d = sleep bits, e = party index
+; d = sleep bits, e = party index
+	ld de, 0
 .loop
 	ld a, [wCurBattleMon]
 	cp e

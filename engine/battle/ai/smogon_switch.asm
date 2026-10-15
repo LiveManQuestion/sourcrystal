@@ -50,7 +50,8 @@ AISmogon_ChooseReplacement:
 ; After a faint, return carry and b = the party index of the Pokemon with the
 ; best matchup against the player's, if the trainer uses Smogon switching.
 	call AISmogon_UsesSmogonSwitching
-	ret z ; no carry
+; z: return no carry
+	ret z
 	call AISmogon_FindBestSwitchIn
 	ccf
 	ret
@@ -172,7 +173,8 @@ AISmogon_PlayerThreatensSleep:
 .loop
 	ld a, [hli]
 	cp -1
-	jr z, .done ; no carry
+; z: done with no carry
+	jr z, .done
 	call AISmogon_PlayerRevealedMove
 	jr nc, .loop
 .done
@@ -218,7 +220,8 @@ AISmogon_CanStopSetup:
 .loop
 	ld a, [hli]
 	cp -1
-	jr z, .done ; no carry
+; z: done with no carry
+	jr z, .done
 	call AISmogon_OTMonHasMove
 	jr nc, .loop
 .done
