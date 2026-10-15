@@ -95,7 +95,7 @@ MigrateMapIDs:
 	inc de
 	ld b, a
 	and c
-	cp -1
+	inc a
 	jr z, .table_end
 	push hl
 	add hl, bc

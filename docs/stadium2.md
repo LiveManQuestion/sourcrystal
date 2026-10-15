@@ -29,7 +29,9 @@ tracing what it reads and writes on the Game Boy cartridge (2026-10-15).
   leaves `sBox` alone. Box names are written to `wBoxNames` in both save copies,
   with both checksums updated.
 - Moving Pokémon between the Game Pak and Stadium's own boxes needs 150
-  Pokémon caught. "Re-order BOXes" works without that.
+  Pokémon caught in the Game Pak's Pokédex. "Re-order BOXes" works without
+  that. Tested: re-ordering boxes, and moving the current box to an N64 box
+  (with the Pokédex flags set in a test save); the game loads both correctly.
 
 ## Testing
 

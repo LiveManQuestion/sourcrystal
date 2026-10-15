@@ -1261,7 +1261,7 @@ _SwapAdjacentEntries:
 	ld bc, BoxEntryFields
 .loop
 	ld a, [bc]
-	cp -1
+	inc a
 	jr z, .done
 	push hl
 	call _GetEntryField
@@ -1308,7 +1308,7 @@ _CopyBoxEntry:
 	ld bc, BoxEntryFields
 .loop
 	ld a, [bc]
-	cp -1
+	inc a
 	jr z, .done
 	push hl
 	call _GetEntryField
