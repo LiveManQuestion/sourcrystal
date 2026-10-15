@@ -164,3 +164,13 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   operations, resets, interrupted saves, outside changes, new game), the PC UI
   driven through RAM (save prompt, moves), and Stadium 2 showing the boxes and
   re-ordering them, then loading that save (no duplicates).
+- **2026-10-15**: Movepools back to vanilla: `evos_attacks.asm` learnsets
+  (evolution methods kept, including the item alternatives to trade
+  evolutions; Golbat and Chansey no longer share Crobat's and Blissey's
+  learnsets), `egg_moves.asm`, and every `tmhm` list. The 26 Sour-only
+  TM/tutor moves follow pret/pokered's Gen 1 TM compatibility of the species
+  or an earlier evolution (Low Kick: vanilla Low Kick learners). Base stats
+  were already vanilla. Checked: learnsets, egg moves and the vanilla part of
+  every `tmhm` list equal vanilla's source; all four ROMs build;
+  `cmp_data.py`, `ai_scenarios.py` and `smoke.py` pass. Also fixed Dunsparce's
+  Frustration on Whitney's rematch team (happiness 0).

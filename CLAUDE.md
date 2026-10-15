@@ -77,6 +77,8 @@ splitting in a `bash script.sh` or in Python.
   - `CheckTypeMatchup` takes the attack's type in `a`; `BattleCheckTypeMatchup`
     loads the current move's type first. The AI calls `CheckTypeMatchup`
     directly, so never restore vanilla's version (it ignores `a`).
+- **Movepools** are vanilla's; Sour's Gen 1 TM tutors follow pokered's TM
+  lists through the evolution line (GSC trade-backs).
 - **Trainers**: Return users get max happiness and Frustration users none
   (`ReadTrainerParty`), unless the party sets `TRAINERTYPE_HAPPINESS`.
 - **AI move power**: moves stored as power 1 get their real power for the AI:

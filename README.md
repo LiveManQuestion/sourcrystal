@@ -45,7 +45,7 @@ Its goal is not to change, but build upon the original game with many bug fixes,
 - **Unique Party sprites**
 - **Updated Stats** up to gen7
 - **Updated Move properties:** Base Power, Accuracy, effects, etc
-- **Updated Movepools**
+- **Vanilla movepools, plus Gen 1 TM moves from tutors**: level-up, egg and TM/HM moves are vanilla Crystal's; tutors teach the Gen 1 TM moves (Body Slam, Seismic Toss, ...) to the Pokémon that could get them by trading back from Red/Blue/Yellow
 - **Upgraded trainer rematch system** to make grinding more enjoyable and rewarding
 - **Expanded Phone Contacts** which can hold all 50 contacts at once
 - **A complete overhaul of the PC Box** which now functions like Gen3. No more saving between boxes required (the game only asks you to save after changing more than 3 boxes)
