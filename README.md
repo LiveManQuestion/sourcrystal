@@ -48,7 +48,8 @@ Its goal is not to change, but build upon the original game with many bug fixes,
 - **Updated Movepools**
 - **Upgraded trainer rematch system** to make grinding more enjoyable and rewarding
 - **Expanded Phone Contacts** which can hold all 50 contacts at once
-- **A complete overhaul of the PC Box** which now functions like Gen3. No more saving between boxes required
+- **A complete overhaul of the PC Box** which now functions like Gen3. No more saving between boxes required (the game only asks you to save after changing more than 3 boxes)
+- **Pokémon Stadium 2 compatible**: the PC boxes use vanilla's save layout, and every Pokémon Center Stadium 2 knows about keeps its map ID
 - **Some post-game Pokémon are now available in Johto** such as Houndour and Slugma
 - **Upgraded battle color system** for more dynamic attack animations
 - **Updated attack animations** for many moves

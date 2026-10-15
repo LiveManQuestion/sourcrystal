@@ -222,7 +222,7 @@ PokeBallEffect:
 	cp PARTY_LENGTH
 	jr nz, .room_in_party
 
-	newfarcall NewStorageBoxPointer
+	newfarcall NewStorageBoxSlot
 	jp c, Ball_BoxIsFullMessage
 	jr .backup_item_done
 
@@ -651,7 +651,7 @@ PokeBallEffect:
 
 	farcall SetBoxMonCaughtData
 
-	newfarcall NewStorageBoxPointer
+	newfarcall NewStorageBoxSlot
 	jr nc, .BoxNotFullYet
 	ld hl, wBattleResult
 	set BATTLERESULT_BOX_FULL, [hl]

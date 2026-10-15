@@ -1928,6 +1928,23 @@ wSunlightIncCounter:: db
 wPrevOvercastIndex:: db
 
 
+
+SECTION "Storage RAM", WRAM0
+
+; boxes held in wBoxBuffer1 - wBoxBuffer3 (0 if unused)
+wBoxBufferBoxes:: ds NUM_BOX_BUFFERS
+; TRUE after starting a new game until it's saved: the saved boxes belong to
+; the old game, so boxes that aren't buffered are empty.
+wStorageNewGame:: db
+; scratch for the storage system (see engine/pc/bills_pc.asm)
+wStorageSlotIndex:: db ; a list position in a box
+wStorageEntryPointer:: dw ; a box entry
+wStorageFoundSlot:: dw ; box, slot
+wStorageCopyMode:: db
+wStorageStagedBoxes:: db
+wStorageStagingPart:: dw
+
+
 SECTION "Fade System Ram", WRAM0
 wPalFadeMode:: db
 
@@ -1946,14 +1963,10 @@ wDefaultSpawnpoint:: db
 SECTION UNION "Miscellaneous WRAM 1", WRAMX
 
 ; mon buffer
-UNION
 wBufferMon:: party_struct wBufferMon
 wBufferMonAltSpecies:: db ; the 2nd (usually redundant) species byte, for eggs
 wBufferMonNickname:: ds MON_NAME_LENGTH
 wBufferMonOT:: ds NAME_LENGTH
-NEXTU
-wEncodedBufferMon:: savemon_struct wEncodedBufferMon
-ENDU
 
 ; Points towards box + slot if using GetStorageBoxMon. Slot set to 0 if empty.
 wBufferMonBox:: db
@@ -3278,7 +3291,9 @@ wRoute42EcruteakGateSceneID::                     db
 wRoute39SceneID::                                 db
 wSafariZoneKantoEntranceSceneID::                 db
 
-	ds 42
+wBoxThemes:: ds NUM_BOXES
+
+	ds 42 - NUM_BOXES
 
 ; fight counts
 wJackFightCount::    db
@@ -3316,10 +3331,11 @@ wEventFlags:: flag_array NUM_EVENTS
 
 wCurBox:: db
 
-	ds 126
-
+; Vanilla has 2 unused bytes here.
 wPlayerCaught:: db
 wPlayerCaught2:: db
+
+wBoxNames:: ds BOX_NAME_LENGTH * NUM_BOXES
 
 wCelebiEvent::
 ; bit 2: forest is restless
@@ -3717,12 +3733,19 @@ wLYOverridesBackup:: ds SCREEN_HEIGHT_PX
 wLYOverridesBackupEnd::
 
 
-SECTION "Used Storage", WRAMX
+SECTION "Box Buffers", WRAMX
 
-wPokeDBUsedEntries::
-wPokeDB1UsedEntries:: flag_array MONDB_ENTRIES
-wPokeDB2UsedEntries:: flag_array MONDB_ENTRIES
-wPokeDBUsedEntriesEnd::
+; Boxes changed since the last save. They're only written to SRAM when saving,
+; so resetting without saving leaves the saved boxes as they were.
+wBoxBuffers::
+; wBoxBuffer1 - wBoxBuffer3
+for n, 1, NUM_BOX_BUFFERS + 1
+wBoxBuffer{d:n}:: box_buffer wBoxBuffer{d:n}
+endr
+
+; box mons being moved
+wBoxTempEntry:: box_entry wBoxTempEntry
+wBoxTempEntry2:: box_entry wBoxTempEntry2
 
 
 SECTION "Sprites Backup", WRAMX

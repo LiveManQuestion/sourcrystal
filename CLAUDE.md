@@ -30,6 +30,9 @@ that, move detail into `docs/` and leave a one-line pointer here.
   included.** Anything that can matter in a link battle stays vanilla; don't
   reintroduce Sour Crystal's old battle mechanics or battle bug fixes.
   Single-player-only fixes and features are kept (see Current state).
+- **Pokémon Stadium 2 compatible** (see `docs/stadium2.md`): keep vanilla's
+  box layout and the Pokémon Center map IDs on its list (the `UNUSED_*_MAP`
+  placeholders hold some).
 - Don't commit or push unless the user asks.
 
 ## Build
@@ -82,6 +85,13 @@ splitting in a `bash script.sh` or in Python.
   (`AISmogon_GetMovePowerAndType`) counts Return/Frustration as 102. Flail,
   Reversal and Present still count as 1.
 
+## PC boxes
+
+`engine/pc/bills_pc.asm` (`docs/newbox_format.md`): vanilla's 14-box SRAM
+layout plus slot maps. Up to 3 changed boxes stay in WRAM until saving (then
+the UI asks to save); they're staged in spare SRAM so `WriteBackupSave` can
+finish an interrupted save.
+
 ## Battle AI layout
 
 - `engine/battle/ai/move.asm`: `AIChooseMove` runs the scoring layers enabled
@@ -122,8 +132,8 @@ Vanilla comparison (no emulator):
   build into `.vanilla/` (git-ignored) if that's missing.
 - `cmp_data.py [ROM SYM]`: every battle data table vs. vanilla, byte for byte.
   Expect `ALL IDENTICAL`.
-- `vanilla_diff.py [-s] FILE...`: diff against `pokecrystal-master/` with the
-  noise removed (renames, jr/jp, quotes, tail calls), grouped by function.
+- `vanilla_diff.py [-s] FILE...`: diff vs. `pokecrystal-master/` minus noise
+  (renames, jr/jp, quotes, tail calls), grouped by function.
 - `replace_region.py FILE SOURCE START END`: replace a block of top-level
   labels with the same block from another file or `REV:path`.
 
@@ -141,8 +151,8 @@ user's save files.
 - `damage_diff.py VANILLA.gbc VANILLA.sym ROM.gbc ROM.sym [N]`: runs the damage
   code on the same random inputs in both ROMs. Expect 0 mismatches.
 - `smoke.py ROM RAM OUTDIR`: boot, title, Continue, overworld and menus, with
-  a screenshot hash per step; diff two ROMs' output. The clock changes the
-  main menu and day/night palette between runs.
+  a screenshot hash per step; diff two ROMs' output (the clock changes some).
+  PyBoy draws Bill's PC as a white screen; test it through RAM.
 - `battle.py ROM SYM RAM "BUGSY 2" SEED [frames]`: one Challenge Mode battle
   against a Smogon-AI trainer (player: Typhlosion with Tackle, Swords Dance,
   Roar, Toxic). JSON line with crashes, AI routine counts and every enemy
@@ -155,6 +165,11 @@ user's save files.
   Jasmine/Koga are normal (stall battles; the harness heals the player and
   Roars). Crashes are not. Any code change shifts the RNG timing, so judge
   win rates over many seeds.
+- `storage_test.py ROM SYM RAM [SEED] [STEPS]`: model-based test of the PC
+  boxes (moves, saves, resets, interrupted saves). Last line `RESULT: OK`.
+  `game_call.py` calls ROM functions from Python.
+
+`stadium2/` runs Pokémon Stadium 2 in mupen64plus (`docs/stadium2.md`).
 
 `peephole.py` applies the pret wiki's "Optimizing assembly code" peepholes
 (skipping timing-sensitive, RAM-copied, link and printer code); then run

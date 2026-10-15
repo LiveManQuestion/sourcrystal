@@ -11,11 +11,14 @@
 ;      * Add the save file version.
 ; 02 = vX.Y
 ;      * wPhoneList is now a bit flag array.
+; 03 = vX.Y
+;      * Placeholder maps restore vanilla's map IDs (for Pokemon Stadium 2).
+;      * Vanilla's PC box layout (for Pokemon Stadium 2). Boxes are emptied.
 
 ; When making a breaking change to the save format, the following
 ; should be updated:
-DEF GAME_VERSION EQU 2
-INCLUDE "save_migrations/02.asm"
+DEF GAME_VERSION EQU 3
+INCLUDE "save_migrations/03.asm"
 
 ;------------------------------------------------------------------------------
 

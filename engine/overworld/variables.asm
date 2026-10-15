@@ -124,8 +124,8 @@ _GetVarAction::
 	ret
 
 .BoxFreeSpace:
-; Remaining database entries
-	newfarcall CheckFreeDatabaseEntries
+; Empty box slots that can be filled without saving first
+	newfarcall CountFreeBoxSlots
 	jp .loadstringbuffer2
 
 .BattleResult:

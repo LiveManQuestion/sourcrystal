@@ -160,6 +160,9 @@ SaveGameData:
 	farcall StageRTCTimeForSave
 	call ValidateSave
 	call ApplySaveVersion
+	; Copy the changed boxes to SRAM first, so WriteBackupSave can write them
+	; even if this save is interrupted.
+	newfarcall StageStorageBoxes
 	call SaveOptions
 	call SavePlayerData
 	call SavePokemonData
@@ -193,7 +196,7 @@ WriteBackupSave:
 	farcall BackupPartyMonMail
 	farcall BackupGSBallFlag
 	farcall BackupMysteryGift
-	call SaveStorageSystem
+	newfarcall CommitStorageBoxes
 
 	; Save the backup copy of game data.
 	call ValidateBackupSave
@@ -209,25 +212,7 @@ WriteBackupSave:
 	jp CloseSRAM
 
 LoadStorageSystem:
-; Copy backup storage system to active.
-	ld hl, sBackupNewBox1
-	ld de, sNewBox1
-	call CopyStorageSystem
-
-	; Initialize allocation information.
-	newfarjp FlushStorageSystem
-
-SaveStorageSystem:
-; Copy active storage system to backup.
-	ld hl, sNewBox1
-	ld de, sBackupNewBox1
-	; fallthrough
-CopyStorageSystem:
-	ld a, BANK(sNewBox1)
-	call OpenSRAM
-	ld bc, sNewBoxEnd - sNewBox1
-	call CopyBytes
-	jp CloseSRAM
+	newfarjp LoadStorageBoxes
 
 UpdateStackTop:
 ; sStackTop appears to be unused.

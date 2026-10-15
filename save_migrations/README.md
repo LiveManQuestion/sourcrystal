@@ -13,6 +13,16 @@ Only the latest migration is `INCLUDE`'d inside of `save_compat.asm`.
 
 ## Save versions summary
 
+### (save version 03)
+
+* Add placeholder maps so the Blackthorn and Cerulean map groups use vanilla's
+  map IDs again. Pokemon Stadium 2 only accepts saves made in a Pokemon Center
+  from its list of vanilla map IDs. Saved map IDs after the placeholders move up.
+* Go back to vanilla's PC box layout (14 boxes), which Pokemon Stadium 2 reads
+  and changes. The old boxes aren't converted: they're emptied, and box names
+  and themes are reset. The legendary caught flags (`wPlayerCaught`) move to
+  vanilla's unused bytes after `wCurBox`.
+
 ### v7.0 (save version 02)
 
 * Change how the Pokegear stores contacts. This results in the phone essentially having

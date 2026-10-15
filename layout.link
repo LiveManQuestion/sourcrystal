@@ -331,6 +331,7 @@ WRAM0
 	align 4
 	"Video"
 	"Weather RAM"
+	"Storage RAM"
 WRAMX 1
 	"WRAM 1"
 	"Miscellaneous WRAM 1"
@@ -340,6 +341,7 @@ WRAMX 1
 WRAMX 2
 	"Pic Animations"
 	"Sprites Backup"
+	"Box Buffers"
 WRAMX 3
 	"Battle Tower RAM"
 WRAMX 4
@@ -367,11 +369,15 @@ SRAM $00
 	"Mailbox Saves"
 	"Mailbox Saves (Backup)"
 	"Misc Saves"
+	"Box Staging 2"
+	"Box Save Status"
+	"Box Staging 1 (Part 1)"
 	org $b200
 	"Save Options (Backup)"
 	org $b208
 	"Save Check Value (Backup)"
 	"Save Game Data (Backup)"
+	"Box Staging 1 (Part 2)"
 	org $bf0c
 	"Save File Version (Backup)"
 	org $bf0d
@@ -384,6 +390,7 @@ SRAM $01
 	org $a008
 	"Save Check Value"
 	"Save Game Data"
+	"Box Staging 1 (Part 3)"
 	org $ad0c
 	"Save File Version"
 	org $ad0d
@@ -391,15 +398,22 @@ SRAM $01
 	org $ad0f
 	"Save Check Value 2"
 	org $ad10
-	"Box Metadata"
+	"Active Box"
+	"Box Staging 3 (Part 1)"
+	org $b230
 	"Link Battle Data"
 	"SRAM Hall of Fame"
 	"SRAM Crystal Data"
 	"SRAM Battle Tower"
+	org $be40
+	"Box Staging 3 (Part 2)"
 SRAM $02
-	"PokeDB Bank 1"
+	"Boxes 1-7"
+	"Box Staging 3 (Part 3)"
 SRAM $03
-	"PokeDB Bank 2"
+	"Boxes 8-14"
+	"Box Staging 3 (Part 4)"
+	"Box Staging 1 (Part 4)"
 SRAM $04
 	"SRAM Mobile 1"
 SRAM $05

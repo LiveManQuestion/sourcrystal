@@ -86,7 +86,7 @@ CheckPartyFullAfterContest:
 	ret
 
 .TryAddToBox:
-	newfarcall NewStorageBoxPointer
+	newfarcall NewStorageBoxSlot
 	jr c, .BoxFull
 	push bc
 	xor a

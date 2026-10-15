@@ -659,7 +659,7 @@ DepositBreedmon:
 SendMonIntoBox:
 ; Sends the mon into one of Bills Boxes
 ; the data comes mainly from 'wEnemyMon:'
-	newfarcall NewStorageBoxPointer
+	newfarcall NewStorageBoxSlot
 	jr nc, .not_full
 
 	and a

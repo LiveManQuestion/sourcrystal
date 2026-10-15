@@ -3,6 +3,7 @@ SECTION "Scratch", SRAM
 UNION
 sScratch:: ds $60 tiles
 
+
 NEXTU
 sEnemyFrontpicTileCount:: db
 sPaddedEnemyFrontpic:: ds 7 * 7 tiles
@@ -70,6 +71,28 @@ sLuckyNumberDay:: db
 sLuckyIDNumber::  dw
 
 
+SECTION "Box Staging 2", SRAM
+; Each box buffer changed since the last save is copied to one of
+; sBoxStaging1 - sBoxStaging3 before saving, so a save interrupted after the
+; main save data is written can still be finished (see StageStorageBoxes).
+; Only sBoxStaging2 fits in one piece. (sScratch would fit, but booting the
+; game changes it.)
+sBoxStaging2:: ds BOXBUF_LENGTH
+sBoxStaging2End::
+
+
+SECTION "Box Save Status", SRAM
+sWritingBackup:: db ; 1 if we're saving, anything else if not.
+; bit n set: box buffer n is staged; bit 7: boxes that aren't staged are empty
+sStagedBoxes:: db
+
+
+SECTION "Box Staging 1 (Part 1)", SRAM
+DEF BOX_STAGING_1_PART_1 EQU $100
+sBoxStaging1Part1:: ds BOX_STAGING_1_PART_1
+sBoxStaging1Part1End::
+
+
 SECTION "Save Options (Backup)", SRAM
 sBackupOptions:: ds wOptionsEnd - wOptions
 
@@ -82,6 +105,13 @@ sBackupPlayerData::  ds wPlayerDataEnd - wPlayerData
 sBackupCurMapData::  ds wCurMapDataEnd - wCurMapData
 sBackupPokemonData:: ds wPokemonDataEnd - wPokemonData
 sBackupGameDataEnd::
+
+SECTION "Box Staging 1 (Part 2)", SRAM
+
+; the space left before sBackupGameVersion
+DEF BOX_STAGING_1_PART_2 EQU $bf0c - $bd83
+sBoxStaging1Part2:: ds BOX_STAGING_1_PART_2
+sBoxStaging1Part2End::
 
 SECTION "Save File Version (Backup)", SRAM
 sBackupGameVersion:: db
@@ -117,6 +147,13 @@ sCurMapData::  ds wCurMapDataEnd - wCurMapData
 sPokemonData:: ds wPokemonDataEnd - wPokemonData
 sGameDataEnd::
 
+SECTION "Box Staging 1 (Part 3)", SRAM
+
+; the space left before sGameVersion
+DEF BOX_STAGING_1_PART_3 EQU $ad0c - $ab83
+sBoxStaging1Part3:: ds BOX_STAGING_1_PART_3
+sBoxStaging1Part3End::
+
 SECTION "Save File Version", SRAM
 sGameVersion:: db
 
@@ -127,21 +164,21 @@ SECTION "Save Check Value 2", SRAM
 sCheckValue2:: db ; loaded with SAVE_CHECK_VALUE_2, used to check save corruption
 
 
-SECTION "Box Metadata", SRAM
+SECTION "Active Box", SRAM
 
-for n, 1, NUM_BOXES + 1
-sNewBox{d:n}:: newbox sNewBox{d:n}
-endr
-sNewBoxEnd::
+; Vanilla's working copy of the current box. Vanilla copies it to the current
+; box when saving and back when loading, so the saved copy (which Pokemon
+; Stadium 2 reads and changes) is the one in sBox1 - sBox14. This copy is kept
+; equal to it.
+sBox:: box sBox
 
-for n, 1, NUM_BOXES + 1
-sBackupNewBox{d:n}:: newbox sBackupNewBox{d:n}
-endr
-sBackupNewBoxEnd::
 
-sWritingBackup:: db ; 1 if we're saving, anything else if not.
+SECTION "Box Staging 3 (Part 1)", SRAM
 
-	ds $ff
+; the space left before the Link Battle Data
+DEF BOX_STAGING_3_PART_1 EQU $b230 - ($ad10 + BOX_LENGTH + 2)
+sBoxStaging3Part1:: ds BOX_STAGING_3_PART_1
+sBoxStaging3Part1End::
 
 
 SECTION "Link Battle Data", SRAM
@@ -206,14 +243,64 @@ sBTMonPrevPrevTrainer{d:n}:: db
 endr
 
 
-SECTION "PokeDB Bank 1", SRAM
+SECTION "Box Staging 3 (Part 2)", SRAM
 
-sNewBoxMons1:: pokedb sNewBoxMons1, MONDB_ENTRIES
+DEF BOX_STAGING_3_PART_2 EQU $c000 - $be40
+sBoxStaging3Part2:: ds BOX_STAGING_3_PART_2
+sBoxStaging3Part2End::
 
 
-SECTION "PokeDB Bank 2", SRAM
+; The PC boxes will not fit into one SRAM bank,
+; so they use multiple SECTIONs
+DEF box_n = 0
+MACRO boxes
+	rept \1
+		DEF box_n += 1
+	sBox{d:box_n}:: box sBox{d:box_n}
+	endr
+ENDM
 
-sNewBoxMons2:: pokedb sNewBoxMons2, MONDB_ENTRIES
+DEF BOXES_SRAM_LENGTH EQU (BOX_LENGTH + 2 + MONS_PER_BOX) * BOXES_PER_SRAM_BANK
+
+SECTION "Boxes 1-7", SRAM
+
+; sBox1 - sBox7
+	boxes BOXES_PER_SRAM_BANK
+; slot maps for sBox1 - sBox7 (see box_buffer)
+sBoxSlotMaps1:: ds MONS_PER_BOX * BOXES_PER_SRAM_BANK
+
+SECTION "Box Staging 3 (Part 3)", SRAM
+
+DEF BOX_STAGING_3_PART_3 EQU $2000 - BOXES_SRAM_LENGTH
+sBoxStaging3Part3:: ds BOX_STAGING_3_PART_3
+sBoxStaging3Part3End::
+
+SECTION "Boxes 8-14", SRAM
+
+; sBox8 - sBox14
+	boxes BOXES_PER_SRAM_BANK
+; slot maps for sBox8 - sBox14 (see box_buffer)
+sBoxSlotMaps8:: ds MONS_PER_BOX * BOXES_PER_SRAM_BANK
+
+SECTION "Box Staging 3 (Part 4)", SRAM
+
+; the rest of sBoxStaging3
+DEF BOX_STAGING_3_PART_4 EQU BOXBUF_LENGTH - BOX_STAGING_3_PART_1 - BOX_STAGING_3_PART_2 - BOX_STAGING_3_PART_3
+	assert BOX_STAGING_3_PART_4 > 0 && BOX_STAGING_3_PART_4 <= $2000 - BOXES_SRAM_LENGTH
+sBoxStaging3Part4:: ds BOX_STAGING_3_PART_4
+sBoxStaging3Part4End::
+
+SECTION "Box Staging 1 (Part 4)", SRAM
+
+; the rest of sBoxStaging1
+DEF BOX_STAGING_1_PART_4 EQU BOXBUF_LENGTH - BOX_STAGING_1_PART_1 - BOX_STAGING_1_PART_2 - BOX_STAGING_1_PART_3
+	assert BOX_STAGING_1_PART_4 > 0 && BOX_STAGING_3_PART_4 + BOX_STAGING_1_PART_4 <= $2000 - BOXES_SRAM_LENGTH
+sBoxStaging1Part4:: ds BOX_STAGING_1_PART_4
+sBoxStaging1Part4End::
+
+; All 14 boxes fit within 2 SRAM banks
+	assert box_n == NUM_BOXES, \
+		"boxes: Expected {d:NUM_BOXES} total boxes, got {d:box_n}"
 
 
 SECTION "SRAM Mobile 1", SRAM

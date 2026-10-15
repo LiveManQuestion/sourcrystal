@@ -279,6 +279,7 @@ MahoganyPokecenter1F_Blocks:
 EcruteakPokecenter1F_Blocks:
 BlackthornPokecenter1F_Blocks:
 CinnabarPokecenter1F_Blocks:
+UnusedMap_Blocks:
 CeruleanPokecenter1F_Blocks:
 Route10Pokecenter1F_Blocks:
 AzaleaPokecenter1F_Blocks:

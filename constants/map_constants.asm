@@ -172,14 +172,17 @@ ENDM
 
 	newgroup BLACKTHORN                                           ;  5
 	map_const BLACKTHORN_GYM_1F,                            5,  9 ;  1
-	map_const BLACKTHORN_DRAGON_SPEECH_HOUSE,               4,  4 ;  2
-	map_const BLACKTHORN_EMYS_HOUSE,                        4,  4 ;  3
-	map_const BLACKTHORN_MART,                              6,  4 ;  4
-	map_const BLACKTHORN_POKECENTER_1F,                     5,  4 ;  5
-	map_const MOVE_DELETERS_HOUSE,                          4,  4 ;  6
-	map_const ROUTE_45,                                    10, 45 ;  7
-	map_const ROUTE_46,                                    10, 18 ;  8
-	map_const BLACKTHORN_CITY,                             20, 18 ;  9
+	; Keeps the later map IDs equal to vanilla's: Pokemon Stadium 2 only
+	; accepts saves made in its own list of Pokemon Center map IDs.
+	map_const UNUSED_BLACKTHORN_MAP,                        1,  1 ;  2
+	map_const BLACKTHORN_DRAGON_SPEECH_HOUSE,               4,  4 ;  3
+	map_const BLACKTHORN_EMYS_HOUSE,                        4,  4 ;  4
+	map_const BLACKTHORN_MART,                              6,  4 ;  5
+	map_const BLACKTHORN_POKECENTER_1F,                     5,  4 ;  6
+	map_const MOVE_DELETERS_HOUSE,                          4,  4 ;  7
+	map_const ROUTE_45,                                    10, 45 ;  8
+	map_const ROUTE_46,                                    10, 18 ;  9
+	map_const BLACKTHORN_CITY,                             20, 18 ; 10
 	endgroup
 
 	newgroup CINNABAR                                             ;  6
@@ -204,17 +207,20 @@ ENDM
 	map_const CERULEAN_POLICE_STATION,                      4,  4 ;  2
 	map_const CERULEAN_TRADE_SPEECH_HOUSE,                  4,  4 ;  3
 	map_const CERULEAN_POKECENTER_1F,                       5,  4 ;  4
-	map_const CERULEAN_GYM,                                 5,  8 ;  5
-	map_const CERULEAN_MART,                                6,  4 ;  6
-	map_const ROUTE_10_POKECENTER_1F,                       5,  4 ;  7
-	map_const POWER_PLANT,                                 10,  9 ;  8
-	map_const BILLS_HOUSE,                                  4,  4 ;  9
-	map_const ROUTE_4,                                     44,  9 ; 10
-	map_const ROUTE_9,                                     30,  9 ; 11
-	map_const ROUTE_10_NORTH,                              10, 15 ; 12
-	map_const ROUTE_24,                                    11,  9 ; 13
-	map_const ROUTE_25,                                    40,  9 ; 14
-	map_const CERULEAN_CITY,                               20, 18 ; 15
+	; Keeps the later map IDs equal to vanilla's (see UNUSED_BLACKTHORN_MAP).
+	map_const UNUSED_CERULEAN_MAP_1,                        1,  1 ;  5
+	map_const CERULEAN_GYM,                                 5,  8 ;  6
+	map_const CERULEAN_MART,                                6,  4 ;  7
+	map_const ROUTE_10_POKECENTER_1F,                       5,  4 ;  8
+	map_const UNUSED_CERULEAN_MAP_2,                        1,  1 ;  9
+	map_const POWER_PLANT,                                 10,  9 ; 10
+	map_const BILLS_HOUSE,                                  4,  4 ; 11
+	map_const ROUTE_4,                                     44,  9 ; 12
+	map_const ROUTE_9,                                     30,  9 ; 13
+	map_const ROUTE_10_NORTH,                              10, 15 ; 14
+	map_const ROUTE_24,                                    11,  9 ; 15
+	map_const ROUTE_25,                                    40,  9 ; 16
+	map_const CERULEAN_CITY,                               20, 18 ; 17
 	endgroup
 
 	newgroup AZALEA                                               ;  8

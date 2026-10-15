@@ -2153,16 +2153,22 @@ BillsPC_Moves:
 	prompt
 
 BillsPC_GetStorageSpace:
-; Forces game save until we have at least a free pokedb entries left.
-; Returns nz if we abort the prompt with insufficient storage space left.
-	ld b, a
+; Forces game save until box b can be changed (see bills_pc.asm).
+; Returns nz if we abort the prompt.
+	push de
+	ld d, 0
+	call BillsPC_GetStorageSpaceForBoxes
+	pop de
+	ret
+
+BillsPC_GetStorageSpaceForBoxes:
+; Forces game save until boxes b and d (bit 7 of d ignored) can be changed.
+; Returns nz if we abort the prompt.
 .loop
-	ld a, b
-	push bc
-	call EnsureStorageSpace
-	pop bc
+	call CanWriteStorageBoxes
 	ret z
 
+	push de
 	push bc
 	ld hl, BillsPC_MustSaveToContinue
 	call MenuTextbox
@@ -2178,23 +2184,17 @@ BillsPC_GetStorageSpace:
 	call CloseWindow
 	pop af
 	pop bc
+	pop de
 	jr nc, .loop
 	or 1
 	ret
 
 BillsPC_GiveItem:
-	; If we're dealing with a Box mon, we must have at least 1 free pokedb
-	; entry.
+	; If we're dealing with a Box mon, we must be able to change the box.
 	call BillsPC_GetCursorSlot
-	ld a, b
-	and a
-	jr z, .entries_not_full
-
-	ld a, 1
 	call BillsPC_GetStorageSpace
 	ret nz
 
-.entries_not_full
 	call BillsPC_PrepareTransistion
 	newfarcall PCGiveItem
 	; fallthrough
@@ -2306,18 +2306,10 @@ BillsPC_MoveItem:
 	jr .got_cursor_item
 
 .not_on_pack
-	; Removing items might reallocate a storage mon, so check that we have space
-	; for that in the database.
-	and b
-	jr z, .entries_not_full
-
-	ld a, 1
-	push bc
+	; Removing items changes the mon, so we must be able to change its box.
 	call BillsPC_GetStorageSpace
-	pop bc
 	ret nz
 
-.entries_not_full
 	; Mark current cursor slot for movement.
 	call GetStorageBoxMon
 	ld a, [wBufferMonItem]
@@ -2382,8 +2374,7 @@ BillsPC_LoadCursorItemIcon:
 	jp BillsPC_SafeGet2bpp
 
 BillsPC_BagItem:
-	; If we're dealing with a Box mon, we must have at least 1 free pokedb
-	; entry.
+	; If we're dealing with a Box mon, we must be able to change the box.
 	ld a, [wBufferMonItem]
 	ld b, a
 	push bc
@@ -2406,17 +2397,9 @@ BillsPC_PrintText:
 
 _BillsPC_BagItem:
 ; Returns z on success.
-	ld a, b
-	and a
-	jr z, .entries_not_full
-
-	ld a, 1
-	push bc
 	call BillsPC_GetStorageSpace
-	pop bc
 	ret nz
 
-.entries_not_full
 	call GetStorageBoxMon
 	call .do_it
 	ld a, [wBufferMonItem]
@@ -2660,6 +2643,10 @@ BillsPC_CanReleaseMon:
 	ret
 
 BillsPC_ReleaseAll:
+	; We must be able to change the box.
+	call BillsPC_GetCursorSlot
+	call BillsPC_GetStorageSpace
+	ret nz
 	call BillsPC_HideModeIcon
 
 	; Double confirmation.
@@ -2760,6 +2747,10 @@ BillsPC_ReleaseAll:
 	prompt
 
 BillsPC_Release:
+	; If we're dealing with a Box mon, we must be able to change the box.
+	call BillsPC_GetCursorSlot
+	call BillsPC_GetStorageSpace
+	ret nz
 	call BillsPC_GetCursorSlot
 	call BillsPC_CanReleaseMon
 	ld hl, BillsPC_LastPartyMon
@@ -2780,7 +2771,7 @@ BillsPC_Release:
 	call NoYesBox
 	jr c, .done
 
-	; Copy mon nick to a string buffer, since SetStorageBoxPointer might
+	; Copy mon nick to a string buffer, since RemoveStorageBoxMon might
 	; mangle wBufferMon.
 	ld hl, wBufferMonNickname
 	ld de, wStringBuffer1
@@ -2980,27 +2971,21 @@ BillsPC_SwapStorage:
 	call GetStorageBoxMon
 	jp z, .abort
 
-	; If we're moving to a Box, we might need to verify that we have the db
-	; space to do so. Box source has already been verified, so box->party is
-	; always safe. This also does the right thing if we're moving from the bag,
-	; since it shares box identifier with party.
+	; If we're moving to a Box, we must be able to change it and the source
+	; box. Box source has already been verified, so box->party is always safe.
+	; This also does the right thing if we're moving from the bag, since it
+	; shares box identifier with party.
 	ld a, b
 	and a
-	jr z, .entries_not_full
-	ld a, d
-	and $7f
-	ld a, 1
-	jr z, .got_space_req
-	inc a
-.got_space_req
-	call BillsPC_GetStorageSpace
+	jr z, .boxes_writable
+	call BillsPC_GetStorageSpaceForBoxes
 	jp nz, .abort
 	pop bc
 	pop de
 	push de
 	push bc
 	; fallthrough
-.entries_not_full
+.boxes_writable
 	; Don't allow Eggs to hold items.
 	ld a, [wBufferMonAltSpecies]
 	cp EGG

@@ -112,40 +112,6 @@ DEF MON_SAT                rw
 DEF MON_SDF                rw
 DEF PARTYMON_STRUCT_LENGTH EQU _RS
 
-; savemon_struct members (see macros/wram.asm)
-rsreset
-DEF SAVEMON_SPECIES            rb
-DEF SAVEMON_ITEM               rb
-DEF SAVEMON_MOVES              rb NUM_MOVES
-DEF SAVEMON_ID                 rw
-DEF SAVEMON_EXP                rb 3
-DEF SAVEMON_STAT_EXP           rw NUM_EXP_STATS
-rsset SAVEMON_STAT_EXP
-DEF SAVEMON_HP_EXP             rw
-DEF SAVEMON_ATK_EXP            rw
-DEF SAVEMON_DEF_EXP            rw
-DEF SAVEMON_SPD_EXP            rw
-DEF SAVEMON_SPC_EXP            rw
-DEF SAVEMON_DVS                rw
-; savemon_struct is identical to party_struct before this point
-DEF SAVEMON_PP_UPS             rb
-; savemon_struct is shifted from party_struct beyond this point
-DEF SAVEMON_HAPPINESS          rb
-DEF SAVEMON_PKRUS              rb
-DEF SAVEMON_CAUGHTDATA         rw
-rsset SAVEMON_CAUGHTDATA
-DEF SAVEMON_CAUGHTTIME         rb
-DEF SAVEMON_CAUGHTGENDER       rb
-rsset SAVEMON_CAUGHTDATA
-DEF SAVEMON_CAUGHTLEVEL        rb
-DEF SAVEMON_CAUGHTLOCATION     rb
-DEF SAVEMON_LEVEL              rb
-; savemon_struct is different from party_struct beyond this point
-DEF SAVEMON_ALTSPECIES         rb
-DEF SAVEMON_NICKNAME           rb MON_NAME_LENGTH - 1
-DEF SAVEMON_OT                 rb PLAYER_NAME_LENGTH - 1
-DEF SAVEMON_STRUCT_LENGTH EQU _RS
-
 DEF NICKNAMED_MON_STRUCT_LENGTH EQU PARTYMON_STRUCT_LENGTH + MON_NAME_LENGTH
 DEF REDMON_STRUCT_LENGTH EQU 44
 
@@ -171,9 +137,40 @@ DEF PARTY_LENGTH EQU 6
 ; boxes
 DEF MONS_PER_BOX EQU 20
 
-DEF MONDB_ENTRIES   EQU 174
-DEF MIN_MONDB_SLACK EQU 10
-DEF NUM_BOXES       EQU (MONDB_ENTRIES * 2 - MIN_MONDB_SLACK) / MONS_PER_BOX ; 16
+DEF NUM_BOXES EQU 14
+DEF BOXES_PER_SRAM_BANK EQU 7
+
+; box members (see the box macro in macros/ram.asm)
+rsreset
+DEF BOX_COUNT     rb
+DEF BOX_SPECIES   rb MONS_PER_BOX + 1
+DEF BOX_MONS      rb BOXMON_STRUCT_LENGTH * MONS_PER_BOX
+DEF BOX_OTS       rb NAME_LENGTH * MONS_PER_BOX
+DEF BOX_NICKNAMES rb MON_NAME_LENGTH * MONS_PER_BOX
+DEF BOX_LENGTH EQU _RS ; without the 2 bytes of padding
+
+; Boxes changed since the last save are kept in WRAM until the game is saved
+; (see engine/pc/bills_pc.asm).
+DEF NUM_BOX_BUFFERS EQU 3
+
+; sStagedBoxes: bit n for each staged box buffer, plus:
+DEF STAGED_BOXES_NEW_GAME_F EQU 7 ; boxes that aren't staged are empty
+	assert NUM_BOX_BUFFERS <= STAGED_BOXES_NEW_GAME_F
+
+; box_buffer members (see macros/ram.asm)
+rsreset
+DEF BOXBUF_NUMBER  rb
+DEF BOXBUF_SLOTMAP rb MONS_PER_BOX
+DEF BOXBUF_BOX     rb BOX_LENGTH
+DEF BOXBUF_LENGTH EQU _RS
+
+; box_entry: one box mon, in the order of the box macro's arrays
+rsreset
+DEF BOXENTRY_SPECIES  rb
+DEF BOXENTRY_MON      rb BOXMON_STRUCT_LENGTH
+DEF BOXENTRY_OT       rb NAME_LENGTH
+DEF BOXENTRY_NICKNAME rb MON_NAME_LENGTH
+DEF BOXENTRY_LENGTH EQU _RS
 
 ; hall of fame
 ; hof_mon: species, id, dvs, level, nicknames

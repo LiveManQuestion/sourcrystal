@@ -136,3 +136,31 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   `battle_compare.py`; `battle.py` logs switches; `battle_matrix.sh` takes
   `SEEDS` and `TRAINERS`; `ai_scenarios.py` restarts itself until every case
   has run and ends with `RESULT: ALL OK`.
+- **2026-10-15**: Pokémon Stadium 2 compatibility, tested in mupen64plus with
+  Transfer Pak emulation (copies of saves only). The cartridge is recognized
+  (`tools/stadium` checksums) and party/bag/money/Pokédex are at vanilla
+  offsets. Stadium reads SRAM bank 1 `$A000-$AD1F` at the Game Pak check and
+  banks 2-3 (vanilla's 14 boxes) plus bank 0 mail in the Lab; its Lab needs a
+  save made on its list of map IDs (US ROM `0x97f1c`: the vanilla Pokémon
+  Centers, `POKECENTER_2F`, `PLAYERS_HOUSE_2F`, the PokéCom admin office).
+  Added `UNUSED_BLACKTHORN_MAP` and `UNUSED_CERULEAN_MAP_1`/`_2` (sharing
+  `maps/UnusedMap.asm`) so Blackthorn's and Route 10's Pokémon Centers have
+  vanilla IDs again, with save migration 03 shifting saved map IDs. Checked:
+  migration in PyBoy (both save copies, checksums, version 3) and Stadium's Lab
+  PC opening for a Blackthorn Pokémon Center save. Mount Moon and Safari Zone
+  Gate Pokémon Centers can't be added to Stadium's list. Also moved inline
+  comments in `smogon.asm` and `smogon_switch.asm` above their code (STYLE.md).
+- **2026-10-15**: PC boxes back in vanilla's save layout (14 boxes instead of
+  the 16-box PokeDB) so Stadium 2 reads and changes them; the box UI is
+  unchanged. Slot maps keep mons in any slot. Reset protection: changed boxes
+  stay in 3 WRAM bank 2 buffers until saving; the UI's "save to continue"
+  prompt covers a 4th box. Saving stages them in spare SRAM (not `sScratch`:
+  booting changes its first bytes), so `WriteBackupSave` finishes an
+  interrupted save. The saved copy is `sBox1 - sBox14` like vanilla (Stadium
+  writes those, not `sBox`); `sBox` mirrors the current box. Box names in
+  `wBoxNames`, themes in saved WRAM padding, `wPlayerCaught` moved to vanilla's
+  unused bytes after `wCurBox`. Migration 03 empties old saves' boxes (not
+  converted, as agreed). Checked: `storage_test.py` (4 seeds × 400 random
+  operations, resets, interrupted saves, outside changes, new game), the PC UI
+  driven through RAM (save prompt, moves), and Stadium 2 showing the boxes and
+  re-ordering them, then loading that save (no duplicates).
