@@ -198,6 +198,9 @@ hVBlankHookFunction::
 			; $c9 [ret]
 	dw
 
-	ds 5
+; TRUE when running in Pokémon Stadium 2's GB Tower (set by _Start)
+hGBTower:: db
+
+	ds 4
 
 ENDSECTION

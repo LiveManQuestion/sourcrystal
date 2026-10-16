@@ -199,3 +199,10 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   it. Bill's PC called `SafeHDMATransfer` directly; `BillsPC_Get2bpp` now
   skips GDMA under `_GBTOWER` too. Only the GBTower ROM changed. Checked
   in mupen64plus's GB Tower: intro, title and party icons correct.
+- **2026-10-16**: GB Tower detection at runtime. Stadium 2's GB Tower starts
+  games with b = $11 and l = $00 (read from its SRAM copy in a mupen64plus
+  savestate with a test ROM); `_Start` sets `hGBTower` (a spare HRAM byte, so
+  no other HRAM address moved), which replaces the `_GBTOWER` checks in
+  `CheckGDMA`, `BillsPC_Get2bpp` and the battle start delay. `sourcrystal.gbc`
+  now works in the GB Tower: intro and party icons correct in mupen64plus;
+  PyBoy keeps `hGBTower` off; `cmp_data.py` ALL IDENTICAL.

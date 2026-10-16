@@ -192,11 +192,10 @@ CheckGDMA:
 	ldh a, [hCGB]
 	and a
 	ret z
-IF DEF(_GBTOWER)
-	xor a 
-	ret
-ELSE
-ENDC
+	; Stadium 2's GB Tower doesn't emulate GDMA.
+	ldh a, [hGBTower]
+	and a
+	ret nz
 
 	; The 4 least significant bits must be zero.
 	ld a, e

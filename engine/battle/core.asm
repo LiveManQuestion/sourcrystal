@@ -8330,11 +8330,13 @@ BattleIntro:
 	ld hl, rLCDC
 	res rLCDC_WINDOW_TILEMAP, [hl] ; select vBGMap0/vBGMap2
 
-IF DEF(_GBTOWER)
-ELSE
+	; artificial delay for GDMA use (not used in the GB Tower)
+	ldh a, [hGBTower]
+	and a
+	jr nz, .no_gdma_delay
 	ld c, 28
-	call DelayFrames        ;artifical delay for GMDA use
-ENDC
+	call DelayFrames
+.no_gdma_delay
 
 	call InitBattleDisplay
 	call BattleStartMessage

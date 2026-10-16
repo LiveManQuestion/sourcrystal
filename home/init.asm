@@ -19,6 +19,25 @@ Reset::
 	jr Init
 
 _Start::
+; Stadium 2's GB Tower starts games with b = $11 and l = $00. A Game Boy
+; Color starts CGB games with b = $00 and l = $0D, a GBA with b = $01.
+	ld d, a
+IF DEF(_GBTOWER)
+	ld a, TRUE
+ELSE
+	ld a, b
+	cp $11
+	ld a, FALSE
+	jr nz, .got_gb_tower
+	or l
+	ld a, FALSE
+	jr nz, .got_gb_tower
+	inc a ; TRUE
+.got_gb_tower
+ENDC
+	ldh [hGBTower], a
+	ld a, d
+
 	cp $11
 	jr z, .cgb
 	xor a ; FALSE
@@ -80,10 +99,14 @@ Init::
 	push af
 	ldh a, [hSystemBooted]
 	push af
+	ldh a, [hGBTower]
+	push af
 	xor a
 	ld hl, STARTOF(HRAM)
 	ld bc, SIZEOF(HRAM)
 	call ByteFill
+	pop af
+	ldh [hGBTower], a
 	pop af
 	ldh [hSystemBooted], a
 	pop af

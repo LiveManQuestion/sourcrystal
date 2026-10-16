@@ -35,13 +35,18 @@ tracing what it reads and writes on the Game Boy cartridge (2026-10-15).
 
 ## GB Tower
 
-Use `sourcrystal_GBTower.gbc` (built by `make all`, `-D _GBTOWER`) in the GB
-Tower. Stadium's Game Boy emulator doesn't handle GDMA (`SafeHDMATransfer`,
-which waits for HBlank on `rSTAT`), so with `sourcrystal.gbc` the intro is
-blank, party icons are garbled and NPCs turn into other sprites. The
-GBTower build skips GDMA (`CheckGDMA`, `BillsPC_Get2bpp`) and the battle
-start delay that it needed. Tested in mupen64plus: intro, title, party menu.
-Same glitches in ares, so this is Stadium, not the emulator.
+Stadium's Game Boy emulator doesn't handle GDMA (`SafeHDMATransfer`, which
+waits for HBlank on `rSTAT`): with GDMA the intro is blank, party icons are
+garbled and NPCs turn into other sprites (in ares too, so it's Stadium, not
+the emulator). `_Start` detects the GB Tower from the registers it starts
+games with (b = $11, l = $00; a Game Boy Color has b = $00, l = $0D, a GBA
+b = $01) and sets `hGBTower`, which turns off GDMA (`CheckGDMA`,
+`BillsPC_Get2bpp`) and the battle start delay that GDMA needed. So every ROM
+works in the GB Tower, and handhelds keep GDMA. `sourcrystal_GBTower.gbc`
+(`-D _GBTOWER`) forces `hGBTower` on. Found by storing the boot registers in
+SRAM (bank 0 `$BF20`) and reading Stadium's SRAM copy from a mupen64plus
+savestate (N64 `0x1B74A0` = bank 0). Tested in mupen64plus: intro, title,
+party menu with `sourcrystal.gbc`; PyBoy (CGB) leaves `hGBTower` off.
 
 ares (148) runs the GB Tower at full speed. It reads the Game Boy save from
 `<ROM name>.ram` and the clock from `<ROM name>.rtc` next to the ROM (not
