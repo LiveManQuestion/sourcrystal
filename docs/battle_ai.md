@@ -39,8 +39,9 @@ How the trainer AI is organized (see also `CLAUDE.md`).
   of its attacks' damage and PP (`ATTACKS_*`, `AISmogon_AddAttack`), and
   `AISmogon_TurnsWithPP` uses the strongest until its PP runs out, then the
   next; a side that can't get through with all its PP can't KO. The AI's own
-  moves use their current PP, the player's revealed moves their base PP, and
-  its expected attacks `SMOGON_UNKNOWN_PP`. For speed,
+  moves use their current PP; the player's moves (revealed attacks, recovery
+  moves, and its expected attacks at base 10) assume `SMOGON_PLAYER_PP_UPS`
+  PP Ups (3), which a human opponent couldn't see. For speed,
   `AISmogon_SetupDamage` precomputes the formula without the power,
   `AISmogon_FillTypeMatchups` fills each attack type's effectiveness from a
   copy of the type chart in the AI bank (`data/types/type_matchups_table.asm`

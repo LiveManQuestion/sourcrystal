@@ -471,6 +471,7 @@ AISmogon_ScoreMatchup:
 	jr z, .player_moves_end
 	push af
 	call AISmogon_BasePP
+	call AISmogon_PlayerMaxPP
 	ld b, a
 	pop af
 	ld hl, wBattleMonDVs
@@ -697,8 +698,8 @@ AISmogon_ApplyHealing:
 ; half the max HP per use, Rest a quarter (it costs sleeping turns). The AI
 ; knows its own Pokemon's moves, item and PP; the player's Pokemon heals
 ; with the recovery moves it has revealed, or Rest if it usually has it,
-; with their base PP, and is assumed to hold Leftovers like most GSC OU
-; Pokemon.
+; with SMOGON_PLAYER_PP_UPS PP Ups, and is assumed to hold Leftovers like
+; most GSC OU Pokemon.
 	ld a, [wBattleMonHP]
 	ld [wSmogonAIPlayerHeal + HEAL_HP], a
 	ld a, [wBattleMonHP + 1]
@@ -777,6 +778,7 @@ AISmogon_ApplyHealing:
 	ld a, [hl]
 	call .Quarter
 .got_player_heal
+	call AISmogon_PlayerMaxPP
 	ld hl, wSmogonAIPlayerHeal
 	call .Store
 	ld hl, wSmogonAIPower
@@ -1210,6 +1212,30 @@ AISmogon_BasePP:
 	ld a, BANK(Moves)
 	call GetFarByte
 	pop hl
+	pop bc
+	ret
+
+AISmogon_PlayerMaxPP:
+; Return the PP of a move of the player's with base PP a, assuming
+; SMOGON_PLAYER_PP_UPS PP Ups: each adds a fifth of the base PP, at most 7.
+; Keeps bc.
+	push bc
+	ld b, a
+	ld c, -1
+.divide_by_5
+	inc c
+	sub 5
+	jr nc, .divide_by_5
+	ld a, c
+	cp 7
+	jr c, .got_boost
+	ld a, 7
+.got_boost
+	ld c, a
+	ld a, b
+	REPT SMOGON_PLAYER_PP_UPS
+	add c
+	ENDR
 	pop bc
 	ret
 

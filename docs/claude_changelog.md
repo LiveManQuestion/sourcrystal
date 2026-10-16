@@ -387,3 +387,12 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   no crashes; switch decisions take at most 8 frames (7 before).
   `ai_scenarios.py` ALL OK, `cmp_data.py` ALL IDENTICAL, 9-trainer battle
   test no crashes (AI wins 1 -> 3 of 54, timeouts 2 -> 5).
+- **2026-10-16**: PP Ups in the Smogon AI's estimate of the player's PP.
+  The player's revealed attacks, recovery moves and unrevealed expected
+  attacks (base 10) now assume `SMOGON_PLAYER_PP_UPS` (3) PP Ups
+  (`AISmogon_PlayerMaxPP`: each adds a fifth of the base PP, at most 7), since
+  a human opponent can't see them and competitive sets max them. The user's
+  own save party has none, so lower the constant if that's typical. Example:
+  a revealed Surf counts 24 PP, so Vaporeon now gets through Blissey's
+  Softboiled (104) instead of a stalemate. `ai_scenarios.py` ALL OK,
+  `cmp_data.py` ALL IDENTICAL.
