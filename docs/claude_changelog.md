@@ -468,3 +468,15 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   The patterns: a less accurate attack for a KO, switching out with a KO
   available (Tauros), Blissey healing instead of finishing a weakened
   Cloyster, and Rest users staying in asleep without Sleep Talk.
+- **2026-10-16**: `AI_Smogon_SureKO`: of the attacks whose lowest roll KOs
+  the player, the most accurate is greatly encouraged and the others
+  discouraged (a priority attack first when the player is faster), from the
+  engine judge's finding that the AI used Fire Blast on a 2 HP Steelix and
+  Thunder over Earthquake for a KO (AI_Aggressive keeps the highest roll and
+  ignores accuracy). The first version read the stale `wCriticalHit` flag
+  through `AIDamageCalc` (double damage after any critical hit) and cost
+  wins: Jasmine 2 10/48 -> 3/48 (z -2.1). With it cleared, 11
+  `ai_scenarios.py` cases pass (one fails without the fix), the rule changes
+  the AI's pick in 21 of 48 battles, and over 576 smart-player battles AI
+  wins went 258 -> 253 (z -0.3, noise). About 2 frames per turn
+  (`ai_profile.py`).

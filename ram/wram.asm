@@ -634,6 +634,8 @@ wSmogonAIPlayerHeal::  ds HEAL_BLOCK_LENGTH
 ; each attack type's effectiveness against the defender (EFFECTIVE = 1x),
 ; filled by AISmogon_FillTypeMatchups
 wSmogonAITypeEffectiveness:: ds TYPES_END
+; each move's rank as a sure KO (AI_Smogon_SureKO)
+wSmogonAIKORanks:: ds NUM_MOVES
 
 wPlayerFutureSightDamage:: dw
 wEnemyFutureSightDamage:: dw

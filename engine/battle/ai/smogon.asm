@@ -11,8 +11,8 @@ AI_Smogon:
 ;   that can't Rest it off (especially into Spikes), Pursuit fleeing Ghosts
 ;   and Psychics, put up the screen that blocks the player's attacks, Baton
 ;   Pass boosts out of trouble, Encore a setup or status move, Heal Bell
-;   a team weighed down by status, and Protect to stall out the player's
-;   residual damage.
+;   a team weighed down by status, Protect to stall out the player's
+;   residual damage, and take a sure KO with the surest attack.
 ; - Know the battle mechanics: Thunder never misses in rain, Defense Curl
 ;   doubles Rollout, attacks miss a Pokemon in the air or underground, Endure
 ;   doesn't stop residual damage, and Morning Sun, Synthesis and Moonlight
@@ -34,12 +34,12 @@ AI_Smogon:
 	ld b, NUM_MOVES + 1
 .checkmove
 	dec b
-	ret z
+	jr z, .done
 
 	ld a, [de]
 	inc de
 	and a
-	ret z
+	jr z, .done
 
 	push de
 	push bc
@@ -81,6 +81,9 @@ AI_Smogon:
 	pop de
 	inc hl
 	jr .checkmove
+
+.done
+	jp AI_Smogon_SureKO
 
 AI_Smogon_EffectHandlers:
 	dbw EFFECT_SLEEP,        AI_Smogon_Sleep
@@ -322,6 +325,200 @@ AI_Smogon_Thunder:
 	call AISmogon_IsResisted
 	ret c
 	jp AISmogon_Encourage
+
+AI_Smogon_SureKO:
+; Take a sure KO with the surest attack: of the attacks whose lowest damage
+; roll KOs the player, encourage the most accurate one (a priority attack
+; first when the player is faster) and discourage the rest. The damage
+; layers (AI_Aggressive, AI_Risky) only look at the highest roll and ignore
+; accuracy, so they used Fire Blast over Ice Beam on a Steelix with 2 HP.
+; A Substitute would take the hit instead.
+	ld a, [wPlayerSubStatus4]
+	bit SUBSTATUS_SUBSTITUTE, a
+	ret nz
+
+; wCriticalHit is still set if the last attack was a critical hit, and
+; AIDamageCalc would double the damage: count a regular hit.
+	ld a, [wCriticalHit]
+	push af
+	xor a
+	ld [wCriticalHit], a
+	ld c, 0
+.rank_loop
+	push bc
+	call .Rank
+	pop bc
+	ld hl, wSmogonAIKORanks
+	ld b, 0
+	add hl, bc
+	ld [hl], a
+	inc c
+	ld a, c
+	cp NUM_MOVES
+	jr c, .rank_loop
+	pop af
+	ld [wCriticalHit], a
+
+; b = the best rank
+	ld hl, wSmogonAIKORanks
+	ld bc, NUM_MOVES
+.best_loop
+	ld a, [hli]
+	cp b
+	jr c, .not_better
+	ld b, a
+.not_better
+	dec c
+	jr nz, .best_loop
+	ld a, b
+	and a
+	ret z
+
+	ld hl, wEnemyAIMoveScores
+	ld de, wSmogonAIKORanks
+	ld c, NUM_MOVES
+.score_loop
+	ld a, [de]
+	inc de
+	and a
+	jr z, .next
+	cp b
+	jr z, .surest
+	inc [hl]
+	inc [hl]
+	jr .next
+.surest
+	call AISmogon_GreatlyEncourage
+.next
+	inc hl
+	dec c
+	jr nz, .score_loop
+	ret
+
+.not_ko
+	xor a
+	ret
+
+.Rank:
+; Return in a the rank of move c as a sure KO: 0 if it isn't one, else
+; its accuracy / 4 + 1 (at most 64), plus $80 for a priority attack when
+; the player is faster.
+	ld b, 0
+	ld hl, wEnemyAIMoveScores
+	add hl, bc
+	ld a, [hl]
+	cp 80 ; disabled or out of PP
+	jr nc, .not_ko
+	ld hl, wEnemyMonMoves
+	add hl, bc
+	ld a, [hl]
+	and a
+	jr z, .not_ko
+	call AIGetEnemyMove
+	ld a, [wEnemyMoveStruct + MOVE_POWER]
+	and a
+	jr z, .not_ko
+	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
+	ld hl, .NotSureKOEffects
+	ld de, 1
+	call IsInArray
+	jr c, .not_ko
+	call AISmogon_MissesHiddenPlayer
+	jr c, .not_ko
+
+; The lowest roll is 217/255 (85%) of the highest: count 27/32 of it.
+	call AIDamageCalc
+	ld a, [wCurDamage]
+	ld h, a
+	ld d, a
+	ld a, [wCurDamage + 1]
+	ld l, a
+	ld e, a
+rept 3
+	srl d
+	rr e
+endr
+	call .Subtract
+rept 2
+	srl d
+	rr e
+endr
+	call .Subtract
+	ld a, [wBattleMonHP + 1]
+	ld e, a
+	ld a, [wBattleMonHP]
+	ld d, a
+	ld a, l
+	sub e
+	ld a, h
+	sbc d
+	jr c, .not_ko
+
+; Lock-On makes the next attack hit, and so does Thunder in rain.
+	ld a, [wEnemySubStatus5]
+	bit SUBSTATUS_LOCK_ON, a
+	ld a, 100 percent
+	jr nz, .got_accuracy
+	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
+	cp EFFECT_THUNDER
+	jr nz, .accuracy
+	ld a, [wBattleWeather]
+	cp WEATHER_RAIN
+	ld a, 100 percent
+	jr z, .got_accuracy
+.accuracy
+	ld a, [wEnemyMoveStruct + MOVE_ACC]
+.got_accuracy
+	srl a
+	srl a
+	inc a
+	ld b, a
+	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
+	cp EFFECT_PRIORITY_HIT
+	jr nz, .no_priority
+	call AICompareSpeed
+	jr c, .no_priority
+	set 7, b
+.no_priority
+	ld a, b
+	ret
+
+.Subtract:
+; hl -= de
+	ld a, l
+	sub e
+	ld l, a
+	ld a, h
+	sbc d
+	ld h, a
+	ret
+
+.NotSureKOEffects:
+; Attacks that need a charging or recharge turn, lock the user in, or
+; whose damage is random or depends on the player's state. Explosion is
+; AI_Smogon_Explosion's call.
+	db EFFECT_SELFDESTRUCT
+	db EFFECT_OHKO
+	db EFFECT_HYPER_BEAM
+	db EFFECT_RAZOR_WIND
+	db EFFECT_SKY_ATTACK
+	db EFFECT_SKULL_BASH
+	db EFFECT_SOLARBEAM
+	db EFFECT_FLY
+	db EFFECT_RAMPAGE
+	db EFFECT_ROLLOUT
+	db EFFECT_BIDE
+	db EFFECT_DREAM_EATER
+	db EFFECT_SNORE
+	db EFFECT_FALSE_SWIPE
+	db EFFECT_FUTURE_SIGHT
+	db EFFECT_PSYWAVE
+	db EFFECT_PRESENT
+	db EFFECT_MAGNITUDE
+	db EFFECT_COUNTER
+	db EFFECT_MIRROR_COAT
+	db EFFECT_SUPER_FANG
+	db -1 ; end
 
 AI_Smogon_Rollout:
 ; Defense Curl doubles Rollout's power.

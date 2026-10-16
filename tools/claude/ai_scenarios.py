@@ -78,7 +78,7 @@ S = lambda *bits: sum(1 << C[b] for b in bits)
 base = dict(weather=0, ptypes=(C['FIRE'], C['FIRE']), etypes=(C['NORMAL'], C['NORMAL']),
             espd=200, pspd=100, sub1=0, sub2=0, sub4=0, sub5=0, psub3=0, psub5=0,
             estatus=0, toxic=0, wrap=0, perish=0, hp=(40, 100), tod=C['DAY_F'], hours=12,
-            pspecies=C['MAGIKARP'], php=(100, 100), pstatus=0, patk=7, psub4=0, pused=(), plast=0)
+            pspecies=C['MAGIKARP'], php=(100, 100), pstatus=0, patk=7, psub4=0, pused=(), plast=0, crit=0)
 F, D = C['FIRE'], C['GROUND']
 scen = [
     ('thunder rain neutral', M('THUNDER'), dict(weather=C['WEATHER_RAIN']), [18]),
@@ -142,6 +142,28 @@ scen = [
     ('t-wave for slow teammate', M('THUNDER_WAVE'), dict(espd=999, pspd=lambda: min(ot_speeds()) + 1), [19]),
     ('t-wave, teammates faster', M('THUNDER_WAVE'), dict(espd=999, pspd=lambda: min(ot_speeds()) - 1), [20]),
     ('t-wave, teammates too slow', M('THUNDER_WAVE'), dict(espd=999, pspd=lambda: max(ot_speeds()) * 4 + 4), [20]),
+    # AI_Smogon_SureKO: the player has 1 HP, so any hit KOs.
+    ('sure KO: most accurate', M('FIRE_BLAST', 'ICE_BEAM', 'THUNDER', 'HARDEN'),
+     dict(php=(1, 100), ptypes=(C['NORMAL'], C['NORMAL'])), [22, 17, 22, 20]),
+    ('sure KO: thunder in rain', M('THUNDER', 'THUNDERBOLT'),
+     dict(php=(1, 100), ptypes=(C['NORMAL'], C['NORMAL']), weather=C['WEATHER_RAIN']), [15, 17]),
+    ('sure KO: priority when slower', M('QUICK_ATTACK', 'BODY_SLAM'),
+     dict(php=(1, 100), ptypes=(C['NORMAL'], C['NORMAL']), espd=50), [17, 22]),
+    ('sure KO: no priority when faster', M('QUICK_ATTACK', 'BODY_SLAM'),
+     dict(php=(1, 100), ptypes=(C['NORMAL'], C['NORMAL'])), [17, 17]),
+    ('sure KO: not hyper beam', M('HYPER_BEAM', 'BODY_SLAM'),
+     dict(php=(1, 100), ptypes=(C['NORMAL'], C['NORMAL'])), [20, 17]),
+    ('sure KO: substitute', M('FIRE_BLAST', 'ICE_BEAM'),
+     dict(php=(1, 100), ptypes=(C['NORMAL'], C['NORMAL']), psub4=S('SUBSTATUS_SUBSTITUTE')), [20, 20]),
+    ('sure KO: none', M('FIRE_BLAST', 'ICE_BEAM'),
+     dict(php=(999, 999), ptypes=(C['NORMAL'], C['NORMAL'])), [20, 20]),
+    # 1.3x Ice Beam's highest regular roll: a KO only if the damage doubled
+    ('sure KO: not from a stale critical hit', M('ICE_BEAM'),
+     dict(php=lambda: (int(ice_beam_damage() * 1.3), 999), ptypes=(C['NORMAL'], C['NORMAL']), crit=1), [20]),
+    ('sure KO: just in range', M('ICE_BEAM'),
+     dict(php=lambda: (int(ice_beam_damage() * 0.8), 999), ptypes=(C['NORMAL'], C['NORMAL'])), [17]),
+    ('sure KO: immune', M('BODY_SLAM', 'ICE_BEAM'),
+     dict(php=(1, 100), ptypes=(C['GHOST'], C['GHOST'])), [20, 17]),
 ]
 
 def ot_speeds():
@@ -244,6 +266,12 @@ heal_cases = heal_cases[HEAL_FIRST:]
 
 results, state = [], {'i': 0, 'cur': None, 'ret': None, 'heal_i': 0, 'heal_cur': None}
 
+def ice_beam_damage():
+    """The enemy's highest regular Ice Beam roll on a neutral, unboosted player."""
+    rd = lambda n: mem[W(n)] << 8 | mem[W(n) + 1]
+    level = mem[W('wEnemyMonLevel')]
+    return (2 * level // 5 + 2) * 95 * rd('wEnemyMonSpclAtk') // max(1, rd('wBattleMonSpclDef')) // 50 + 2
+
 def apply(setup, moves):
     st = dict(base); st.update(setup)
     st = {k: v() if callable(v) else v for k, v in st.items()}
@@ -281,6 +309,7 @@ def apply(setup, moves):
     mem[W('wPlayerAtkLevel')] = st['patk']
     mem[W('wPlayerSubStatus4')] = st['psub4']
     mem[W('wLastPlayerMove')] = st['plast']
+    mem[W('wCriticalHit')] = st['crit']
 
 def on_ret(ctx):
     # the return address is the shared far call stub: only count our own return
