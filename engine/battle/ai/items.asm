@@ -191,8 +191,7 @@ SwitchSmogon:
 	jp nc, DontSwitch
 
 ; A Ghost or Psychic fleeing a Pursuit user takes double damage.
-	ld a, PURSUIT
-	call AISmogon_PlayerRevealedMove
+	call AISmogon_PlayerHasPursuit
 	jr nc, .no_pursuit
 	ld a, [wEnemyMonType1]
 	call AISmogon_GhostOrPsychic

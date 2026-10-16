@@ -68,9 +68,10 @@ AISmogon_ScoreActive:
 
 AISmogon_FindBestSwitchIn:
 ; Find the healthy, non-active Pokemon with the best matchup, discounting
-; low HP and status, and favoring answers to a boosted player and Sleep Talk
-; users against a sleep move. Return its
-; party index in b and wSmogonAIBestMon, and its score in wSmogonAIBestScore.
+; low HP and status, and favoring answers to a boosted player, Sleep Talk
+; users against a sleep move, and Rock, Steel and Ghost types against a
+; likely Explosion. Return its party index in b and wSmogonAIBestMon, and its
+; score in wSmogonAIBestScore.
 ; Return carry if there is none.
 	ld a, -1
 	ld [wSmogonAIBestMon], a
@@ -147,21 +148,80 @@ AISmogon_SwitchInBonus:
 .sleep
 ; A Sleep Talk user takes the player's sleep move and keeps attacking.
 	call AISmogon_PlayerThreatensSleep
-	jr nc, .done
+	jr nc, .boom
 	ld a, SLEEP_TALK
 	call AISmogon_OTMonHasMove
-	jr nc, .done
+	jr nc, .boom
 	ld a, c
 	add SMOGON_SLEEP_ABSORB_BONUS
+	ld c, a
+.boom
+; A Rock, Steel or Ghost type takes a likely Explosion. wSmogonAITypes still
+; holds this Pokemon's types from AISmogon_ScoreMatchup.
+	call AISmogon_PlayerMayExplode
+	jr nc, .done
+	ld a, [wSmogonAITypes]
+	call AISmogon_ResistsExplosion
+	jr z, .boom_absorber
+	ld a, [wSmogonAITypes + 1]
+	call AISmogon_ResistsExplosion
+	jr nz, .done
+.boom_absorber
+	ld a, c
+	add SMOGON_BOOM_ABSORB_BONUS
 	ld c, a
 .done
 	ld a, c
 	pop bc
 	ret
 
+AISmogon_ResistsExplosion:
+; Return z if type a resists Normal or is immune to it.
+	cp ROCK
+	ret z
+	cp STEEL
+	ret z
+	cp GHOST
+	ret
+
+AISmogon_PlayerMayExplode:
+; Return carry if the player's Pokemon is likely to explode now: it usually
+; has Explosion or Selfdestruct (or has revealed it among its four moves), it
+; can move, and it has done its job (Spikes are down on the AI's side) or is
+; below half HP.
+	ld a, [wBattleMonStatus]
+	and SLP_MASK | 1 << FRZ
+	ret nz
+	ld a, [wPlayerUsedMoves + NUM_MOVES - 1]
+	and a
+	jr z, .traits
+	ld a, EXPLOSION
+	call AISmogon_PlayerRevealedMove
+	jr c, .worn_down
+	ld a, SELFDESTRUCT
+	call AISmogon_PlayerRevealedMove
+	ret nc
+	jr .worn_down
+
+.traits
+	call AISmogon_GetPlayerTraits
+	and SMOGON_EXPLODER
+	ret z
+.worn_down
+	ld a, [wEnemyScreens]
+	bit SCREENS_SPIKES, a
+	scf
+	ret nz
+	push bc
+	call AICheckPlayerHalfHP
+	pop bc
+	ccf
+	ret
+
 AISmogon_PlayerThreatensSleep:
-; Return carry if the player's Pokemon has revealed a sleep move it can use
-; on the AI's side: it isn't asleep or frozen, and no Safeguard is up.
+; Return carry if the player's Pokemon can use a sleep move on the AI's side
+; (it isn't asleep or frozen, and no Safeguard is up) and has revealed one,
+; or usually has one and hasn't revealed four other moves.
 	ld a, [wBattleMonStatus]
 	and SLP_MASK | 1 << FRZ
 	ret nz
@@ -173,12 +233,21 @@ AISmogon_PlayerThreatensSleep:
 .loop
 	ld a, [hli]
 	cp -1
-; z: done with no carry
-	jr z, .done
+	jr z, .traits
 	call AISmogon_PlayerRevealedMove
 	jr nc, .loop
-.done
 	pop hl
+	ret
+
+.traits
+	pop hl
+	ld a, [wPlayerUsedMoves + NUM_MOVES - 1]
+	and a
+	ret nz
+	call AISmogon_GetPlayerTraits
+	and SMOGON_SLEEPER
+	ret z
+	scf
 	ret
 
 .SleepMoves:
@@ -370,7 +439,41 @@ AISmogon_ScoreMatchup:
 	call AISmogon_StatEdges
 	ld hl, wSmogonAITypes
 
-; Assume the player has strong STAB attacks of both its types.
+; Until the player's Pokemon has revealed all four moves, expect the attacks
+; its species usually has in GSC OU...
+	ld a, [wPlayerUsedMoves + NUM_MOVES - 1]
+	and a
+	jr nz, .revealed_moves
+	push hl
+	call AISmogon_FindExpectedAttacks
+	jr nc, .assume_stab
+.expected_loop
+	ld a, [hli]
+	cp -1
+	jr z, .expected_done
+	ld e, a
+	ld d, [hl]
+	inc hl
+	ld c, FALSE
+	ld a, [wBattleMonType1]
+	cp e
+	jr z, .expected_stab
+	ld a, [wBattleMonType2]
+	cp e
+	jr nz, .expected_no_stab
+.expected_stab
+	inc c
+.expected_no_stab
+	push hl
+	ld a, e
+	ld hl, wSmogonAITypes
+	call .PlayerAttack
+	pop hl
+	jr .expected_loop
+
+.assume_stab
+; ...or else strong STAB attacks of both its types.
+	pop hl
 	ld c, TRUE
 	ld d, SMOGON_STAB_POWER
 	ld a, [wBattleMonType1]
@@ -379,7 +482,11 @@ AISmogon_ScoreMatchup:
 	ld a, [wBattleMonType2]
 	cp e
 	call nz, .PlayerAttack
+	jr .revealed_moves
 
+.expected_done
+	pop hl
+.revealed_moves
 ; Also consider the attacks it has revealed since it came in.
 	ld e, 0
 .player_moves
@@ -427,18 +534,30 @@ AISmogon_ScoreMatchup:
 .player_moves_done
 
 ; A sleeping or frozen Pokemon can't attack, unless it uses Sleep Talk.
-	ld a, [wBattleMonStatus]
-	and SLP_MASK | 1 << FRZ
+	call AISmogon_PlayerCantAttack
 	jr z, .player_can_attack
-	ld hl, wPlayerUsedMoves
-	ld b, NUM_MOVES
-.sleep_talk_loop
-	ld a, [hli]
-	cp SLEEP_TALK
-	jr z, .player_can_attack
-	dec b
-	jr nz, .sleep_talk_loop
 	ld hl, wSmogonAIThreat
+; One that usually has Sleep Talk may still have it: count 3/4 of its
+; threat (Sleep Talk calls an attack most of the time) instead of half.
+	ld a, [wBattleMonStatus]
+	and SLP_MASK
+	jr z, .halve_threat
+	ld a, [wPlayerUsedMoves + NUM_MOVES - 1]
+	and a
+	jr nz, .halve_threat
+	call AISmogon_GetPlayerTraits
+	bit SMOGON_SLEEP_TALK_F, a
+	jr z, .halve_threat
+	ld a, [hl]
+	srl a
+	srl a
+	cpl
+	inc a
+	add [hl]
+	ld [hl], a
+	jr .player_can_attack
+
+.halve_threat
 	srl [hl]
 .player_can_attack
 
@@ -510,13 +629,44 @@ AISmogon_ScoreMatchup:
 	sub b
 	ld b, a
 
-; Outspeeding wins trades...
+; Outspeeding wins trades... The active Pokemon's Speed includes its stat
+; changes and paralysis; paralysis quarters the Speed of one in the back.
+	ld a, [wCurOTMon]
+	ld c, a
+	ld a, [wSmogonAIMon]
+	cp c
+	jr nz, .party_speed
+	ld a, [wEnemyMonSpeed]
+	ld d, a
+	ld a, [wEnemyMonSpeed + 1]
+	ld e, a
+	jr .compare_speed
+
+.party_speed
+	ld a, MON_STATUS
+	call AISmogon_OTPartyAttr
+	ld c, [hl]
 	ld a, MON_SPD
 	call AISmogon_OTPartyAttr
-	ld d, h
-	ld e, l
-	ld hl, wBattleMonSpeed
-	call AISmogon_Compare16
+	ld a, [hli]
+	ld d, a
+	ld e, [hl]
+	bit PAR, c
+	jr z, .compare_speed
+	srl d
+	rr e
+	srl d
+	rr e
+.compare_speed
+	; carry if de < the player's Speed
+	ld a, [wBattleMonSpeed + 1]
+	ld c, a
+	ld a, e
+	sub c
+	ld a, [wBattleMonSpeed]
+	ld c, a
+	ld a, d
+	sbc c
 	ld a, b
 	jr c, .done
 	add SMOGON_FASTER_BONUS
@@ -825,6 +975,29 @@ AISmogon_GetMovePowerAndType:
 .done
 	pop hl
 	pop bc
+	ret
+
+AISmogon_FindExpectedAttacks:
+; If the player's Pokemon is in SmogonExpectedAttacks, return carry and hl =
+; its attacks (type and power pairs, ending with -1). Keeps b and de.
+	ld a, [wBattleMonSpecies]
+	ld c, a
+	ld hl, SmogonExpectedAttacks
+.loop
+	ld a, [hli]
+	and a
+	ret z
+	cp c
+	jr z, .found
+.skip
+	ld a, [hli]
+	cp -1
+	jr z, .loop
+	inc hl
+	jr .skip
+
+.found
+	scf
 	ret
 
 AISmogon_OTPartyAttr:

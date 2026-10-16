@@ -177,6 +177,7 @@ INCLUDE "engine/battle/ai/scoring.asm"
 INCLUDE "engine/battle/ai/smogon.asm"
 INCLUDE "engine/battle/ai/smogon_switch.asm"
 INCLUDE "data/battle/ai/smogon_traits.asm"
+INCLUDE "data/battle/ai/smogon_attacks.asm"
 INCLUDE "engine/battle/read_trainer_attributes.asm"
 INCLUDE "engine/battle/read_trainer_party.asm"
 

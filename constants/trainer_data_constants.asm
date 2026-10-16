@@ -31,6 +31,9 @@ DEF NO_AI EQU 0
 	shift_const SMOGON_PHAZER
 	shift_const SMOGON_SETUP
 	shift_const SMOGON_THREAT
+	shift_const SMOGON_EXPLODER
+	shift_const SMOGON_PURSUIT
+	shift_const SMOGON_SLEEPER
 
 ; Smogon AI matchup scores (see engine/battle/ai/smogon_switch.asm)
 DEF SMOGON_MATCHUP_EVEN      EQU 128 ; neither side hits harder
@@ -64,7 +67,8 @@ DEF SMOGON_JUST_IN_MARGIN    EQU 10 ; extra gain needed right after switching in
 DEF SMOGON_SURE_SWITCH       EQU 12 ; gain past the margin that always switches
 DEF SMOGON_ESCAPE_TOLERANCE  EQU 16 ; how much worse an escape switch-in may be
 DEF SMOGON_ANTI_SETUP_BONUS  EQU 24 ; switch-in that can phaze, Haze or explode a boosted player
-DEF SMOGON_SLEEP_ABSORB_BONUS EQU 16 ; Sleep Talk switch-in against a revealed sleep move
+DEF SMOGON_SLEEP_ABSORB_BONUS EQU 16 ; Sleep Talk switch-in against a sleep move
+DEF SMOGON_BOOM_ABSORB_BONUS EQU 10 ; Rock, Steel or Ghost switch-in against a likely Explosion
 
 ; AISmogon_StatEdges flags
 	const_def

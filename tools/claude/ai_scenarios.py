@@ -77,7 +77,8 @@ M = lambda *names: [C[n] for n in names]
 S = lambda *bits: sum(1 << C[b] for b in bits)
 base = dict(weather=0, ptypes=(C['FIRE'], C['FIRE']), etypes=(C['NORMAL'], C['NORMAL']),
             espd=200, pspd=100, sub1=0, sub2=0, sub4=0, sub5=0, psub3=0, psub5=0,
-            estatus=0, toxic=0, wrap=0, perish=0, hp=(40, 100), tod=C['DAY_F'], hours=12)
+            estatus=0, toxic=0, wrap=0, perish=0, hp=(40, 100), tod=C['DAY_F'], hours=12,
+            pspecies=C['MAGIKARP'], php=(100, 100), pstatus=0, patk=7, psub4=0, pused=(), plast=0)
 F, D = C['FIRE'], C['GROUND']
 scen = [
     ('thunder rain neutral', M('THUNDER'), dict(weather=C['WEATHER_RAIN']), [18]),
@@ -86,12 +87,12 @@ scen = [
     ('rollout curled', M('ROLLOUT'), dict(sub2=S('SUBSTATUS_CURLED')), [18]),
     ('rollout not curled', M('ROLLOUT'), dict(), [20]),
     ('rollout curled vs ground', M('ROLLOUT'), dict(sub2=S('SUBSTATUS_CURLED'), ptypes=(D, D)), [20]),
-    ('fly faster', M('TACKLE', 'GUST', 'EARTHQUAKE', 'GROWL'), dict(psub3=S('SUBSTATUS_FLYING')), [30, 20, 30, 20]),
+    ('fly faster', M('TACKLE', 'GUST', 'EARTHQUAKE', 'HARDEN'), dict(psub3=S('SUBSTATUS_FLYING')), [30, 20, 30, 20]),
     ('fly thunder/twister/own fly', M('THUNDER', 'TWISTER', 'FLY', 'SWIFT'), dict(psub3=S('SUBSTATUS_FLYING')), [20, 20, 20, 30]),
     ('dig faster', M('TACKLE', 'GUST', 'EARTHQUAKE', 'MAGNITUDE'), dict(psub3=S('SUBSTATUS_UNDERGROUND')), [30, 30, 20, 20]),
-    ('fly slower', M('TACKLE', 'GUST', 'EARTHQUAKE', 'GROWL'), dict(psub3=S('SUBSTATUS_FLYING'), espd=50), [20, 20, 20, 20]),
-    ('fly lock-on', M('TACKLE', 'GUST', 'EARTHQUAKE', 'GROWL'), dict(psub3=S('SUBSTATUS_FLYING'), psub5=S('SUBSTATUS_LOCK_ON')), [20, 20, 30, 20]),
-    ('dig lock-on', M('TACKLE', 'GUST', 'EARTHQUAKE', 'GROWL'), dict(psub3=S('SUBSTATUS_UNDERGROUND'), psub5=S('SUBSTATUS_LOCK_ON')), [20, 20, 20, 20]),
+    ('fly slower', M('TACKLE', 'GUST', 'EARTHQUAKE', 'HARDEN'), dict(psub3=S('SUBSTATUS_FLYING'), espd=50), [20, 20, 20, 20]),
+    ('fly lock-on', M('TACKLE', 'GUST', 'EARTHQUAKE', 'HARDEN'), dict(psub3=S('SUBSTATUS_FLYING'), psub5=S('SUBSTATUS_LOCK_ON')), [20, 20, 30, 20]),
+    ('dig lock-on', M('TACKLE', 'GUST', 'EARTHQUAKE', 'HARDEN'), dict(psub3=S('SUBSTATUS_UNDERGROUND'), psub5=S('SUBSTATUS_LOCK_ON')), [20, 20, 20, 20]),
     ('endure plain', M('ENDURE'), dict(hp=(10, 100)), [20]),
     ('endure sand', M('ENDURE'), dict(weather=C['WEATHER_SANDSTORM']), [30]),
     ('endure sand rock', M('ENDURE'), dict(weather=C['WEATHER_SANDSTORM'], etypes=(C['ROCK'], C['NORMAL'])), [20]),
@@ -112,7 +113,48 @@ scen = [
     ('heal eve 17h', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(tod=C['EVE_F'], hours=17), [20, 18, 20, 18]),
     ('heal eve 19h', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(tod=C['EVE_F'], hours=19), [20, 20, 18, 18]),
     ('heal above half', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(tod=C['MORN_F'], hours=6, hp=(60, 100)), [20, 20, 20, 20]),
+    ('destiny bond doomed faster', M('DESTINY_BOND'), dict(hp=(20, 100)), [17]),
+    ('destiny bond doomed slower', M('DESTINY_BOND'), dict(hp=(20, 100), espd=50), [20]),
+    ('destiny bond healthy', M('DESTINY_BOND'), dict(hp=(60, 100)), [20]),
+    ('protect vs worn exploder', M('PROTECT'), dict(pspecies=C['CLOYSTER'], php=(40, 100)), [17]),
+    ('protect vs healthy exploder', M('PROTECT'), dict(pspecies=C['CLOYSTER'], php=(90, 100)), [20]),
+    ('protect vs worn exploder, ghost', M('PROTECT'), dict(pspecies=C['CLOYSTER'], php=(40, 100),
+                                                           etypes=(C['GHOST'], C['POISON'])), [20]),
+    ('protect vs worn non-exploder', M('PROTECT'), dict(pspecies=C['LAPRAS'], php=(40, 100)), [20]),
+    ('growl/charm vs cursed physical', M('GROWL', 'CHARM'), dict(pused=M('BODY_SLAM'), patk=8), [17, 17]),
+    ('charm vs unboosted physical', M('CHARM'), dict(pused=M('BODY_SLAM')), [20]),
+    ('charm vs belly drum', M('CHARM'), dict(pused=M('BODY_SLAM'), patk=13), [22]),
+    ('charm vs boosted special', M('CHARM'), dict(pused=M('THUNDER'), patk=8), [22]),
+    ('charm vs substitute', M('CHARM'), dict(pused=M('BODY_SLAM'), patk=8, psub4=S('SUBSTATUS_SUBSTITUTE')), [30]),
+    ('mean look vs phazer', M('MEAN_LOOK'), dict(pused=M('ROAR')), [22]),
+    ('mean look vs non-phazer', M('MEAN_LOOK'), dict(pused=M('SURF')), [20]),
+    ('sub vs sleeping', M('SUBSTITUTE'), dict(hp=(60, 100), pstatus=2), [18]),
+    ('sub vs sleeping sleep talker', M('SUBSTITUTE'), dict(hp=(60, 100), pstatus=2, pused=M('SLEEP_TALK')), [20]),
+    ('sub vs frozen', M('SUBSTITUTE'), dict(hp=(60, 100), pstatus=1 << C['FRZ']), [18]),
+    ('roar vs non-phazer', M('ROAR'), dict(pused=M('SURF')), [20]),
+    ('roar vs slower phazer', M('ROAR'), dict(pused=M('ROAR')), [22]),
+    ('roar vs faster phazer', M('ROAR'), dict(pused=M('WHIRLWIND'), espd=50), [20]),
+    ('encore after encore', M('ENCORE'), dict(plast=C['ENCORE']), [30]),
+    ('encore after mirror move', M('ENCORE'), dict(plast=C['MIRROR_MOVE']), [30]),
+    ('encore after swords dance', M('ENCORE'), dict(plast=C['SWORDS_DANCE']), [17]),
+    # Speeds from the enemy party: the player is just faster than the slowest
+    # teammate (paralysis would flip it), or slower than all of them.
+    ('t-wave for slow teammate', M('THUNDER_WAVE'), dict(espd=999, pspd=lambda: min(ot_speeds()) + 1), [19]),
+    ('t-wave, teammates faster', M('THUNDER_WAVE'), dict(espd=999, pspd=lambda: min(ot_speeds()) - 1), [20]),
+    ('t-wave, teammates too slow', M('THUNDER_WAVE'), dict(espd=999, pspd=lambda: max(ot_speeds()) * 4 + 4), [20]),
 ]
+
+def ot_speeds():
+    # Speeds of the enemy's healthy Pokemon other than the active one.
+    size = W('wOTPartyMon2') - W('wOTPartyMon1')
+    out = []
+    for i in range(mem[W('wOTPartyCount')]):
+        if i == mem[W('wCurOTMon')]:
+            continue
+        hp_, spd = W('wOTPartyMon1HP') + i * size, W('wOTPartyMon1Speed') + i * size
+        if mem[hp_] | mem[hp_ + 1]:
+            out.append(mem[spd] << 8 | mem[spd + 1])
+    return out
 scen = scen[first:]
 # Engine phase: (name, move, tod, hours, weather, expected .Multipliers index)
 heal_cases = [
@@ -126,7 +168,10 @@ heal_cases = [
     ('synthesis day sand', 'SYNTHESIS', C['DAY_F'], 12, C['WEATHER_SANDSTORM'], 1),
 ]
 
-# Switch-in phase: (name, player types, [(species, moves)...], expected index)
+# Switch-in phase: (name, player types, [(species, moves)...], expected index
+# [, extra]). The player's Pokemon is a Magikarp (no expected attacks in
+# SmogonExpectedAttacks, so its types decide) unless extra sets 'species'.
+# Other extra keys: 'used' (revealed moves), 'php' (HP out of 100), 'escreens'.
 switch_cases = [
     ('switch vs fire: water over 4x weak', (C['FIRE'], C['FIRE']),
      [(C['FORRETRESS'], M('TACKLE')), (C['STARMIE'], M('SURF'))], 1),
@@ -138,6 +183,31 @@ switch_cases = [
      [(C['SKARMORY'], M('DRILL_PECK')), (C['GOLEM'], M('EARTHQUAKE'))], 0),
     ('switch vs dark: fighting over psychic', (C['DARK'], C['DARK']),
      [(C['ALAKAZAM'], M('PSYCHIC_M')), (C['HERACROSS'], M('MEGAHORN'))], 1),
+    # Golem's usual attack is Earthquake, which can't touch Charizard.
+    ('switch vs golem: expects earthquake, not rock', (C['ROCK'], C['GROUND']),
+     [(C['CHARIZARD'], M('FLAMETHROWER')), (C['SNORLAX'], M('BODY_SLAM'))], 0, dict(species=C['GOLEM'])),
+    ('switch vs golem with rock slide revealed', (C['ROCK'], C['GROUND']),
+     [(C['CHARIZARD'], M('FLAMETHROWER')), (C['SNORLAX'], M('BODY_SLAM'))], 1,
+     dict(species=C['GOLEM'], used=M('ROCK_SLIDE', 'REST', 'ROAR', 'CURSE'))),
+    ('switch vs rock/ground with no data: both stabs', (C['ROCK'], C['GROUND']),
+     [(C['CHARIZARD'], M('FLAMETHROWER')), (C['SNORLAX'], M('BODY_SLAM'))], 1),
+    # Equal matchups: the Ghost takes a worn-down Cloyster's Explosion.
+    ('switch vs worn cloyster: ghost absorbs explosion', (C['WATER'], C['ICE']),
+     [(C['SNORLAX'], M('THUNDERBOLT')), (C['MISDREAVUS'], M('THUNDERBOLT'))], 1,
+     dict(species=C['CLOYSTER'], php=40)),
+    ('switch vs cloyster after spikes: ghost absorbs explosion', (C['WATER'], C['ICE']),
+     [(C['SNORLAX'], M('THUNDERBOLT')), (C['MISDREAVUS'], M('THUNDERBOLT'))], 1,
+     dict(species=C['CLOYSTER'], escreens=1 << C['SCREENS_SPIKES'])),
+    ('switch vs healthy cloyster: no explosion expected', (C['WATER'], C['ICE']),
+     [(C['SNORLAX'], M('THUNDERBOLT')), (C['MISDREAVUS'], M('THUNDERBOLT'))], 0,
+     dict(species=C['CLOYSTER'])),
+    # Jynx usually has Lovely Kiss: a Sleep Talk user takes it.
+    ('switch vs jynx: sleep talk absorbs sleep', (C['ICE'], C['PSYCHIC_TYPE']),
+     [(C['SNORLAX'], M('THUNDERBOLT')), (C['SNORLAX'], M('THUNDERBOLT', 'SLEEP_TALK'))], 1,
+     dict(species=C['JYNX'])),
+    ('switch vs lapras: no sleep expected', (C['WATER'], C['ICE']),
+     [(C['SNORLAX'], M('THUNDERBOLT')), (C['SNORLAX'], M('THUNDERBOLT', 'SLEEP_TALK'))], 0,
+     dict(species=C['LAPRAS'])),
 ]
 
 # Hidden Power phase: (Atk/Def DVs, Spd/Spc DVs) -> vanilla power and type
@@ -168,6 +238,7 @@ results, state = [], {'i': 0, 'cur': None, 'ret': None, 'heal_i': 0, 'heal_cur':
 
 def apply(setup, moves):
     st = dict(base); st.update(setup)
+    st = {k: v() if callable(v) else v for k, v in st.items()}
     for i in range(4):
         mem[W('wEnemyMonMoves') + i] = moves[i] if i < len(moves) else 0
         mem[W('wEnemyMonPP') + i] = 10 if i < len(moves) else 0
@@ -180,8 +251,7 @@ def apply(setup, moves):
     for k, n in (('sub1', 'wEnemySubStatus1'), ('sub2', 'wEnemySubStatus2'), ('sub4', 'wEnemySubStatus4'),
                  ('sub5', 'wEnemySubStatus5'), ('psub3', 'wPlayerSubStatus3'), ('psub5', 'wPlayerSubStatus5')):
         mem[W(n)] = st[k]
-    mem[W('wPlayerSubStatus1')] = 0; mem[W('wPlayerSubStatus4')] = 0
-    mem[W('wBattleMonStatus')] = 0
+    mem[W('wPlayerSubStatus1')] = 0
     mem[W('wEnemyMonStatus')] = st['estatus']
     mem[W('wEnemyToxicCount')] = st['toxic']
     mem[W('wEnemyWrapCount')] = st['wrap']
@@ -191,6 +261,18 @@ def apply(setup, moves):
     mem[W('wTimeOfDay')] = st['tod']
     mem[W('hHours')] = st['hours']
     mem[W('wEnemyScreens')] = 0; mem[W('wPlayerScreens')] = 0
+    if state.get('player') is None:
+        state['player'] = [mem[W('wBattleMonSpecies')]] + [mem[W('wBattleMonHP') + k] for k in range(4)] + \
+                          [mem[W('wPlayerUsedMoves') + k] for k in range(4)] + \
+                          [mem[W(n)] for n in ('wBattleMonStatus', 'wPlayerAtkLevel', 'wPlayerSubStatus4', 'wLastPlayerMove')]
+    mem[W('wBattleMonSpecies')] = st['pspecies']
+    word(W('wBattleMonHP'), st['php'][0]); word(W('wBattleMonMaxHP'), st['php'][1])
+    for k in range(4):
+        mem[W('wPlayerUsedMoves') + k] = st['pused'][k] if k < len(st['pused']) else 0
+    mem[W('wBattleMonStatus')] = st['pstatus']
+    mem[W('wPlayerAtkLevel')] = st['patk']
+    mem[W('wPlayerSubStatus4')] = st['psub4']
+    mem[W('wLastPlayerMove')] = st['plast']
 
 def on_ret(ctx):
     # the return address is the shared far call stub: only count our own return
@@ -201,6 +283,15 @@ def on_ret(ctx):
     results.append((name, got, exp, got == exp))
     state['cur'] = None
     # undo the scenario so the enemy survives and the battle keeps going
+    if state.get('player') is not None:
+        p = state['player']
+        mem[W('wBattleMonSpecies')] = p[0]
+        for k in range(4):
+            mem[W('wBattleMonHP') + k] = p[1 + k]
+            mem[W('wPlayerUsedMoves') + k] = p[5 + k]
+        for k, n in enumerate(('wBattleMonStatus', 'wPlayerAtkLevel', 'wPlayerSubStatus4', 'wLastPlayerMove')):
+            mem[W(n)] = p[9 + k]
+        state['player'] = None
     word(W('wEnemyMonHP'), 100); word(W('wEnemyMonMaxHP'), 100)
     for n in ('wEnemyMonStatus', 'wEnemyWrapCount', 'wEnemyPerishCount', 'wEnemyToxicCount', 'wEnemySubStatus1',
               'wEnemySubStatus2', 'wEnemySubStatus4', 'wEnemySubStatus5', 'wPlayerSubStatus3', 'wPlayerSubStatus5'):
@@ -265,12 +356,14 @@ pb.hook_register(*sym['BattleCommand_TimeBasedHealContinue.Heal'], on_heal, None
 
 # --- switch-in phase ---------------------------------------------------------
 PARTY_LEN = W('wOTPartyMon2') - W('wOTPartyMon1')
-PLAYER_SAVE = [('wBattleMonType1', 2), ('wBattleMonAttack', 10), ('wBattleMonStatus', 1), ('wPlayerUsedMoves', 4)]
+PLAYER_SAVE = [('wBattleMonType1', 2), ('wBattleMonAttack', 10), ('wBattleMonStatus', 1), ('wPlayerUsedMoves', 4),
+               ('wBattleMonSpecies', 1), ('wBattleMonHP', 4), ('wEnemyScreens', 1)]
 sw = {'i': 0, 'saved': None}
 def on_switch_entry(ctx):
     if sw['i'] >= len(switch_cases) or sw['saved'] is not None:
         return
-    name, ptypes, cands, exp = switch_cases[sw['i']]
+    name, ptypes, cands, exp, *extra = switch_cases[sw['i']]
+    extra = extra[0] if extra else {}
     active = mem[W('wCurOTMon')]
     others = [i for i in range(mem[W('wOTPartyCount')]) if i != active]
     if len(others) < len(cands):
@@ -282,8 +375,12 @@ def on_switch_entry(ctx):
     for k in range(5):
         word(W('wBattleMonAttack') + 2 * k, 200)
     mem[W('wBattleMonStatus')] = 0
+    used = extra.get('used', [])
     for k in range(4):
-        mem[W('wPlayerUsedMoves') + k] = 0
+        mem[W('wPlayerUsedMoves') + k] = used[k] if k < len(used) else 0
+    mem[W('wBattleMonSpecies')] = extra.get('species', C['MAGIKARP'])
+    word(W('wBattleMonHP'), extra.get('php', 100)); word(W('wBattleMonMaxHP'), 100)
+    mem[W('wEnemyScreens')] = extra.get('escreens', 0)
     slots = []
     for j, i in enumerate(others):
         b = i * PARTY_LEN

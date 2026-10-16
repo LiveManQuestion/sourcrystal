@@ -3,8 +3,10 @@ AI_Smogon:
 ; - Follow the GSC OU clauses: Sleep Clause, OHKO Clause, Evasion Clause and
 ;   SleepTrap Clause (no sleep move together with Mean Look or Spider Web).
 ; - Follow standard GSC OU strategy: lead with sleep, lay Spikes and phaze
-;   into them, spin Spikes away, stop setup sweepers with phazing or Haze,
-;   set up only when it's safe, heal before falling into KO range, trade
+;   into them, spin Spikes away, stop setup sweepers with phazing, Haze,
+;   Growl or Charm, set up only when it's safe (a sleeping Pokemon with Sleep
+;   Talk can still punish it), paralyze for slow teammates, don't Mean Look a
+;   phazer, heal before falling into KO range, trade
 ;   Explosion for a healthy threat, steal Leftovers with Thief, Toxic walls
 ;   that can't Rest it off (especially into Spikes), Pursuit fleeing Ghosts
 ;   and Psychics, put up the screen that blocks the player's attacks, Baton
@@ -119,6 +121,9 @@ AI_Smogon_EffectHandlers:
 	dbw EFFECT_THUNDER,      AI_Smogon_Thunder
 	dbw EFFECT_ROLLOUT,      AI_Smogon_Rollout
 	dbw EFFECT_ENDURE,       AI_Smogon_Endure
+	dbw EFFECT_DESTINY_BOND, AI_Smogon_DestinyBond
+	dbw EFFECT_ATTACK_DOWN,  AI_Smogon_AttackDown ; Growl
+	dbw EFFECT_ATTACK_DOWN_2, AI_Smogon_AttackDown ; Charm
 	db -1 ; end
 
 AI_Smogon_Sleep:
@@ -152,6 +157,11 @@ AI_Smogon_MeanLook:
 	ld b, EFFECT_SLEEP
 	call AIHasMoveEffect
 	jp c, AIDiscourageMove
+; Trapping doesn't stop the player from phazing us out, which ends the trap.
+	call AISmogon_PlayerCanPhaze
+	ret nc
+	inc [hl]
+	inc [hl]
 	ret
 
 AI_Smogon_Spikes:
@@ -183,10 +193,10 @@ AI_Smogon_Phaze:
 	ld a, c
 	and a
 	jp z, AIDiscourageMove
-; A sleeping Pokemon is a sitting duck: phazing it out would only bring in
-; something that can fight back. Unless it has boosted.
-	ld a, [wBattleMonStatus]
-	and SLP_MASK
+; A sleeping (without Sleep Talk) or frozen Pokemon is a sitting duck:
+; phazing it out would only bring in something that can fight back. Unless
+; it has boosted.
+	call AISmogon_PlayerCantAttack
 	jr z, .awake
 	call AISmogon_PlayerBoosted
 	jr c, AISmogon_GreatlyEncourage
@@ -194,6 +204,20 @@ AI_Smogon_Phaze:
 	ret
 
 .awake
+; Roar and Whirlwind go after other moves, and fail if the user moves first.
+; Against a phazer we outspeed, ours goes first and fails, and theirs
+; succeeds. Unless the player has boosted, and won't phaze away its boosts.
+	call AISmogon_PlayerBoosted
+	jr c, .no_phazing_war
+	call AICompareSpeed
+	jr nc, .no_phazing_war
+	call AISmogon_PlayerPhazes
+	jr nc, .no_phazing_war
+	inc [hl]
+	inc [hl]
+	ret
+
+.no_phazing_war
 ; Phaze to make the player take Spikes damage again.
 	ld a, [wPlayerScreens]
 	bit SCREENS_SPIKES, a
@@ -578,14 +602,80 @@ AI_Smogon_Toxic:
 	ret
 
 AI_Smogon_Paralyze:
-; Paralysis cripples faster Pokemon and setup sweepers.
+; Paralysis cripples faster Pokemon and setup sweepers, and lets slow,
+; strong teammates outspeed the player.
 	call AICompareSpeed
 	jr nc, .encourage
 	call AISmogon_GetPlayerTraits
 	bit SMOGON_SETUP_F, a
-	ret z
+	jr nz, .encourage
+	call AISmogon_ParalysisHelpsTeammate
+	ret nc
 .encourage
 	dec [hl]
+	ret
+
+AISmogon_ParalysisHelpsTeammate:
+; Return carry if a healthy teammate is slower than the player's Pokemon, but
+; would outspeed it once paralysis quarters its Speed.
+	push hl
+	ld hl, wOTPartyMon1HP
+	ld a, [wOTPartyCount]
+	ld b, a
+	ld c, 0
+.loop
+	ld a, [wCurOTMon]
+	cp c
+	jr z, .next
+	ld a, [hli]
+	or [hl]
+	dec hl
+	jr z, .next
+	push bc
+	push hl
+	ld de, MON_SPD - MON_HP
+	add hl, de
+	ld a, [hli]
+	ld d, a
+	ld e, [hl]
+	ld a, [wBattleMonSpeed]
+	ld b, a
+	ld a, [wBattleMonSpeed + 1]
+	ld c, a
+	; slower: Speed < the player's
+	ld a, e
+	sub c
+	ld a, d
+	sbc b
+	jr nc, .no
+	; faster once paralyzed: Speed * 4 > the player's
+	sla e
+	rl d
+	sla e
+	rl d
+	ld a, c
+	sub e
+	ld a, b
+	sbc d
+	jr c, .yes
+.no
+	pop hl
+	pop bc
+.next
+	ld de, PARTYMON_STRUCT_LENGTH
+	add hl, de
+	inc c
+	dec b
+	jr nz, .loop
+	pop hl
+	and a
+	ret
+
+.yes
+	pop hl
+	pop bc
+	pop hl
+	scf
 	ret
 
 AI_Smogon_Pursuit:
@@ -600,10 +690,64 @@ AI_Smogon_Pursuit:
 	dec [hl]
 	ret
 
+AI_Smogon_DestinyBond:
+; Destiny Bond takes down whatever knocks us out before we move again.
+; Use it when the player is about to knock us out, and we move first: the
+; player's attack then can't come before Destiny Bond is up.
+; A sleeping or frozen Pokemon won't attack, so don't waste the turn.
+	call AISmogon_PlayerCantAttack
+	jr nz, .discourage
+	call AICheckEnemyQuarterHP
+	ret c
+	call AICompareSpeed
+	ret nc
+	jp AISmogon_GreatlyEncourage
+
+.discourage
+	inc [hl]
+	inc [hl]
+	ret
+
+AISmogon_PlayerHasPursuit:
+; Return carry if the player's Pokemon has revealed Pursuit, or usually has
+; it and hasn't revealed four other moves.
+	ld a, PURSUIT
+	call AISmogon_PlayerRevealedMove
+	ret c
+	ld a, [wPlayerUsedMoves + NUM_MOVES - 1]
+	and a
+	ret nz
+	call AISmogon_GetPlayerTraits
+	and SMOGON_PURSUIT
+	ret z
+	scf
+	ret
+
 AISmogon_GhostOrPsychic:
 	cp GHOST
 	ret z
 	cp PSYCHIC_TYPE
+	ret
+
+AI_Smogon_AttackDown:
+; Growl and Charm wall physical setup sweepers like Curse Snorlax by undoing
+; their Attack boosts. They do nothing through a Substitute, little against
+; special attackers, and can't keep up with a Belly Drum that maxed out Attack.
+	ld a, [wPlayerSubStatus4]
+	bit SUBSTATUS_SUBSTITUTE, a
+	jp nz, AIDiscourageMove
+	call AISmogon_PlayerIsPhysical
+	jr nc, .discourage
+	ld a, [wPlayerAtkLevel]
+	cp MAX_STAT_LEVEL
+	jr nc, .discourage
+	cp BASE_STAT_LEVEL + 1
+	ret c
+	jp AISmogon_GreatlyEncourage
+
+.discourage
+	inc [hl]
+	inc [hl]
 	ret
 
 AI_Smogon_PerishSong:
@@ -673,9 +817,21 @@ AI_Smogon_Protect:
 	and a
 	ret nz
 ; A sleeping or frozen Pokemon can't hurt us: attack it instead of stalling.
-	ld a, [wBattleMonStatus]
-	and SLP_MASK | 1 << FRZ
+	call AISmogon_PlayerCantAttack
 	ret nz
+
+; Protect against a likely Explosion, unless it would barely hurt.
+	push hl
+	call AISmogon_PlayerMayExplode
+	pop hl
+	jr nc, .no_explosion
+	ld a, [wEnemyMonType1]
+	call AISmogon_ResistsExplosion
+	jr z, .no_explosion
+	ld a, [wEnemyMonType2]
+	call AISmogon_ResistsExplosion
+	jp nz, AISmogon_GreatlyEncourage
+.no_explosion
 
 ; Stall out the player's Perish Song count if ours runs out later.
 	ld a, [wPlayerSubStatus1]
@@ -727,8 +883,7 @@ AISmogon_SandstormImmune:
 
 AI_Smogon_Substitute:
 ; A sleeping or frozen Pokemon can't break a Substitute.
-	ld a, [wBattleMonStatus]
-	and SLP_MASK | 1 << FRZ
+	call AISmogon_PlayerCantAttack
 	ret z
 	call AICheckEnemyHalfHP
 	ret nc
@@ -778,9 +933,9 @@ AI_Smogon_Setup:
 	cp SMOGON_SETUP_GOAL
 	jr nc, .discourage
 
-; A sleeping or frozen Pokemon can't punish setup.
-	ld a, [wBattleMonStatus]
-	and SLP_MASK | 1 << FRZ
+; A sleeping or frozen Pokemon can't punish setup, unless it uses Sleep Talk
+; (Curse + Sleep Talk Snorlax wins Snorlax wars that way).
+	call AISmogon_PlayerCantAttack
 	jp nz, AISmogon_Encourage
 
 ; Otherwise encourage boosting, especially against something that can
@@ -853,7 +1008,7 @@ AI_Smogon_Screens:
 .special
 	cp EFFECT_LIGHT_SCREEN
 .check
-	jr z, AISmogon_EncourageNear
+	jp z, AISmogon_EncourageNear
 	inc [hl]
 	inc [hl]
 	ret
@@ -870,8 +1025,7 @@ AI_Smogon_Counter:
 	and a
 	jp z, AIDiscourageMove
 ; A sleeping or frozen Pokemon won't attack.
-	ld a, [wBattleMonStatus]
-	and SLP_MASK | 1 << FRZ
+	call AISmogon_PlayerCantAttack
 	jr nz, .discourage
 ; Use the one that matches the player's attacks, going by the attacks it
 ; has revealed, or else by its Attack and Sp.Atk stats.
@@ -936,6 +1090,11 @@ AI_Smogon_Encore:
 	ld a, [wLastPlayerMove]
 	and a
 	ret z
+; Encore fails on Encore and Mirror Move (and Struggle, an attack).
+	cp ENCORE
+	jp z, AIDiscourageMove
+	cp MIRROR_MOVE
+	jp z, AIDiscourageMove
 	call AISmogon_GetMovePowerAndType
 	ld a, d
 	and a
@@ -1023,6 +1182,24 @@ AISmogon_PlayerCanPhaze:
 	db HAZE
 	db -1 ; end
 
+AISmogon_PlayerPhazes:
+; Return carry if the player's Pokemon has revealed Roar or Whirlwind, or
+; usually has one and hasn't revealed four other moves.
+	ld a, ROAR
+	call AISmogon_PlayerRevealedMove
+	ret c
+	ld a, WHIRLWIND
+	call AISmogon_PlayerRevealedMove
+	ret c
+	ld a, [wPlayerUsedMoves + NUM_MOVES - 1]
+	and a
+	ret nz
+	call AISmogon_GetPlayerTraits
+	and SMOGON_PHAZER
+	ret z
+	scf
+	ret
+
 AISmogon_PlayerIsCounterable:
 ; Same as AISmogon_PlayerIsPhysical, but the way Counter and Mirror Coat
 ; see attacks: Hidden Power is physical (Normal in the move data), and
@@ -1104,6 +1281,22 @@ AISmogon_PlayerIsPhysical:
 	pop hl
 	pop de
 	pop bc
+	ret
+
+AISmogon_PlayerCantAttack:
+; Return nz if the player's Pokemon can't attack this turn: it's frozen (it
+; doesn't move on the turn it thaws either), or asleep and hasn't revealed
+; Sleep Talk.
+	ld a, [wBattleMonStatus]
+	bit FRZ, a
+	ret nz
+	and SLP_MASK
+	ret z
+	ld a, SLEEP_TALK
+	call AISmogon_PlayerRevealedMove
+	; Sleep Talk: a = 0 (z), else a = 1 (nz)
+	sbc a
+	inc a
 	ret
 
 AISmogon_GetPlayerTraits:

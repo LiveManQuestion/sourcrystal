@@ -221,3 +221,67 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
     0 mismatches, `ai_scenarios.py` ALL OK, smoke and a 5100-frame walk with
     every screen identical to the old ROM, 12 battles with exp and a level-up
     (same exp as the old ROM, no crashes).
+- **2026-10-16**: Smogon AI from new sources: the Smogon GSC dex analyses
+  (OU/UUBL/UU/Uber sets, saved as `smogonairesources/smogon_dex_gs.json`)
+  and the per-species move counts in the replay spreadsheet.
+  `tools/claude/smogon_data.py` now generates `smogon_traits.asm` (old flags
+  reproduced exactly, `SMOGON_THREAT` kept) and the new `smogon_attacks.asm`.
+  - `SmogonExpectedAttacks`: the attack types (and power) on >= 20% of a
+    species' sets, e.g. Zapdos Thunder + Hidden Power Ice/Water, Golem only
+    Earthquake, Gengar Ice Punch/Thunderbolt/Dynamic Punch, Smeargle none.
+    `AISmogon_ScoreMatchup` assumes these instead of two 80-power STABs for
+    the 90 listed species, and drops all assumptions once four moves are
+    revealed.
+  - New traits `SMOGON_EXPLODER`, `SMOGON_PURSUIT`, `SMOGON_SLEEPER`:
+    a worn-down (below half HP, or Spikes already down) likely exploder
+    makes Rock/Steel/Ghost switch-ins worth `SMOGON_BOOM_ABSORB_BONUS` and
+    Protect greatly encouraged (unless the enemy resists Normal); a usual
+    Pursuit user keeps Ghosts/Psychics in; a usual sleeper counts as a sleep
+    threat for Sleep Talk switch-ins.
+  - Speed in matchups: the active Pokemon uses its battle Speed (boosts,
+    paralysis); paralysis quarters a benched Pokemon's Speed.
+  - `AI_Smogon_DestinyBond`: greatly encouraged at <= 1/4 HP when faster;
+    discouraged against a sleeping/frozen Pokemon.
+  - Checked: all four ROMs build (Enemy Trainers +861 bytes);
+    `cmp_data.py` ALL IDENTICAL; `ai_scenarios.py` ALL OK with 7 new move
+    and 8 new switch cases (6 of them fail on the old ROM); battle matrix
+    9 trainers × 12 seeds: AI wins 13 -> 24 of 108, timeouts 81 -> 65,
+    no crashes.
+- **2026-10-16**: Smogon AI from "GSC - A Naughty Guide"
+  (`smogonairesources/`, a Smogon-community GSC OU guide).
+  - `AISmogon_PlayerCantAttack`: a sleeping Pokemon that has revealed Sleep
+    Talk counts as able to attack (no free setup, Substitute, phazing
+    restraint or Destiny Bond/Protect/Counter shortcuts against it); frozen
+    still can't. Used by all of AI_Smogon's sleep/freeze checks.
+  - Matchups: a sleeping Pokemon that usually has Sleep Talk (trait) and
+    hasn't revealed four moves keeps 3/4 of its threat instead of half.
+  - `AI_Smogon_AttackDown` (Growl, Charm): greatly encouraged against a
+    physical attacker with raised (not maxed) Attack, discouraged against
+    special attackers, a maxed Belly Drum, or a Substitute.
+  - `AI_Smogon_MeanLook`: discouraged against a phazer.
+  - `AI_Smogon_Paralyze`: also encouraged when paralysis would let a slower
+    healthy teammate outspeed the player (`AISmogon_ParalysisHelpsTeammate`).
+  - Checked: all four ROMs build; `cmp_data.py` ALL IDENTICAL;
+    `ai_scenarios.py` ALL OK with 13 new cases (7 fail on the previous
+    build; the Fly/Dig cases now use Harden as their filler, since Growl now
+    has a handler). Battle matrix 9 x 12 vs. the previous build: AI wins
+    24 -> 26, timeouts 65 -> 57, no crashes. Per trainer it's noisy (Bugsy
+    5 -> 1, Rival 5 -> 10), but Bugsy's and Sabrina's teams use none of the
+    affected moves, so those swings are RNG timing.
+- **2026-10-16**: Smogon GSC move pages (descriptions and learners, saved
+  as `smogonairesources/smogon_moves_gs.json`) checked against the AI's
+  move handlers and the engine. Where Showdown's descriptions differ from
+  the cartridge (Encore also failing on Sleep Talk etc., Morning Sun
+  ignoring the time of day), the AI follows the engine.
+  - `AI_Smogon_Phaze`: Roar and Whirlwind fail if the user moves first
+    (`BattleCommand_ForceSwitch` checks `wEnemyGoesFirst`), so they're
+    discouraged against a slower Pokemon that phazes (revealed, or
+    `SMOGON_PHAZER` with fewer than four moves revealed), unless it has
+    boosted. New `AISmogon_PlayerPhazes`.
+  - `AI_Smogon_Encore`: discouraged when the player's last move was Encore
+    or Mirror Move, where `BattleCommand_Encore` fails.
+  - Checked: all four ROMs build; `cmp_data.py` ALL IDENTICAL;
+    `ai_scenarios.py` ALL OK with 6 new cases (3 fail on the previous
+    build). Battle matrix 9 x 12: AI wins 26 -> 26, no crashes; the only
+    trainers that phaze (Brock 0 -> 2, Jasmine 2 -> 4) improved. Rival 10 -> 5
+    is RNG timing: its team has none of the affected moves.
