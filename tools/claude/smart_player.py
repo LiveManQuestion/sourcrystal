@@ -8,7 +8,9 @@ Plays the save's own party, with no healing:
 - switches when a healthy party member wins the KO race against the enemy's
   active Pokemon at least twice as well as the active one, after taking a
   hit on the way in (and not two turns in a row),
-- after a faint, sends in the party member with the best KO race.
+- after a faint, sends in the party member with the best KO race,
+- lays Spikes (its one status move) when the enemy has Pokemon left to
+  switch in and they aren't down yet.
 It sees the enemy's actual moves, so it's a strong benchmark, stronger than a
 human who only knows the revealed moves.
 
@@ -73,6 +75,7 @@ HP_TYPES = ['FIGHTING', 'FLYING', 'POISON', 'GROUND', 'ROCK', 'BUG', 'GHOST', 'S
             'FIRE', 'WATER', 'GRASS', 'ELECTRIC', 'PSYCHIC_TYPE', 'ICE', 'DRAGON', 'DARK']
 SKIP = {'EFFECT_SELFDESTRUCT', 'EFFECT_COUNTER', 'EFFECT_MIRROR_COAT'}
 CANT_RUN = consts('constants/battle_constants.asm')['SUBSTATUS_CANT_RUN']
+SCREENS_SPIKES = consts('constants/battle_constants.asm')['SCREENS_SPIKES']
 TWO_TURN = {'EFFECT_RAZOR_WIND', 'EFFECT_SKY_ATTACK', 'EFFECT_SKULL_BASH', 'EFFECT_SOLARBEAM',
             'EFFECT_HYPER_BEAM'}
 
@@ -169,7 +172,7 @@ class SmartPlayer:
         self.idle = 0
         self.watchdog = 0
         self.actions = {'attacks': 0, 'switches': 0, 'replacements': 0, 'watchdog': 0,
-                        'errors': 0}
+                        'errors': 0, 'spikes': 0}
         for name, cb in (('BattleMenu', self.on_menu), ('MoveSelectionScreen', self.on_moves),
                          ('BattleMenuPKMN_Loop', self.on_pkmn), ('PickPartyMonInBattle', self.on_pick)):
             pb.hook_register(*sym[name], self.guarded(cb), None)
@@ -226,6 +229,14 @@ class SmartPlayer:
             out.append((race(mon, enemy, entry_hit), i))
         return sorted(out, reverse=True)
 
+    def enemy_bench(self):
+        """How many of the enemy's other Pokemon can still battle."""
+        m, W = self.m, self.W
+        length = W('wOTPartyMon2') - W('wOTPartyMon1')
+        cur = m[W('wCurOTMon')]
+        return sum(1 for i in range(m[W('wOTPartyCount')]) if i != cur and
+                   self.word(W('wOTPartyMon1HP') + i * length))
+
     def trapped(self):
         m, W = self.m, self.W
         return m[W('wPlayerSubStatus5')] & 1 << CANT_RUN or m[W('wPlayerWrapCount')]
@@ -249,6 +260,11 @@ class SmartPlayer:
             disabled = m[W('wDisabledMove')]
             moves = [0 if mv == disabled else mv for mv in us['moves']]
             _, slot = best_move(us, enemy, moves, us['pp'], us['dvs'])
+            spikes = next((i for i, mv in enumerate(moves)
+                           if MOVES.get(mv, {}).get('name') == 'SPIKES' and us['pp'][i] & 0x3f), None)
+            if spikes is not None and not m[W('wEnemyScreens')] & 1 << SCREENS_SPIKES and self.enemy_bench():
+                slot = spikes
+                self.actions['spikes'] += 1
             if slot is None:
                 # no damaging move left: any move with PP (with none, it
                 # Struggles)

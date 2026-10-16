@@ -31,7 +31,8 @@ user's save files.
   PyBoy draws Bill's PC as a white screen; test it through RAM.
 - `battle.py [--smart] ROM SYM RAM "BUGSY 2" SEED [frames]`: one Challenge
   Mode battle against a Smogon-AI trainer. JSON line with crashes, AI routine
-  counts, the enemy's moves and every enemy switch-in. Run
+  counts, the enemy's moves, every enemy switch-in, and `player_left` /
+  `enemy_left` (Pokemon with HP left at the end: finer than win/loss). Run
   `make_battle_scripts.py` first. An injected battle needs `winlosstext`.
   - Default player: an unkillable Typhlosion (Tackle, Swords Dance, Roar,
     Toxic) pressing random buttons. Good for crashes and stalls, not for win

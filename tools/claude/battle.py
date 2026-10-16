@@ -134,6 +134,13 @@ mem[W('wMapReentryScriptAddress')] = base & 0xff
 mem[W('wMapReentryScriptAddress') + 1] = base >> 8
 
 started = False
+# Pokemon left with HP on each side during the battle (a lost battle heals
+# the party afterwards), for finer comparisons than win/loss
+def alive(first, count):
+    length = W(first[:-1] + '2') - W(first)
+    return sum(1 for i in range(mem[W(count)])
+               if mem[W(first + 'HP') + i * length] | mem[W(first + 'HP') + i * length + 1])
+left = (None, None)
 enemy_moves = collections.Counter()
 last_turn = None
 out_frames = 0
@@ -142,6 +149,7 @@ while frame < max_frames and not crashed:
     if in_battle:
         started = True
         out_frames = 0
+        left = (alive('wPartyMon1', 'wPartyCount'), alive('wOTPartyMon1', 'wOTPartyCount'))
         if player:
             press(player.button(), after=rng.randint(8, 30))
         else:
@@ -168,6 +176,10 @@ result = {'switches': switch_log,
     'ended': started and mem[W('wBattleMode')] == 0, 'won': mem[W('wBattleResult')] & 0xf, 'crashed_at': crashed[:2],
     'hooks': dict(counts), 'enemy_moves': {f'{sp},{mv}': n for (sp, mv), n in enemy_moves.items()},
 }
+result['player_left'], result['enemy_left'] = left
+if result['won'] == 1:
+    # lost: the last faint can come after the last snapshot
+    result['player_left'] = 0
 if player:
     result['player_actions'] = player.actions
 print(json.dumps(result))
