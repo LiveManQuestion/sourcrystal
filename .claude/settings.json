@@ -8,7 +8,13 @@
       "Bash(python3 tools/claude/vanilla_diff.py *)",
       "Bash(python3 tools/claude/switch_report.py *)",
       "Bash(~/.local/share/uv/tools/pyboy/bin/python tools/claude/ai_scenarios.py *)",
-      "Bash(~/.local/share/uv/tools/pyboy/bin/python tools/claude/storage_test.py *)"
+      "Bash(~/.local/share/uv/tools/pyboy/bin/python tools/claude/storage_test.py *)",
+      "Bash(python3 tools/claude/stadium2/tpak.py *)",
+      "Bash(python3 tools/claude/battle_compare.py *)",
+      "Bash(pacman -Q *)",
+      "Bash(pacman -Qi *)",
+      "Bash(pacman -Qs *)",
+      "Bash(pacman -Ss *)"
     ]
   }
 }
