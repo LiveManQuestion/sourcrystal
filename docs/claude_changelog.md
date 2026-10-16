@@ -174,3 +174,16 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   every `tmhm` list equal vanilla's source; all four ROMs build;
   `cmp_data.py`, `ai_scenarios.py` and `smoke.py` pass. Also fixed Dunsparce's
   Frustration on Whitney's rematch team (happiness 0).
+- **2026-10-15**: Trainer movesets made legal. Checked every
+  `TRAINERTYPE_MOVES` party in `data/trainers/parties.asm` against
+  RBY/Yellow/GS/Crystal learnsets (level-up through pre-evolutions, TM/HM,
+  Crystal tutors, egg moves, Gen 1 trade-backs, Odd Egg, Extremespeed Dratini,
+  Surf/Fly Pikachu; Smeargle can Sketch anything). Replaced 314 impossible
+  moves (e.g. Gyarados Earthquake/Crunch, Golbat Crunch, Aerodactyl Rock
+  Slide, Skarmory Spikes) with legal moves filling the same role, and fixed
+  3 impossible combinations of a Gen 1-only move with a Gen 2 egg move
+  (Lt. Surge's Raichu, Bird Keeper Fearow). 51 level-up moves above the
+  Pokémon's level remain; Gen 2 breeding can pass those down. Also checked
+  against the GSC illegal-combination lists in `illegalmovecombos/` (4092
+  rules, 178 species): only Chuck's Granbull (Crunch + Metronome) hit, now
+  Ice Punch. All four ROMs build; `ai_scenarios.py` ALL OK.
