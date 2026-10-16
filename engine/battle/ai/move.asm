@@ -11,6 +11,9 @@ AIChooseMove:
 	and a
 	ret nz
 
+	xor a
+	ld [wEnemyAIMovesSpent], a
+
 ; No use picking a move if there's no choice.
 	farcall CheckEnemyLockedIn
 	ret nz
@@ -87,7 +90,7 @@ AIChooseMove:
 
 	ld a, c
 	cp 16 ; up to 16 scoring layers
-	jr z, .DecrementScores
+	jr z, .CheckSpent
 
 	push bc
 	ld d, BANK(TrainerClassAttributes)
@@ -115,6 +118,26 @@ AIChooseMove:
 	call FarCall_hl
 
 	jr .CheckLayer
+
+; Flag a Pokemon whose every move scored worse than the default 20, like a
+; Smeargle after Spore and Spikes: SwitchSmogon switches it out.
+.CheckSpent:
+	ld hl, wEnemyAIMoveScores
+	ld de, wEnemyMonMoves
+	ld c, NUM_MOVES
+.check_spent_loop
+	ld a, [de]
+	and a
+	jr z, .spent
+	ld a, [hli]
+	cp 20 + 1
+	jr c, .DecrementScores
+	inc de
+	dec c
+	jr nz, .check_spent_loop
+.spent
+	ld a, TRUE
+	ld [wEnemyAIMovesSpent], a
 
 ; Decrement the scores of all moves one by one until one reaches 0.
 .DecrementScores:

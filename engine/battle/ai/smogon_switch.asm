@@ -709,7 +709,7 @@ AISmogon_AttackPoints:
 	newfarcall CheckTypeMatchup
 	ld a, [wTypeMatchup]
 	and a
-	jr z, .done
+	jp z, .done
 	ld h, SMOGON_POINTS_RESISTED
 	cp EFFECTIVE
 	jr c, .got_points
@@ -790,18 +790,31 @@ AISmogon_AttackPoints:
 	ld h, a
 
 .stats
+; The stat matchup adds or removes a quarter, or half when it's lopsided.
 	ld a, e
 	cp SPECIAL
 	ld a, b
 	jr c, .physical
-	assert SMOGON_SPECIAL_EDGE_F == SMOGON_PHYSICAL_EDGE_F + 1
+	assert SMOGON_SPECIAL_EDGE_SHIFT == 2
+	rrca
 	rrca
 .physical
-	assert SMOGON_PHYSICAL_EDGE_F == 0
-	rrca
+	and %11
+	ld c, a
+	assert SMOGON_EDGE_MUCH_WORSE == 0
+	jr z, .lopsided
+	cp SMOGON_EDGE_MUCH_BETTER
+	jr nz, .got_edge
+.lopsided
+	sla l
+.got_edge
 	ld a, h
-	jr c, .edge
+	assert SMOGON_EDGE_BETTER == %10 && SMOGON_EDGE_MUCH_BETTER == %11
+	bit 1, c
+	jr nz, .edge
 	sub l
+	jr nc, .done
+	xor a
 	jr .done
 
 .edge
@@ -815,21 +828,23 @@ AISmogon_AttackPoints:
 AISmogon_StatEdges:
 ; de = the attacker's Attack, hl = the defender's Attack, each followed by
 ; Defense, Speed, Sp.Atk and Sp.Def as big-endian words, and a = the
-; defending side's screens. Return in b which of the attacker's stats beat
-; the defender's: Attack vs Defense (SMOGON_PHYSICAL_EDGE_F) and Sp.Atk vs
-; Sp.Def (SMOGON_SPECIAL_EDGE_F). Reflect and Light Screen take an edge away.
+; defending side's screens. Return in b how the attacker's stats compare to
+; the defender's (SMOGON_EDGE_* levels): Attack vs Defense in bits 0-1 and
+; Sp.Atk vs Sp.Def in bits 2-3. Reflect and Light Screen make it one level
+; worse. The defender's stats count its bulk: they're scaled by its max HP
+; against the usual HP at its level, so Blissey's and Snorlax's huge HP matter.
 	push de
 	push hl
+	push af
+	call AISmogon_GetBulk
+	pop af
 	ld c, a
-	ld b, 0
 	inc hl
 	inc hl
-	call AISmogon_Compare16
-	jr c, .no_physical_edge
+	call AISmogon_CompareBulk
 	bit SCREENS_REFLECT, c
-	jr nz, .no_physical_edge
-	set SMOGON_PHYSICAL_EDGE_F, b
-.no_physical_edge
+	call nz, .Screen
+	ld b, a
 	; Defense -> Sp.Def and Attack -> Sp.Atk
 	assert wBattleMonSpclDef - wBattleMonDefense == MON_SDF - MON_DEF
 	assert wBattleMonSpclAtk - wBattleMonAttack == MON_SAT - MON_ATK
@@ -845,14 +860,150 @@ AISmogon_StatEdges:
 	adc d
 	sub e
 	ld d, a
-	call AISmogon_Compare16
-	jr c, .done
+	call AISmogon_CompareBulk
 	bit SCREENS_LIGHT_SCREEN, c
-	jr nz, .done
-	set SMOGON_SPECIAL_EDGE_F, b
+	call nz, .Screen
+	assert SMOGON_SPECIAL_EDGE_SHIFT == 2
+	add a
+	add a
+	or b
+	ld b, a
+	pop hl
+	pop de
+	ret
+
+.Screen:
+; A screen halves the damage.
+	and a
+	ret z
+	dec a
+	ret
+
+AISmogon_GetBulk:
+; hl = the defender's Attack in a party or battle struct, where its max HP
+; and level come 2 and 7 bytes before. Store its max HP / 4 in
+; wSmogonAIBulkHP, and the usual HP at its level (about 3.25 * level + 10)
+; / 4 in wSmogonAIBulkRef.
+	push de
+	push hl
+	dec hl
+	ld e, [hl]
+	dec hl
+	ld d, [hl]
+	srl d
+	rr e
+	srl d
+	rr e
+	ld a, d
+	and a
+	ld a, e
+	jr z, .got_hp
+	ld a, $ff
+.got_hp
+	ld [wSmogonAIBulkHP], a
+	ld de, -(MON_ATK - MON_LEVEL - 2)
+	add hl, de
+	assert MON_ATK - MON_LEVEL == wBattleMonAttack - wBattleMonLevel
+	assert MON_ATK - MON_MAXHP == wBattleMonAttack - wBattleMonMaxHP
+; 13 * level / 16 + 3
+	ld e, [hl]
+	ld d, 0
+	ld h, d
+	ld l, e
+	add hl, hl
+	add hl, de
+	add hl, hl
+	add hl, hl
+	add hl, de
+	ld a, l
+	srl h
+	rra
+	srl h
+	rra
+	srl h
+	rra
+	srl h
+	rra
+	add 3
+	ld [wSmogonAIBulkRef], a
+	pop hl
+	pop de
+	ret
+
+AISmogon_CompareBulk:
+; Return in a how the attacker's stat word at de times wSmogonAIBulkRef
+; compares to the defender's stat word at hl times wSmogonAIBulkHP, from
+; SMOGON_EDGE_MUCH_WORSE (below half) to SMOGON_EDGE_MUCH_BETTER (at least
+; double). Both products fit in 18 bits, so doubling one can't overflow.
+	push bc
+	push de
+	push hl
+	xor a
+	ldh [hMultiplicand], a
+	ld a, [de]
+	ldh [hMultiplicand + 1], a
+	inc de
+	ld a, [de]
+	ldh [hMultiplicand + 2], a
+	ld a, [wSmogonAIBulkRef]
+	ldh [hMultiplier], a
+	call Multiply
+	ldh a, [hProduct + 1]
+	push af
+	ldh a, [hProduct + 2]
+	ld b, a
+	ldh a, [hProduct + 3]
+	ld c, a
+	xor a
+	ldh [hMultiplicand], a
+	ld a, [hli]
+	ldh [hMultiplicand + 1], a
+	ld a, [hl]
+	ldh [hMultiplicand + 2], a
+	ld a, [wSmogonAIBulkHP]
+	ldh [hMultiplier], a
+	call Multiply
+; d:b:c = the attacker's product, hProduct + 1 = the defender's
+	pop de
+	call .Compare
+	jr c, .worse
+	ld hl, hProduct + 3
+	sla [hl]
+	dec hl
+	rl [hl]
+	dec hl
+	rl [hl]
+	call .Compare
+	ld a, SMOGON_EDGE_BETTER
+	jr c, .done
+	inc a
+	jr .done
+
+.worse
+	sla c
+	rl b
+	rl d
+	call .Compare
+	ld a, SMOGON_EDGE_MUCH_WORSE
+	jr c, .done
+	inc a
 .done
 	pop hl
 	pop de
+	pop bc
+	ret
+
+.Compare:
+; Return carry if d:b:c is less than the 3 bytes at hProduct + 1.
+	ld hl, hProduct + 3
+	ld a, c
+	sub [hl]
+	dec hl
+	ld a, b
+	sbc [hl]
+	dec hl
+	ld a, d
+	sbc [hl]
 	ret
 
 AISmogon_Compare16:

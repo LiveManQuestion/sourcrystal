@@ -180,12 +180,23 @@ AI_Smogon_RapidSpin:
 ; Spin away Spikes if there are Pokemon left to switch in.
 	ld a, [wEnemyScreens]
 	bit SCREENS_SPIKES, a
-	ret z
+	jr z, .nothing_to_spin
 	push hl
 	farcall FindAliveEnemyMons
 	pop hl
 	ret c
 	jr AISmogon_Encourage
+
+.nothing_to_spin
+; With no Spikes, Leech Seed or Bind to clear, it's a weak 20 power attack.
+	ld a, [wEnemyWrapCount]
+	and a
+	ret nz
+	ld a, [wEnemySubStatus4]
+	bit SUBSTATUS_LEECH_SEED, a
+	ret nz
+	inc [hl]
+	ret
 
 AI_Smogon_Phaze:
 ; Roar and Whirlwind fail against a last Pokemon.

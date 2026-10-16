@@ -242,10 +242,27 @@ SwitchSmogon:
 	call AISmogon_EncoredIntoStatusMove
 	jr c, .escape
 
+; A Pokemon with no useful move left (every move scored worse than neutral),
+; like a Smeargle that has used Spore and Spikes, makes room for a teammate.
+	ld a, [wEnemyAIMovesSpent]
+	and a
+	jr nz, .spent
+
 ; Let a Sleep Talk user take the player's sleep move instead of losing the
 ; active Pokemon to sleep.
 	call AISmogon_ShouldAbsorbSleep
 	jr nc, .matchup
+
+.spent
+; ...but only for a better matchup, or two spent Pokemon swap back and forth.
+	ld a, [wEnemyAISwitchScore]
+	ld b, a
+	ld a, [wSmogonAIBestScore]
+	cp b
+	jr z, .stay
+	jr nc, .switch
+.stay
+	jp DontSwitch
 
 .escape
 ; Escape unless the best switch-in matches up much worse.

@@ -296,3 +296,30 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   `make_battle_scripts.py` now includes WHITNEY 2. `battle.py` prints the
   enemy's moves by species, and `battle_matrix.sh` writes one file per run,
   because parallel appends of long JSON lines interleaved.
+- **2026-10-16**: Spent Pokemon switch out. Whitney's Smeargle used Rapid
+  Spin with nothing to spin once Spore and Spikes were done: Rapid Spin was
+  its only attack, and it stayed at a neutral score. `AI_Smogon_RapidSpin` now
+  mildly discourages it with no Spikes, Leech Seed or Bind to clear.
+  `AIChooseMove` sets `wEnemyAIMovesSpent` (a battle-only padding byte, so
+  nothing moved) when every move scores worse than 20, and `SwitchSmogon`
+  escapes on it like on Leech Seed. Over 32 battles with the player's save
+  party: Smeargle's useless Rapid Spins went from 29 to 0, and it switched out
+  8 times instead of 1. Whitney's win rate didn't change (24 vs 23 of 32), no
+  crashes. `ai_scenarios.py` ALL OK, `cmp_data.py` ALL IDENTICAL.
+- **2026-10-16**: Bulk in the Smogon matchup scoring. `AISmogon_ScoreMatchup`
+  ignored HP, so Blissey's special bulk counted for nothing: against Zapdos
+  all six of Whitney's Pokemon scored 120-127, and ties went to party order
+  (Snorlax 43x, Blissey 5x after a faint). `AISmogon_StatEdges` now scales
+  the defender's stat by its max HP against the usual HP at its level
+  (`AISmogon_GetBulk`: 13 * level / 16 + 3, both / 4; the two temporaries
+  use the unused padding bytes after the Reflect counters, so no WRAM
+  moved), and each stat comparison is a level (`SMOGON_EDGE_*`: below half,
+  worse, better, at least double) that moves the points by a quarter or a
+  half. A screen makes it one level worse. A spent Pokemon only switches to a
+  strictly better matchup (two spent Pokemon swapped back and forth).
+  Results: Blissey sent into Zapdos 41 of 41 times. `ai_scenarios.py` ALL OK,
+  `cmp_data.py` ALL IDENTICAL, 9-trainer battle test (6 seeds) no crashes,
+  AI wins 0 -> 2 of 54, timeouts 5 -> 3. Still open: the score subtracts
+  per-hit points instead of comparing turns to KO, so a fast attacker with a
+  super-effective move (Tauros's Thunderbolt into Vaporeon) beats a wall
+  that takes far less damage.

@@ -70,10 +70,14 @@ DEF SMOGON_ANTI_SETUP_BONUS  EQU 24 ; switch-in that can phaze, Haze or explode 
 DEF SMOGON_SLEEP_ABSORB_BONUS EQU 16 ; Sleep Talk switch-in against a sleep move
 DEF SMOGON_BOOM_ABSORB_BONUS EQU 10 ; Rock, Steel or Ghost switch-in against a likely Explosion
 
-; AISmogon_StatEdges flags
+; AISmogon_StatEdges levels: how the attacker's stat compares to the
+; defender's, scaled by bulk (physical in bits 0-1, special in bits 2-3)
 	const_def
-	const SMOGON_PHYSICAL_EDGE_F ; 0
-	const SMOGON_SPECIAL_EDGE_F  ; 1
+	const SMOGON_EDGE_MUCH_WORSE  ; 0: below half
+	const SMOGON_EDGE_WORSE       ; 1
+	const SMOGON_EDGE_BETTER      ; 2
+	const SMOGON_EDGE_MUCH_BETTER ; 3: at least double
+DEF SMOGON_SPECIAL_EDGE_SHIFT EQU 2
 
 ; TRNATTR_AI_ITEM_SWITCH bit flags
 	const_def

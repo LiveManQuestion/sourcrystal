@@ -555,14 +555,18 @@ wEnemyScreens::
 wPlayerSafeguardCount:: db
 wPlayerLightScreenCount:: db
 wPlayerReflectCount:: db
-	ds 1
+; the defender's max HP / 4 in AISmogon_StatEdges
+wSmogonAIBulkHP:: db
 
 wEnemySafeguardCount:: db
 wEnemyLightScreenCount:: db
 wEnemyReflectCount:: db
-	ds 1
+; the usual HP / 4 at the defender's level in AISmogon_StatEdges
+wSmogonAIBulkRef:: db
 
-	ds 1
+; TRUE when every move of the enemy's Pokemon scored worse than neutral
+; (set by AIChooseMove, read by SwitchSmogon)
+wEnemyAIMovesSpent:: db
 
 wBattleWeather::
 ; 00 normal
