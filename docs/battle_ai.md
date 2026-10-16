@@ -30,10 +30,12 @@ How the trainer AI is organized (see also `CLAUDE.md`).
   (not when replacing a fainted Pokemon). `AISmogon_ApplyHealing` adds
   healing: Leftovers comes off the damage taken (the player's Pokemon is
   assumed to hold it), and a recovery move (half max HP per turn, Rest a
-  quarter) that outheals the damage taken means it can't be KOed, while its
-  own KO takes longer by the turns spent healing (`AISmogon_HealDelay`).
-  The player's Pokemon counts its revealed recovery moves, or Rest if its
-  `SmogonTraits` say so. For speed,
+  quarter) that outheals the damage taken lasts until its recovery PP runs
+  out (`AISmogon_SideTurns`: its HP plus each heal left), while its own KO
+  takes longer by the turns spent healing, at most its PP
+  (`AISmogon_HealDelay`). The AI knows its own Pokemon's PP; the player's
+  Pokemon counts its revealed recovery moves, or Rest if its `SmogonTraits`
+  say so, with their base PP. For speed,
   `AISmogon_SetupDamage` precomputes the formula without the power,
   `AISmogon_FillTypeMatchups` fills each attack type's effectiveness from a
   copy of the type chart in the AI bank (`data/types/type_matchups_table.asm`

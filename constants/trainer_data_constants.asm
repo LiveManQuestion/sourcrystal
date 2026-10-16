@@ -40,6 +40,13 @@ DEF SMOGON_MATCHUP_EVEN      EQU 128 ; neither side hits harder
 DEF SMOGON_MATCHUP_GOOD      EQU SMOGON_MATCHUP_EVEN + 16
 DEF SMOGON_STAB_POWER        EQU 80  ; assumed power of unrevealed STAB attacks
 DEF SMOGON_MAX_TURNS         EQU 63  ; turns to KO are capped here (at most 63)
+
+; Smogon AI healing blocks (wSmogonAIOurHeal, wSmogonAIPlayerHeal)
+rsreset
+DEF HEAL_AMOUNT       rw
+DEF HEAL_PP           rb
+DEF HEAL_HP           rw
+DEF HEAL_BLOCK_LENGTH EQU _RS
 DEF SMOGON_SETUP_GOAL        EQU BASE_STAT_LEVEL + 2 ; boost this far, then attack
 
 ; Smogon AI switch-in penalties (see AISmogon_SwitchInPenalty)

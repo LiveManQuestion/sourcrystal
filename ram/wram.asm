@@ -620,9 +620,10 @@ wSmogonAIScreens::     db
 wSmogonAIPhysFactor::  dw
 wSmogonAISpclFactor::  dw
 wSmogonAIBestDamage::  dw
-; HP each side can heal per turn with a recovery move (AISmogon_ApplyHealing)
-wSmogonAIOurHeal::     dw
-wSmogonAIPlayerHeal::  dw
+; each side's healing block (AISmogon_ApplyHealing): HP a recovery move
+; heals per use (big-endian), its PP left, and the current HP
+wSmogonAIOurHeal::     ds HEAL_BLOCK_LENGTH
+wSmogonAIPlayerHeal::  ds HEAL_BLOCK_LENGTH
 ; each attack type's effectiveness against the defender (EFFECTIVE = 1x),
 ; filled by AISmogon_FillTypeMatchups
 wSmogonAITypeEffectiveness:: ds TYPES_END

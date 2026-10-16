@@ -360,3 +360,16 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   test no crashes (AI wins 0 -> 3 of 54, timeouts 3 -> 6, within noise).
   PP isn't modeled, so two Pokemon that both outheal each other come out
   even.
+- **2026-10-16**: Recovery PP in the Smogon KO race. A side that outheals
+  the damage it takes now lasts until its recovery PP runs out
+  (`AISmogon_SideTurns`: HP plus PP * healing per use), and the turns it
+  loses to healing are at most its PP (`AISmogon_HealDelay`). Each side's
+  healing, PP and HP are in a healing block (`HEAL_*`, `wSmogonAIOurHeal`,
+  `wSmogonAIPlayerHeal`). The AI reads its own Pokemon's current PP (from
+  `wEnemyMonPP` for the active one); the player's recovery moves count their
+  base PP. Two healers no longer come out even: Miltank against a Rest
+  Snorlax scores 124 instead of 128, and Blissey against Zapdos 166 instead
+  of 183. Against the user's save party (48 battles): Whitney won 43, no
+  crashes; switch decisions still take at most 7 frames. `ai_scenarios.py`
+  ALL OK, `cmp_data.py` ALL IDENTICAL, 9-trainer battle test no crashes (AI
+  wins 3 -> 1 of 54, timeouts 6 -> 2). Attack PP isn't modeled.
