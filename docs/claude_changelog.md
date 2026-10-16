@@ -396,3 +396,13 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   a revealed Surf counts 24 PP, so Vaporeon now gets through Blissey's
   Softboiled (104) instead of a stalemate. `ai_scenarios.py` ALL OK,
   `cmp_data.py` ALL IDENTICAL.
+- **2026-10-16**: The player's PP Ups are estimated from their party instead
+  of the fixed `SMOGON_PLAYER_PP_UPS` (removed). `AISmogon_CountPlayerPPUps`
+  averages the PP Ups per move across the player's whole party (rounded),
+  once per matchup: the AI can tell how much the player uses PP Ups, not on
+  which Pokemon. Unrevealed attacks get `SMOGON_UNKNOWN_BASE_PP` (10) with
+  those PP Ups (`wSmogonAIUnknownPP`). Checked by giving the party none (0,
+  10 PP), all (3, 16 PP), and two of six Pokemon maxed (1, 12 PP). The
+  user's party has none, so Whitney is back to 43 wins of 48 against it (38
+  when assuming 3). `ai_scenarios.py` ALL OK, `cmp_data.py` ALL IDENTICAL,
+  9-trainer battle test no crashes.

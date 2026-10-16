@@ -383,6 +383,7 @@ AISmogon_ScoreMatchup:
 	push hl
 	ld a, b
 	ld [wSmogonAIMon], a
+	call AISmogon_CountPlayerPPUps
 
 ; Read the types from the base data, so this works for Pokemon in the back.
 	ld a, MON_SPECIES
@@ -432,8 +433,9 @@ AISmogon_ScoreMatchup:
 .expected_stab
 	inc c
 .expected_no_stab
+	ld a, [wSmogonAIUnknownPP]
+	ld b, a
 	ld a, e
-	ld b, SMOGON_UNKNOWN_PP
 	call AISmogon_AttackDamage
 	jr .expected_loop
 
@@ -442,7 +444,8 @@ AISmogon_ScoreMatchup:
 	pop hl
 	ld c, TRUE
 	ld d, SMOGON_STAB_POWER
-	ld b, SMOGON_UNKNOWN_PP
+	ld a, [wSmogonAIUnknownPP]
+	ld b, a
 	ld a, [wBattleMonType1]
 	ld e, a
 	call AISmogon_AttackDamage
@@ -698,8 +701,8 @@ AISmogon_ApplyHealing:
 ; half the max HP per use, Rest a quarter (it costs sleeping turns). The AI
 ; knows its own Pokemon's moves, item and PP; the player's Pokemon heals
 ; with the recovery moves it has revealed, or Rest if it usually has it,
-; with SMOGON_PLAYER_PP_UPS PP Ups, and is assumed to hold Leftovers like
-; most GSC OU Pokemon.
+; with the PP Ups the player uses (AISmogon_CountPlayerPPUps), and is
+; assumed to hold Leftovers like most GSC OU Pokemon.
 	ld a, [wBattleMonHP]
 	ld [wSmogonAIPlayerHeal + HEAL_HP], a
 	ld a, [wBattleMonHP + 1]
@@ -1215,11 +1218,85 @@ AISmogon_BasePP:
 	pop bc
 	ret
 
-AISmogon_PlayerMaxPP:
-; Return the PP of a move of the player's with base PP a, assuming
-; SMOGON_PLAYER_PP_UPS PP Ups: each adds a fifth of the base PP, at most 7.
-; Keeps bc.
+AISmogon_CountPlayerPPUps:
+; Store in wSmogonAIPlayerPPUps the PP Ups per move across the player's
+; party, rounded: the AI can tell how much the player uses PP Ups, but not
+; on which Pokemon. Also store the PP of the player's unrevealed attacks
+; (SMOGON_UNKNOWN_BASE_PP with those PP Ups) in wSmogonAIUnknownPP.
 	push bc
+	push de
+	push hl
+	ld hl, wPartyMon1Moves
+	ld a, [wPartyCount]
+	ld b, a
+	; d = moves, e = PP Ups
+	ld de, 0
+.mon
+	ld a, b
+	and a
+	jr z, .average
+	push hl
+	ld c, NUM_MOVES
+.move
+	ld a, [hl]
+	and a
+	jr z, .next_move
+	inc d
+	push hl
+	ld a, l
+	add MON_PP - MON_MOVES
+	ld l, a
+	adc h
+	sub l
+	ld h, a
+	ld a, [hl]
+	rlca
+	rlca
+	and %11
+	add e
+	ld e, a
+	pop hl
+.next_move
+	inc hl
+	dec c
+	jr nz, .move
+	pop hl
+	push bc
+	ld bc, PARTYMON_STRUCT_LENGTH
+	add hl, bc
+	pop bc
+	dec b
+	jr .mon
+
+.average
+; (PP Ups + moves / 2) / moves
+	ld a, d
+	and a
+	jr z, .got_average
+	srl a
+	add e
+	ld c, -1
+.divide
+	inc c
+	sub d
+	jr nc, .divide
+	ld a, c
+.got_average
+	ld [wSmogonAIPlayerPPUps], a
+	ld a, SMOGON_UNKNOWN_BASE_PP
+	call AISmogon_PlayerMaxPP
+	ld [wSmogonAIUnknownPP], a
+	pop hl
+	pop de
+	pop bc
+	ret
+
+AISmogon_PlayerMaxPP:
+; Return the PP of a move of the player's with base PP a, with
+; wSmogonAIPlayerPPUps PP Ups: each adds a fifth of the base PP, at most 7.
+; Keeps bc and de.
+	push bc
+	push de
 	ld b, a
 	ld c, -1
 .divide_by_5
@@ -1232,10 +1309,18 @@ AISmogon_PlayerMaxPP:
 	ld a, 7
 .got_boost
 	ld c, a
+	ld a, [wSmogonAIPlayerPPUps]
+	ld d, a
 	ld a, b
-	REPT SMOGON_PLAYER_PP_UPS
+	inc d
+.add_boost
+	dec d
+	jr z, .done
 	add c
-	ENDR
+	jr .add_boost
+
+.done
+	pop de
 	pop bc
 	ret
 

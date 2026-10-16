@@ -625,6 +625,8 @@ wSmogonAIAttacks::    dw ; the attack list AISmogon_AttackDamage adds to
 wSmogonAIMovePP::     dw ; a temporary
 wSmogonAIRemaining::  dw ; for AISmogon_TurnsWithPP
 wSmogonAITurns::      db
+wSmogonAIPlayerPPUps:: db ; PP Ups per move across the player's party
+wSmogonAIUnknownPP::   db ; PP of the player's unrevealed attacks
 ; each side's healing block (AISmogon_ApplyHealing): HP a recovery move
 ; heals per use (big-endian), its PP left, and the current HP
 wSmogonAIOurHeal::     ds HEAL_BLOCK_LENGTH

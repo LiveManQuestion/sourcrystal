@@ -41,9 +41,7 @@ DEF SMOGON_MATCHUP_GOOD      EQU SMOGON_MATCHUP_EVEN + 16
 DEF SMOGON_STAB_POWER        EQU 80  ; assumed power of unrevealed STAB attacks
 DEF SMOGON_MAX_TURNS         EQU 63  ; turns to KO are capped here (at most 63)
 
-DEF SMOGON_PLAYER_PP_UPS     EQU 3   ; PP Ups assumed on the player's moves (0-3)
-; PP assumed for the player's attacks it hasn't used: base 10, with PP Ups
-DEF SMOGON_UNKNOWN_PP        EQU 10 + SMOGON_PLAYER_PP_UPS * 2
+DEF SMOGON_UNKNOWN_BASE_PP   EQU 10  ; base PP of the player's attacks it hasn't used
 DEF SMOGON_MAX_ATTACKS       EQU 8   ; attacks kept per side
 
 ; Smogon AI attack lists (wSmogonAIThreat, wSmogonAIPower)
