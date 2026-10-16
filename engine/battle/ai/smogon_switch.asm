@@ -3,17 +3,19 @@
 ; Instead of relying on GSC OU usage data, which says nothing about Pokemon
 ; outside the OU metagame, these routines judge a matchup the way a player
 ; does from the battle screen, so they work against any team:
-; - how hard the player's Pokemon can hit ours: its own types (assuming STAB
-;   attacks of both) and the attacks it has revealed since it came in,
+; - how hard the player's Pokemon can hit ours: the attacks its species
+;   usually has (or STAB attacks of its types) and the attacks it has
+;   revealed since it came in,
 ; - how hard our Pokemon can hit back with its attacks,
-; - who has the edge between the attacking and defending stats involved
-;   (physical or special, by type), the moves' power and STAB, Hidden Power's
-;   real type, Reflect and Light Screen, and rain or sun,
+; - each side's best attack is estimated with the damage formula (level,
+;   power, the stats involved, STAB, type, Hidden Power's real type,
+;   Reflect and Light Screen, and rain or sun), and turned into how many
+;   turns it takes to KO the other side from its current HP,
 ; - whether the player's Pokemon is asleep or frozen,
-; - who is faster, and whether that allows a revenge kill.
-; Each side's best attack is reduced to rough damage points, and a matchup
-; scores SMOGON_MATCHUP_EVEN + (our points) - (the player's points), plus
-; bonuses for speed. Higher is better for the AI.
+; - who is faster (it hits first), and the hit a switch-in takes on the way in.
+; A matchup scores SMOGON_MATCHUP_EVEN + 16 * log2(the player's turns to KO
+; ours / ours to KO the player's), so 16 points is a race twice as good.
+; Higher is better for the AI.
 ;
 ; Everything here only runs for Smogon-AI trainers in Challenge Mode, and
 ; never in link battles.
@@ -307,29 +309,13 @@ AISmogon_CanStopSetup:
 	db -1 ; end
 
 AISmogon_SwitchInPenalty:
-; Return in a how much worse a switch-in is because of its HP and status.
-; A Pokemon in KO range can't afford to take a hit on the way in, and a
-; sleeping or frozen one would just sit there.
+; Return in a how much worse a switch-in is because of its status: a
+; sleeping or frozen one would just sit there. (Its HP is part of its
+; matchup score.)
 	push bc
 	push de
 	push hl
 	ld c, 0
-	ld a, MON_HP
-	call AISmogon_OTPartyAttr
-	call AISmogon_HPBelowHalf
-	jr nc, .status
-	ld c, SMOGON_PENALTY_HALF_HP
-	; HP * 4 < max HP?
-	sla e
-	rl d
-	ld a, e
-	sub [hl]
-	ld a, d
-	sbc b
-	jr nc, .status
-	ld c, SMOGON_PENALTY_QUARTER_HP
-
-.status
 	ld a, MON_STATUS
 	call AISmogon_OTPartyAttr
 	ld b, [hl]
@@ -364,24 +350,6 @@ AISmogon_SwitchInPenalty:
 	pop bc
 	ret
 
-AISmogon_HPBelowHalf:
-; hl = a Pokemon's HP, followed by its max HP (big-endian words).
-; Return carry if HP * 2 < max HP, with de = HP * 2, b = the max HP's high
-; byte and hl pointing to its low byte.
-	ld a, [hli]
-	ld d, a
-	ld a, [hli]
-	ld e, a
-	ld a, [hli]
-	ld b, a
-	sla e
-	rl d
-	ld a, e
-	sub [hl]
-	ld a, d
-	sbc b
-	ret
-
 AISmogon_OTMonHasMove:
 ; Return carry if wOTPartyMon [wSmogonAIMon] knows move a.
 	push bc
@@ -408,7 +376,8 @@ AISmogon_OTMonHasMove:
 
 AISmogon_ScoreMatchup:
 ; Return in a the matchup score of wOTPartyMon b against the player's active
-; Pokemon. SMOGON_MATCHUP_EVEN is even; higher is better for the AI.
+; Pokemon: SMOGON_MATCHUP_EVEN + 16 * log2(the player's turns to KO it /
+; its turns to KO the player). Higher is better for the AI.
 	push bc
 	push de
 	push hl
@@ -427,17 +396,14 @@ AISmogon_ScoreMatchup:
 	ld a, BANK(BaseData)
 	call FarCopyBytes
 
-	xor a
-	ld [wSmogonAIThreat], a
-	ld [wSmogonAIPower], a
-
 ; How hard can the player hit this Pokemon?
 	ld a, MON_ATK
 	call AISmogon_OTPartyAttr
 	ld de, wBattleMonAttack
 	ld a, [wEnemyScreens]
-	call AISmogon_StatEdges
+	call AISmogon_SetupDamage
 	ld hl, wSmogonAITypes
+	call AISmogon_FillTypeMatchups
 
 ; Until the player's Pokemon has revealed all four moves, expect the attacks
 ; its species usually has in GSC OU...
@@ -464,11 +430,8 @@ AISmogon_ScoreMatchup:
 .expected_stab
 	inc c
 .expected_no_stab
-	push hl
 	ld a, e
-	ld hl, wSmogonAITypes
-	call .PlayerAttack
-	pop hl
+	call AISmogon_AttackDamage
 	jr .expected_loop
 
 .assume_stab
@@ -478,10 +441,10 @@ AISmogon_ScoreMatchup:
 	ld d, SMOGON_STAB_POWER
 	ld a, [wBattleMonType1]
 	ld e, a
-	call .PlayerAttack
+	call AISmogon_AttackDamage
 	ld a, [wBattleMonType2]
 	cp e
-	call nz, .PlayerAttack
+	call nz, AISmogon_AttackDamage
 	jr .revealed_moves
 
 .expected_done
@@ -519,7 +482,7 @@ AISmogon_ScoreMatchup:
 	inc c
 .player_no_stab
 	ld a, e
-	call .PlayerAttack
+	call AISmogon_AttackDamage
 .next_player_move
 	pop de
 	inc e
@@ -532,13 +495,20 @@ AISmogon_ScoreMatchup:
 	pop hl
 	pop de
 .player_moves_done
+	ld a, [wSmogonAIBestDamage]
+	ld h, a
+	ld a, [wSmogonAIBestDamage + 1]
+	ld l, a
 
 ; A sleeping or frozen Pokemon can't attack, unless it uses Sleep Talk.
 	call AISmogon_PlayerCantAttack
 	jr z, .player_can_attack
-	ld hl, wSmogonAIThreat
+	ld d, h
+	ld e, l
+	srl d
+	rr e
 ; One that usually has Sleep Talk may still have it: count 3/4 of its
-; threat (Sleep Talk calls an attack most of the time) instead of half.
+; damage (Sleep Talk calls an attack most of the time) instead of half.
 	ld a, [wBattleMonStatus]
 	and SLP_MASK
 	jr z, .halve_threat
@@ -548,18 +518,24 @@ AISmogon_ScoreMatchup:
 	call AISmogon_GetPlayerTraits
 	bit SMOGON_SLEEP_TALK_F, a
 	jr z, .halve_threat
-	ld a, [hl]
-	srl a
-	srl a
-	cpl
-	inc a
-	add [hl]
-	ld [hl], a
+	srl d
+	rr e
+	ld a, l
+	sub e
+	ld l, a
+	ld a, h
+	sbc d
+	ld h, a
 	jr .player_can_attack
 
 .halve_threat
-	srl [hl]
+	ld h, d
+	ld l, e
 .player_can_attack
+	ld a, h
+	ld [wSmogonAIThreat], a
+	ld a, l
+	ld [wSmogonAIThreat + 1], a
 
 ; How hard can this Pokemon hit the player?
 	ld a, MON_ATK
@@ -568,7 +544,9 @@ AISmogon_ScoreMatchup:
 	ld e, l
 	ld hl, wBattleMonAttack
 	ld a, [wPlayerScreens]
-	call AISmogon_StatEdges
+	call AISmogon_SetupDamage
+	ld hl, wBattleMonType
+	call AISmogon_FillTypeMatchups
 
 	ld e, 0
 .our_moves
@@ -602,13 +580,8 @@ AISmogon_ScoreMatchup:
 .our_stab
 	inc c
 .our_no_stab
-	ld hl, wBattleMonType
 	ld a, e
-	call AISmogon_AttackPoints
-	ld hl, wSmogonAIPower
-	cp [hl]
-	jr c, .next_our_move
-	ld [hl], a
+	call AISmogon_AttackDamage
 .next_our_move
 	pop de
 	inc e
@@ -620,17 +593,57 @@ AISmogon_ScoreMatchup:
 .our_moves_end
 	pop de
 .our_moves_done
+	ld a, [wSmogonAIBestDamage]
+	ld [wSmogonAIPower], a
+	ld a, [wSmogonAIBestDamage + 1]
+	ld [wSmogonAIPower + 1], a
 
-; Even + our best attack - the player's best attack
-	ld a, [wSmogonAIThreat]
-	ld b, a
-	ld a, [wSmogonAIPower]
-	add SMOGON_MATCHUP_EVEN
-	sub b
+; Turns for this Pokemon to KO the player's...
+	ld hl, wBattleMonHP
+	ld a, [hli]
+	ld d, a
+	ld e, [hl]
+	ld hl, wSmogonAIPower
+	call AISmogon_TurnsToKO
+	add a
+	push af
+
+; ...and for the player's to KO it, counted in half turns.
+	ld a, [wCurOTMon]
+	ld c, a
+	ld a, [wSmogonAIMon]
+	cp c
+	ld hl, wEnemyMonHP
+	jr z, .got_hp
+	ld a, MON_HP
+	call AISmogon_OTPartyAttr
+.got_hp
+	ld a, [hli]
+	ld d, a
+	ld e, [hl]
+	ld hl, wSmogonAIThreat
+	call AISmogon_TurnsToKO
+	add a
 	ld b, a
 
-; Outspeeding wins trades... The active Pokemon's Speed includes its stat
-; changes and paralysis; paralysis quarters the Speed of one in the back.
+; A switch-in takes a hit on the way in, unless it replaces a fainted
+; Pokemon.
+	ld a, [wCurOTMon]
+	ld c, a
+	ld a, [wSmogonAIMon]
+	cp c
+	jr z, .no_entry_hit
+	ld hl, wEnemyMonHP
+	ld a, [hli]
+	or [hl]
+	jr z, .no_entry_hit
+	dec b
+	dec b
+.no_entry_hit
+
+; The faster Pokemon gets its hit in first: half a turn more. The active
+; Pokemon's Speed includes its stat changes and paralysis; paralysis quarters
+; the Speed of one in the back.
 	ld a, [wCurOTMon]
 	ld c, a
 	ld a, [wSmogonAIMon]
@@ -667,343 +680,501 @@ AISmogon_ScoreMatchup:
 	ld c, a
 	ld a, d
 	sbc c
+	jr c, .slower
+	inc b
+.slower
+	; a switch-in KOed on the way in counts as half a turn
 	ld a, b
-	jr c, .done
-	add SMOGON_FASTER_BONUS
-	ld c, a
+	dec a
+	cp $80
+	jr c, .got_turns
+	ld b, 1
+.got_turns
 
-; ...and finishes off a weakened Pokemon before it can move.
-	ld hl, wBattleMonHP
-	call AISmogon_HPBelowHalf
-	ld a, c
-	jr nc, .done
-	add SMOGON_REVENGE_BONUS
-.done
+; Even + 16 * log2(the player's half turns / ours)
+	ld a, b
+	call AISmogon_Log2
+	ld d, a
+	pop af
+	call AISmogon_Log2
+	ld b, a
+	ld a, SMOGON_MATCHUP_EVEN
+	add d
+	sub b
 	pop hl
 	pop de
 	pop bc
 	ret
 
-.PlayerAttack:
-	call AISmogon_AttackPoints
-	push hl
-	ld hl, wSmogonAIThreat
-	cp [hl]
-	jr c, .keep_threat
-	ld [hl], a
-.keep_threat
-	pop hl
+AISmogon_TurnsToKO:
+; Return in a how many hits of the damage word at hl it takes to KO a
+; Pokemon with de HP, from 1 to SMOGON_MAX_TURNS.
+	ld a, [hli]
+	ld b, a
+	ld c, [hl]
+	or c
+	ld a, SMOGON_MAX_TURNS
+	ret z
+; ceil(HP / damage)
+	ld h, d
+	ld l, e
+	dec bc
+	add hl, bc
+	inc bc
+	xor a
+	ldh [hMathBuffer + 1], a
+	ld a, h
+	ldh [hMathBuffer + 2], a
+	ld a, l
+	ldh [hMathBuffer + 3], a
+	ld d, b
+	ld e, c
+	call AISmogon_Divide24
+	ld a, h
+	and a
+	jr nz, .max
+	ld a, l
+	and a
+	jr z, .min
+	cp SMOGON_MAX_TURNS + 1
+	ret c
+.max
+	ld a, SMOGON_MAX_TURNS
 	ret
 
-AISmogon_AttackPoints:
-; Return in a rough damage points for an attack of type a and power d against
-; the types at hl. c is nonzero for STAB. b holds the attacker's stat edges
-; (see AISmogon_StatEdges).
-; Effectiveness gives the base points; STAB, rain or sun add or remove half;
-; power and the stat edge add or remove a quarter.
-; Fixed-damage moves like Seismic Toss count as neutral hits.
+.min
+	inc a
+	ret
+
+AISmogon_Divide24:
+; Divide the 24-bit big-endian number at hMathBuffer + 1 by de (1 to $7fff).
+; Leave the quotient there and return its low 16 bits in hl.
+; Much faster than Divide for this.
+	ld hl, 0
+	ld b, 24
+.loop
+; Shift the dividend's top bit into the remainder in hl...
+	ldh a, [hMathBuffer + 3]
+	add a
+	ldh [hMathBuffer + 3], a
+	ldh a, [hMathBuffer + 2]
+	rla
+	ldh [hMathBuffer + 2], a
+	ldh a, [hMathBuffer + 1]
+	rla
+	ldh [hMathBuffer + 1], a
+	rl l
+	rl h
+; ...and subtract the divisor when it fits, for a 1 in the quotient.
+	ld a, l
+	sub e
+	ld c, a
+	ld a, h
+	sbc d
+	jr c, .next
+	ld h, a
+	ld l, c
+	ldh a, [hMathBuffer + 3]
+	inc a
+	ldh [hMathBuffer + 3], a
+.next
+	dec b
+	jr nz, .loop
+	ldh a, [hMathBuffer + 2]
+	ld h, a
+	ldh a, [hMathBuffer + 3]
+	ld l, a
+	ret
+
+AISmogon_Log2:
+; Return in a about 16 * log2(a), for a from 1 to 255. Clobbers b and c.
+	ld c, 7 * 16
+.normalize
+	bit 7, a
+	jr nz, .got_exponent
+	add a
+	ld b, a
+	ld a, c
+	sub 16
+	ld c, a
+	ld a, b
+	jr .normalize
+
+.got_exponent
+; the four bits after the top one approximate the fraction
+	rrca
+	rrca
+	rrca
+	and $f
+	add c
+	ret
+
+AISmogon_SetupDamage:
+; de = the attacker's Attack, hl = the defender's Attack, each followed by
+; Defense, Speed, Sp.Atk and Sp.Def as big-endian words, with the level 7
+; bytes before (as in party and battle structs), and a = the defending
+; side's screens. Store what AISmogon_AttackDamage needs, and reset
+; wSmogonAIBestDamage.
+	assert MON_ATK - MON_LEVEL == wBattleMonAttack - wBattleMonLevel
+	assert wBattleMonSpclDef - wBattleMonAttack == MON_SDF - MON_ATK
+	assert wBattleMonSpclAtk - wBattleMonAttack == MON_SAT - MON_ATK
 	push bc
 	push de
 	push hl
-	ld e, a
-	newfarcall CheckTypeMatchup
-	ld a, [wTypeMatchup]
-	and a
-	jp z, .done
-	ld h, SMOGON_POINTS_RESISTED
-	cp EFFECTIVE
-	jr c, .got_points
-	ld h, SMOGON_POINTS_NEUTRAL
-	jr z, .got_points
-	ld h, SMOGON_POINTS_SUPER
-	cp SUPER_EFFECTIVE + 1
-	jr c, .got_points
-	ld h, SMOGON_POINTS_4X
-.got_points
+	ld [wSmogonAIScreens], a
 
-	ld a, d
-	cp 2
-	ld a, SMOGON_POINTS_NEUTRAL
-	jr c, .done
-
-	; l = a quarter of the base points
-	ld a, h
-	srl a
-	srl a
-	ld l, a
-
-	ld a, c
-	and a
-	jr z, .no_stab
-	ld a, l
+; 2 * level / 5 + 2
+	ld h, d
+	ld l, e
+	ld bc, -(MON_ATK - MON_LEVEL)
+	add hl, bc
+	ld a, [hl]
+	ld [wSmogonAILevel], a
 	add a
-	add h
-	ld h, a
-.no_stab
-
-; Rain boosts Water and weakens Fire; sun does the opposite.
-	ld a, [wBattleWeather]
-	cp WEATHER_RAIN
-	jr z, .rain
-	cp WEATHER_SUN
-	jr nz, .no_weather
-	ld a, e
-	cp FIRE
-	jr z, .weather_boost
-	cp WATER
-	jr z, .weather_drop
-	jr .no_weather
-
-.rain
-	ld a, e
-	cp WATER
-	jr z, .weather_boost
-	cp FIRE
-	jr nz, .no_weather
-.weather_drop
-	ld a, h
-	sub l
-	sub l
-	ld h, a
-	jr .no_weather
-
-.weather_boost
-	ld a, l
-	add a
-	add h
-	ld h, a
-.no_weather
-
-	ld a, d
-	cp SMOGON_WEAK_POWER
-	jr nc, .not_weak
-	ld a, h
-	sub l
-	ld h, a
-	jr .stats
-
-.not_weak
-	cp SMOGON_STRONG_POWER
-	jr c, .stats
-	ld a, h
-	add l
-	ld h, a
-
-.stats
-; The stat matchup adds or removes a quarter, or half when it's lopsided.
-	ld a, e
-	cp SPECIAL
+	ld b, -1
+.div5
+	inc b
+	sub 5
+	jr nc, .div5
 	ld a, b
-	jr c, .physical
-	assert SMOGON_SPECIAL_EDGE_SHIFT == 2
-	rrca
-	rrca
-.physical
-	and %11
-	ld c, a
-	assert SMOGON_EDGE_MUCH_WORSE == 0
-	jr z, .lopsided
-	cp SMOGON_EDGE_MUCH_BETTER
-	jr nz, .got_edge
-.lopsided
-	sla l
-.got_edge
-	ld a, h
-	assert SMOGON_EDGE_BETTER == %10 && SMOGON_EDGE_MUCH_BETTER == %11
-	bit 1, c
-	jr nz, .edge
-	sub l
-	jr nc, .done
-	xor a
-	jr .done
+	add 2
+	ld [wSmogonAILevelFactor], a
 
-.edge
-	add l
-.done
+; Attack vs Defense (Reflect doubles Defense)
+	pop hl
+	push hl
+	ld a, [de]
+	ld b, a
+	inc de
+	ld a, [de]
+	ld c, a
+	inc hl
+	inc hl
+	ld a, [hli]
+	ld d, a
+	ld e, [hl]
+	ld a, [wSmogonAIScreens]
+	bit SCREENS_REFLECT, a
+	call nz, .Double
+	call .Scale
+	call .Factor
+	ld a, h
+	ld [wSmogonAIPhysFactor], a
+	ld a, l
+	ld [wSmogonAIPhysFactor + 1], a
+
+; Sp.Atk vs Sp.Def (Light Screen doubles Sp.Def)
 	pop hl
 	pop de
-	pop bc
-	ret
-
-AISmogon_StatEdges:
-; de = the attacker's Attack, hl = the defender's Attack, each followed by
-; Defense, Speed, Sp.Atk and Sp.Def as big-endian words, and a = the
-; defending side's screens. Return in b how the attacker's stats compare to
-; the defender's (SMOGON_EDGE_* levels): Attack vs Defense in bits 0-1 and
-; Sp.Atk vs Sp.Def in bits 2-3. Reflect and Light Screen make it one level
-; worse. The defender's stats count its bulk: they're scaled by its max HP
-; against the usual HP at its level, so Blissey's and Snorlax's huge HP matter.
 	push de
 	push hl
-	push af
-	call AISmogon_GetBulk
-	pop af
-	ld c, a
-	inc hl
-	inc hl
-	call AISmogon_CompareBulk
-	bit SCREENS_REFLECT, c
-	call nz, .Screen
-	ld b, a
-	; Defense -> Sp.Def and Attack -> Sp.Atk
-	assert wBattleMonSpclDef - wBattleMonDefense == MON_SDF - MON_DEF
-	assert wBattleMonSpclAtk - wBattleMonAttack == MON_SAT - MON_ATK
-	ld a, l
-	add (MON_SDF - MON_DEF)
-	ld l, a
-	adc h
-	sub l
-	ld h, a
 	ld a, e
-	add (MON_SAT - MON_ATK)
+	add MON_SAT - MON_ATK
 	ld e, a
 	adc d
 	sub e
 	ld d, a
-	call AISmogon_CompareBulk
-	bit SCREENS_LIGHT_SCREEN, c
-	call nz, .Screen
-	assert SMOGON_SPECIAL_EDGE_SHIFT == 2
-	add a
-	add a
-	or b
+	ld a, [de]
 	ld b, a
-	pop hl
-	pop de
-	ret
-
-.Screen:
-; A screen halves the damage.
-	and a
-	ret z
-	dec a
-	ret
-
-AISmogon_GetBulk:
-; hl = the defender's Attack in a party or battle struct, where its max HP
-; and level come 2 and 7 bytes before. Store its max HP / 4 in
-; wSmogonAIBulkHP, and the usual HP at its level (about 3.25 * level + 10)
-; / 4 in wSmogonAIBulkRef.
-	push de
-	push hl
-	dec hl
-	ld e, [hl]
-	dec hl
-	ld d, [hl]
-	srl d
-	rr e
-	srl d
-	rr e
-	ld a, d
-	and a
-	ld a, e
-	jr z, .got_hp
-	ld a, $ff
-.got_hp
-	ld [wSmogonAIBulkHP], a
-	ld de, -(MON_ATK - MON_LEVEL - 2)
-	add hl, de
-	assert MON_ATK - MON_LEVEL == wBattleMonAttack - wBattleMonLevel
-	assert MON_ATK - MON_MAXHP == wBattleMonAttack - wBattleMonMaxHP
-; 13 * level / 16 + 3
-	ld e, [hl]
-	ld d, 0
-	ld h, d
-	ld l, e
-	add hl, hl
-	add hl, de
-	add hl, hl
-	add hl, hl
-	add hl, de
+	inc de
+	ld a, [de]
+	ld c, a
 	ld a, l
-	srl h
-	rra
-	srl h
-	rra
-	srl h
-	rra
-	srl h
-	rra
-	add 3
-	ld [wSmogonAIBulkRef], a
+	add MON_SDF - MON_ATK
+	ld l, a
+	adc h
+	sub l
+	ld h, a
+	ld a, [hli]
+	ld d, a
+	ld e, [hl]
+	ld a, [wSmogonAIScreens]
+	bit SCREENS_LIGHT_SCREEN, a
+	call nz, .Double
+	call .Scale
+	call .Factor
+	ld a, h
+	ld [wSmogonAISpclFactor], a
+	ld a, l
+	ld [wSmogonAISpclFactor + 1], a
+
+	xor a
+	ld [wSmogonAIBestDamage], a
+	ld [wSmogonAIBestDamage + 1], a
 	pop hl
 	pop de
+	pop bc
 	ret
 
-AISmogon_CompareBulk:
-; Return in a how the attacker's stat word at de times wSmogonAIBulkRef
-; compares to the defender's stat word at hl times wSmogonAIBulkHP, from
-; SMOGON_EDGE_MUCH_WORSE (below half) to SMOGON_EDGE_MUCH_BETTER (at least
-; double). Both products fit in 18 bits, so doubling one can't overflow.
+.Double:
+	sla e
+	rl d
+	ret
+
+.Factor:
+; Return in hl (2 * level / 5 + 2) * c * 256 / e / 50: the damage formula
+; without the power, which AISmogon_AttackDamage multiplies by and divides
+; by 256. At most 42 * 255 * 256 / 50, so it fits in 16 bits.
+	xor a
+	ldh [hMultiplicand], a
+	ldh [hMultiplicand + 1], a
+	ld a, [wSmogonAILevelFactor]
+	ldh [hMultiplicand + 2], a
+	ld a, c
+	ldh [hMultiplier], a
+	call Multiply
+	; * 256
+	ldh a, [hProduct + 2]
+	ldh [hMathBuffer + 1], a
+	ldh a, [hProduct + 3]
+	ldh [hMathBuffer + 2], a
+	xor a
+	ldh [hMathBuffer + 3], a
+	; de = defense * 50
+	ld l, e
+	ld h, 0
+	ld d, h
+	add hl, hl
+	add hl, hl
+	add hl, de
+	add hl, hl
+	ld d, h
+	ld e, l
+	add hl, hl
+	add hl, hl
+	add hl, de
+	ld d, h
+	ld e, l
+	jp AISmogon_Divide24
+
+.Scale:
+; Halve bc and de together until both fit in a byte. The defending stat in
+; e is at least 1.
+	ld a, b
+	or d
+	jr z, .scaled
+	srl b
+	rr c
+	srl d
+	rr e
+	jr .Scale
+
+.scaled
+	ld a, e
+	and a
+	ret nz
+	inc e
+	ret
+
+AISmogon_FillTypeMatchups:
+; Fill wSmogonAITypeEffectiveness with each attack type's effectiveness
+; against the types at hl, as CheckTypeMatchup would compute it (ignoring
+; Foresight), so AISmogon_AttackDamage doesn't scan the type chart per move.
 	push bc
 	push de
 	push hl
+	ld b, [hl]
+	inc hl
+	ld c, [hl]
+	ld hl, wSmogonAITypeEffectiveness
+	ld e, TYPES_END
+	ld a, EFFECTIVE
+.init
+	ld [hli], a
+	dec e
+	jr nz, .init
+
+	ld hl, AISmogon_TypeMatchups
+.loop
+	ld a, [hli]
+	cp -1
+	jr z, .done
+	cp -2
+	jr z, .loop
+	ld e, a
+	ld a, [hli]
+	cp b
+	jr z, .match
+	cp c
+	jr z, .match
+	inc hl
+	jr .loop
+
+.match
+	ld a, [hli]
+	push hl
+	ld d, a
+	ld hl, wSmogonAITypeEffectiveness
+	ld a, e
+	add l
+	ld l, a
+	adc h
+	sub l
+	ld h, a
+	ld a, d
+	cp SUPER_EFFECTIVE
+	jr z, .super
+	cp NOT_VERY_EFFECTIVE
+	jr z, .not_very
 	xor a
-	ldh [hMultiplicand], a
-	ld a, [de]
-	ldh [hMultiplicand + 1], a
-	inc de
-	ld a, [de]
-	ldh [hMultiplicand + 2], a
-	ld a, [wSmogonAIBulkRef]
-	ldh [hMultiplier], a
-	call Multiply
-	ldh a, [hProduct + 1]
-	push af
-	ldh a, [hProduct + 2]
+	jr .store
+
+.super
+	ld a, [hl]
+	add a
+	jr .store
+
+.not_very
+	ld a, [hl]
+	srl a
+.store
+	ld [hl], a
+	pop hl
+	jr .loop
+
+.done
+	pop hl
+	pop de
+	pop bc
+	ret
+
+AISmogon_AttackDamage:
+; Estimate the damage of an attack of type a and power d, with STAB if c is
+; nonzero, using AISmogon_SetupDamage and AISmogon_FillTypeMatchups, and
+; keep the highest in wSmogonAIBestDamage.
+; Fixed-damage moves like Seismic Toss (power 1) do the attacker's level.
+; The random factor, critical hits and accuracy are left out.
+	push bc
+	push de
+	push hl
+	ld e, a
+	ld hl, wSmogonAITypeEffectiveness
+	add l
+	ld l, a
+	adc h
+	sub l
+	ld h, a
+	ld a, [hl]
+	and a
+	jp z, .done
 	ld b, a
-	ldh a, [hProduct + 3]
-	ld c, a
+
+	ld a, d
+	cp 2
+	jr nc, .formula
+	ld a, [wSmogonAILevel]
+	ld l, a
+	ld h, 0
+	jp .keep
+
+.formula
+	ld hl, wSmogonAIPhysFactor
+	ld a, e
+	cp SPECIAL
+	jr c, .got_factor
+	ld hl, wSmogonAISpclFactor
+.got_factor
+; power * factor / 256 + 2 (see AISmogon_SetupDamage.Factor), at most
+; $7ff so the multipliers below (up to 9 times) stay below $8000
 	xor a
 	ldh [hMultiplicand], a
 	ld a, [hli]
 	ldh [hMultiplicand + 1], a
 	ld a, [hl]
 	ldh [hMultiplicand + 2], a
-	ld a, [wSmogonAIBulkHP]
+	ld a, d
 	ldh [hMultiplier], a
 	call Multiply
-; d:b:c = the attacker's product, hProduct + 1 = the defender's
-	pop de
-	call .Compare
-	jr c, .worse
-	ld hl, hProduct + 3
-	sla [hl]
-	dec hl
-	rl [hl]
-	dec hl
-	rl [hl]
-	call .Compare
-	ld a, SMOGON_EDGE_BETTER
-	jr c, .done
-	inc a
-	jr .done
+	ldh a, [hProduct + 1]
+	ld h, a
+	ldh a, [hProduct + 2]
+	ld l, a
+	inc hl
+	inc hl
+	ld a, h
+	cp HIGH($800)
+	jr c, .capped
+	ld hl, $7ff
+.capped
 
-.worse
-	sla c
-	rl b
-	rl d
-	call .Compare
-	ld a, SMOGON_EDGE_MUCH_WORSE
-	jr c, .done
-	inc a
+	ld a, c
+	and a
+	call nz, .AddHalf
+
+; Rain boosts Water and weakens Fire; sun does the opposite.
+	ld a, [wBattleWeather]
+	cp WEATHER_RAIN
+	jr z, .rain
+	cp WEATHER_SUN
+	jr nz, .type
+	ld a, e
+	cp FIRE
+	jr z, .weather_boost
+	cp WATER
+	jr z, .weather_drop
+	jr .type
+
+.rain
+	ld a, e
+	cp WATER
+	jr z, .weather_boost
+	cp FIRE
+	jr nz, .type
+.weather_drop
+	srl h
+	rr l
+	jr .type
+
+.weather_boost
+	call .AddHalf
+
+.type
+; Effectiveness: 2 or 4 times, or a half or a quarter.
+	ld a, b
+	cp EFFECTIVE
+	jr z, .keep
+	jr c, .resisted
+	add hl, hl
+	cp EFFECTIVE * 4
+	jr c, .keep
+	add hl, hl
+	jr .keep
+
+.resisted
+	srl h
+	rr l
+	cp NOT_VERY_EFFECTIVE
+	jr nc, .keep
+	srl h
+	rr l
+
+.keep
+	ld a, [wSmogonAIBestDamage]
+	cp h
+	jr c, .store
+	jr nz, .done
+	ld a, [wSmogonAIBestDamage + 1]
+	cp l
+	jr nc, .done
+.store
+	ld a, h
+	ld [wSmogonAIBestDamage], a
+	ld a, l
+	ld [wSmogonAIBestDamage + 1], a
 .done
 	pop hl
 	pop de
 	pop bc
 	ret
 
-.Compare:
-; Return carry if d:b:c is less than the 3 bytes at hProduct + 1.
-	ld hl, hProduct + 3
-	ld a, c
-	sub [hl]
-	dec hl
-	ld a, b
-	sbc [hl]
-	dec hl
-	ld a, d
-	sbc [hl]
+.AddHalf:
+	push de
+	ld d, h
+	ld e, l
+	srl d
+	rr e
+	add hl, de
+	pop de
 	ret
 
 AISmogon_Compare16:

@@ -323,3 +323,25 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   per-hit points instead of comparing turns to KO, so a fast attacker with a
   super-effective move (Tauros's Thunderbolt into Vaporeon) beats a wall
   that takes far less damage.
+- **2026-10-16**: Smogon matchups as a KO race. `AISmogon_ScoreMatchup`
+  subtracted per-hit damage points, so a fast attacker with a
+  super-effective move beat a wall that takes far less damage (Whitney's
+  Blissey switched to Tauros against Vaporeon). Each side's best attack is
+  now estimated with the damage formula (`AISmogon_SetupDamage`,
+  `AISmogon_AttackDamage`), turned into hits to KO from current HP
+  (`AISmogon_TurnsToKO`), and scored EVEN + 16 * log2(the player's half
+  turns / ours): the faster side gets half a turn, and a switch-in takes a
+  hit on the way in unless it replaces a fainted Pokemon. This replaces the
+  speed/revenge bonuses, the stat edges and the low-HP switch-in penalties.
+  For speed: the formula without the power is precomputed per pair,
+  `AISmogon_Divide24` replaces home `Divide`, and
+  `AISmogon_FillTypeMatchups` reads a copy of the type chart in the AI bank
+  (`data/types/type_matchups_table.asm`, included by both). A switch
+  decision takes at most 7 frames, the same as before (first draft: 18).
+  Against the user's save party (48 battles, random inputs): Whitney won 42
+  (33 before), clearly losing stay-ins fell from 154 to 18, Blissey ->
+  Tauros against Vaporeon is gone (Blissey -> Snorlax instead), and 95 of
+  112 replacements after a faint match an independent damage-race estimate.
+  `ai_scenarios.py` ALL OK, `cmp_data.py` ALL IDENTICAL, 9-trainer battle
+  test no crashes (AI wins 2 -> 0 of 54, timeouts 3 -> 3, both noise).
+  Healing (Softboiled, Recover, Leftovers) isn't part of the race yet.

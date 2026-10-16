@@ -27,7 +27,7 @@ def consts(path):
 
 SPECIES = consts("constants/pokemon_constants.asm")
 CHART = {}
-for line in open(os.path.join(ROOT, "data/types/type_matchups.asm")):
+for line in open(os.path.join(ROOT, "data/types/type_matchups_table.asm")):
     m = re.match(r"\s*db (\w+),\s*(\w+),\s*(\w+)", line)
     if m and m.group(3) in ("SUPER_EFFECTIVE", "NOT_VERY_EFFECTIVE", "NO_EFFECT"):
         CHART[m.group(1), m.group(2)] = {"SUPER_EFFECTIVE": 2, "NOT_VERY_EFFECTIVE": .5, "NO_EFFECT": 0}[m.group(3)]

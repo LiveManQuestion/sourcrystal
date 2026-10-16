@@ -555,14 +555,12 @@ wEnemyScreens::
 wPlayerSafeguardCount:: db
 wPlayerLightScreenCount:: db
 wPlayerReflectCount:: db
-; the defender's max HP / 4 in AISmogon_StatEdges
-wSmogonAIBulkHP:: db
+	ds 1
 
 wEnemySafeguardCount:: db
 wEnemyLightScreenCount:: db
 wEnemyReflectCount:: db
-; the usual HP / 4 at the defender's level in AISmogon_StatEdges
-wSmogonAIBulkRef:: db
+	ds 1
 
 ; TRUE when every move of the enemy's Pokemon scored worse than neutral
 ; (set by AIChooseMove, read by SwitchSmogon)
@@ -611,10 +609,20 @@ wGivingExperienceToExpShareHolders:: db
 ; Smogon AI matchup scoring (see engine/battle/ai/smogon_switch.asm)
 wSmogonAIMon::       db
 wSmogonAITypes::     ds 2
-wSmogonAIThreat::    db
-wSmogonAIPower::     db
+wSmogonAIThreat::    dw ; the player's best damage on wSmogonAIMon, in HP
+wSmogonAIPower::     dw ; wSmogonAIMon's best damage on the player's, in HP
 wSmogonAIBestMon::   db
 wSmogonAIBestScore:: db
+; set by AISmogon_SetupDamage for AISmogon_AttackDamage
+wSmogonAILevel::       db
+wSmogonAILevelFactor:: db
+wSmogonAIScreens::     db
+wSmogonAIPhysFactor::  dw
+wSmogonAISpclFactor::  dw
+wSmogonAIBestDamage::  dw
+; each attack type's effectiveness against the defender (EFFECTIVE = 1x),
+; filled by AISmogon_FillTypeMatchups
+wSmogonAITypeEffectiveness:: ds TYPES_END
 
 wPlayerFutureSightDamage:: dw
 wEnemyFutureSightDamage:: dw

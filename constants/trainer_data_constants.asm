@@ -38,22 +38,11 @@ DEF NO_AI EQU 0
 ; Smogon AI matchup scores (see engine/battle/ai/smogon_switch.asm)
 DEF SMOGON_MATCHUP_EVEN      EQU 128 ; neither side hits harder
 DEF SMOGON_MATCHUP_GOOD      EQU SMOGON_MATCHUP_EVEN + 16
-DEF SMOGON_FASTER_BONUS      EQU 6   ; outspeeds the player's Pokemon
-DEF SMOGON_REVENGE_BONUS     EQU 6   ; ...and that Pokemon is below half HP
 DEF SMOGON_STAB_POWER        EQU 80  ; assumed power of unrevealed STAB attacks
-DEF SMOGON_WEAK_POWER        EQU 60  ; attacks below this lose a quarter
-DEF SMOGON_STRONG_POWER      EQU 100 ; attacks from this on gain a quarter
+DEF SMOGON_MAX_TURNS         EQU 63  ; turns to KO are capped here (at most 63)
 DEF SMOGON_SETUP_GOAL        EQU BASE_STAT_LEVEL + 2 ; boost this far, then attack
 
-; Smogon AI rough damage points (see AISmogon_AttackPoints)
-DEF SMOGON_POINTS_RESISTED   EQU 4
-DEF SMOGON_POINTS_NEUTRAL    EQU 10
-DEF SMOGON_POINTS_SUPER      EQU 20
-DEF SMOGON_POINTS_4X         EQU 32
-
 ; Smogon AI switch-in penalties (see AISmogon_SwitchInPenalty)
-DEF SMOGON_PENALTY_HALF_HP    EQU 8
-DEF SMOGON_PENALTY_QUARTER_HP EQU 24
 DEF SMOGON_PENALTY_ASLEEP     EQU 20
 DEF SMOGON_PENALTY_SLEEP_TALK EQU 4 ; asleep, but can still attack
 DEF SMOGON_PENALTY_FROZEN     EQU 30
@@ -69,15 +58,6 @@ DEF SMOGON_ESCAPE_TOLERANCE  EQU 16 ; how much worse an escape switch-in may be
 DEF SMOGON_ANTI_SETUP_BONUS  EQU 24 ; switch-in that can phaze, Haze or explode a boosted player
 DEF SMOGON_SLEEP_ABSORB_BONUS EQU 16 ; Sleep Talk switch-in against a sleep move
 DEF SMOGON_BOOM_ABSORB_BONUS EQU 10 ; Rock, Steel or Ghost switch-in against a likely Explosion
-
-; AISmogon_StatEdges levels: how the attacker's stat compares to the
-; defender's, scaled by bulk (physical in bits 0-1, special in bits 2-3)
-	const_def
-	const SMOGON_EDGE_MUCH_WORSE  ; 0: below half
-	const SMOGON_EDGE_WORSE       ; 1
-	const SMOGON_EDGE_BETTER      ; 2
-	const SMOGON_EDGE_MUCH_BETTER ; 3: at least double
-DEF SMOGON_SPECIAL_EDGE_SHIFT EQU 2
 
 ; TRNATTR_AI_ITEM_SWITCH bit flags
 	const_def
