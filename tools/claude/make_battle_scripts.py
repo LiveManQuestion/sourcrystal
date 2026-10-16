@@ -4,7 +4,8 @@ import json, os, subprocess, tempfile
 
 here = os.path.dirname(os.path.abspath(__file__))
 TRAINERS = [("BUGSY", 2), ("JASMINE", 2), ("KOGA", 1), ("KOGA", 2), ("BROCK", 2),
-            ("MISTY", 2), ("SABRINA", 1), ("FALKNER", 2), ("RIVAL2", 1)]
+            ("MISTY", 2), ("SABRINA", 1), ("FALKNER", 2), ("RIVAL2", 1),
+            ("WHITNEY", 2)]
 out = {}
 with tempfile.TemporaryDirectory() as tmp:
     for cls, i in TRAINERS:

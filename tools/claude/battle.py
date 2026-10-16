@@ -149,7 +149,7 @@ while frame < max_frames and not crashed:
 result = {'switches': switch_log, 
     'trainer': trainer, 'seed': seed, 'frames': frame, 'started': started,
     'ended': started and mem[W('wBattleMode')] == 0, 'won': mem[W('wBattleResult')] & 0xf, 'crashed_at': crashed[:2],
-    'hooks': dict(counts), 'enemy_moves': len(enemy_moves),
+    'hooks': dict(counts), 'enemy_moves': {f'{sp},{mv}': n for (sp, mv), n in enemy_moves.items()},
 }
 print(json.dumps(result))
 if len(sys.argv) > 7:

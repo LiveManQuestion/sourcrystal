@@ -17,8 +17,8 @@ if [ $# -eq 2 ] && [ "$(basename "$1")" = "$(basename "$2")" ]; then
 	echo "both ROMs are named $(basename "$1"): copy one to another name first" >&2
 	exit 1
 fi
-mkdir -p "$out"
-for rom in "$@"; do rm -f "$out/$(basename "${rom%.gbc}").jsonl"; done
+mkdir -p "$out/runs"
+rm -f "$out"/runs/*.json
 IFS='|' read -ra tlist <<< "$trainers"
 for rom in "$@"; do
 	for t in "${tlist[@]}"; do
@@ -26,5 +26,11 @@ for rom in "$@"; do
 	done
 done | xargs -P 16 -I{} bash -c '
 	IFS="|" read rom t s <<< "{}"
+	n=$(basename "${rom%.gbc}")
 	'"$P"' '"$here"'/battle.py "$rom" "${rom%.gbc}.sym" '"$save"' "$t" $s 216000 2>/dev/null \
-		| grep "^{" >> '"$out"'/$(basename "${rom%.gbc}").jsonl'
+		| grep "^{" > "'"$out"'/runs/$n.${t// /_}.$s.json"'
+# One file per run: parallel appends of lines over 4 KB to one file interleave.
+for rom in "$@"; do
+	n=$(basename "${rom%.gbc}")
+	cat "$out"/runs/"$n".*.json > "$out/$n.jsonl"
+done

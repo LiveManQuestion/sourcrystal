@@ -293,3 +293,6 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   Flamethrower) and Curse/EQ Miltank. Every move was checked against the
   learnsets. With the player's real save party and random inputs (no healing),
   over 32 seeds she went from 3 wins to 24, with no crashes.
+  `make_battle_scripts.py` now includes WHITNEY 2. `battle.py` prints the
+  enemy's moves by species, and `battle_matrix.sh` writes one file per run,
+  because parallel appends of long JSON lines interleaved.
