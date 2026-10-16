@@ -1,5 +1,5 @@
 """Headless Challenge Mode battle test against Smogon-AI trainers (PyBoy).
-usage: battle.py ROM SYM SAVE TRAINER(e.g. "BUGSY 2") SEED [max_frames] [end_screenshot.png]
+usage: battle.py [--smart] ROM SYM SAVE TRAINER(e.g. "BUGSY 2") SEED [max_frames] [end_screenshot.png]
 
 Boots SAVE (32 KB cartridge RAM), continues, turns on Challenge Mode, makes the
 player's first Pokemon a bulky level 100 Typhlosion (Tackle/Swords Dance/Roar/
@@ -8,12 +8,18 @@ script queue, then plays with random inputs. Prints one JSON line: whether the
 battle started and ended, the result, any jump to the rst $38 crash vector
 (with the stack), how often each hooked AI routine ran, and every enemy
 switch-in ("switches"; summarize with switch_report.py).
-Needs battle_scripts.json from make_battle_scripts.py."""
+Needs battle_scripts.json from make_battle_scripts.py.
+
+With --smart, the player keeps the save's own party, is never healed, and
+plays the strong greedy policy in smart_player.py instead of random inputs,
+so win rates mean something. The JSON line adds the player's actions."""
 import io, json, os, random, sys, collections
 from pyboy import PyBoy
 
-rom, symf, save, trainer, seed = sys.argv[1:6]
-max_frames = int(sys.argv[6]) if len(sys.argv) > 6 else 60 * 60 * 12
+SMART = '--smart' in sys.argv
+argv = [a for a in sys.argv if a != '--smart']
+rom, symf, save, trainer, seed = argv[1:6]
+max_frames = int(argv[6]) if len(argv) > 6 else 60 * 60 * 12
 rng = random.Random(int(seed))
 here = os.path.dirname(os.path.abspath(__file__))
 script = json.load(open(os.path.join(here, 'battle_scripts.json')))[trainer]
@@ -95,20 +101,28 @@ run(600); press('start', after=200); press('start', after=120); press('a', after
 
 # Challenge Mode on, a bulky level 100 Typhlosion that sets up and phazes
 mem[W('wChallengeMode')] |= 1
-mon = 'wPartyMon1'
-mem[W('wPartySpecies')] = TYPHLOSION
-mem[W(mon + 'Species')] = TYPHLOSION
-for i, mv in enumerate((TACKLE, SWORDS_DANCE, ROAR, TOXIC)):
-    mem[W(mon + 'Moves') + i] = mv
-    mem[W(mon + 'PP') + i] = 30
-mem[W(mon + 'Level')] = 100
-mem[W(mon + 'Status')] = 0
+player = None
+if SMART:
+    sys.path.insert(0, here)
+    from smart_player import SmartPlayer
+    from smart_player import heal_party
+    player = SmartPlayer(pb, sym)
+    heal_party(mem, W)
 def word(addr, v):
     mem[addr] = v >> 8; mem[addr + 1] = v & 0xff
-word(W(mon + 'HP'), 999); word(W(mon + 'MaxHP'), 999)
-spd = rng.choice((150, 300, 450))
-for st, v in (('Attack', 120), ('Defense', 700), ('Speed', spd), ('SpclAtk', 120), ('SpclDef', 700)):
-    word(W(mon + st), v)
+if not SMART:
+    mon = 'wPartyMon1'
+    mem[W('wPartySpecies')] = TYPHLOSION
+    mem[W(mon + 'Species')] = TYPHLOSION
+    for i, mv in enumerate((TACKLE, SWORDS_DANCE, ROAR, TOXIC)):
+        mem[W(mon + 'Moves') + i] = mv
+        mem[W(mon + 'PP') + i] = 30
+    mem[W(mon + 'Level')] = 100
+    mem[W(mon + 'Status')] = 0
+    word(W(mon + 'HP'), 999); word(W(mon + 'MaxHP'), 999)
+    spd = rng.choice((150, 300, 450))
+    for st, v in (('Attack', 120), ('Defense', 700), ('Speed', spd), ('SpclAtk', 120), ('SpclDef', 700)):
+        word(W(mon + st), v)
 
 # queue the battle script in free WRAM0
 base = 0xcfe2
@@ -128,12 +142,15 @@ while frame < max_frames and not crashed:
     if in_battle:
         started = True
         out_frames = 0
-        # keep the player's Pokemon alive so the battle runs long
-        if rng.random() < 0.02:
-            word(W('wBattleMonHP'), 999)
-        r = rng.random()
-        btn = 'a' if r < 0.70 else 'down' if r < 0.82 else 'up' if r < 0.90 else 'b'
-        press(btn, after=rng.randint(8, 30))
+        if player:
+            press(player.button(), after=rng.randint(8, 30))
+        else:
+            # keep the player's Pokemon alive so the battle runs long
+            if rng.random() < 0.02:
+                word(W('wBattleMonHP'), 999)
+            r = rng.random()
+            btn = 'a' if r < 0.70 else 'down' if r < 0.82 else 'up' if r < 0.90 else 'b'
+            press(btn, after=rng.randint(8, 30))
         mv = mem[W('wCurEnemyMove')]
         t = mem[W('wEnemyTurnsTaken')], mem[W('wEnemyMonSpecies')], mv
         if t != last_turn and mv:
@@ -151,12 +168,14 @@ result = {'switches': switch_log,
     'ended': started and mem[W('wBattleMode')] == 0, 'won': mem[W('wBattleResult')] & 0xf, 'crashed_at': crashed[:2],
     'hooks': dict(counts), 'enemy_moves': {f'{sp},{mv}': n for (sp, mv), n in enemy_moves.items()},
 }
+if player:
+    result['player_actions'] = player.actions
 print(json.dumps(result))
-if len(sys.argv) > 7:
+if len(argv) > 7:
     import zlib, struct
     arr = pb.screen.ndarray[:, :, :3].copy()
     h, w, _ = arr.shape
     raw = b''.join(b'\0' + arr[y].tobytes() for y in range(h))
     ch = lambda t, d: struct.pack('>I', len(d)) + t + d + struct.pack('>I', zlib.crc32(t + d) & 0xffffffff)
-    open(sys.argv[7], 'wb').write(b'\x89PNG\r\n\x1a\n' + ch(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0)) + ch(b'IDAT', zlib.compress(raw)) + ch(b'IEND', b''))
+    open(argv[7], 'wb').write(b'\x89PNG\r\n\x1a\n' + ch(b'IHDR', struct.pack('>IIBBBBB', w, h, 8, 2, 0, 0, 0)) + ch(b'IDAT', zlib.compress(raw)) + ch(b'IEND', b''))
 pb.stop(save=False)

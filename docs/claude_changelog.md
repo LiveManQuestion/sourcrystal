@@ -406,3 +406,19 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   user's party has none, so Whitney is back to 43 wins of 48 against it (38
   when assuming 3). `ai_scenarios.py` ALL OK, `cmp_data.py` ALL IDENTICAL,
   9-trainer battle test no crashes.
+- **2026-10-16**: `battle.py --smart` (`tools/claude/smart_player.py`): the
+  save's own party, healed once and never again, played by a greedy policy
+  instead of an unkillable Typhlosion pressing random buttons, so win rates
+  mean something. It attacks with the strongest move by the damage formula
+  (no Explosion or Counter; two-turn moves count half), switches when a
+  healthy teammate wins the KO race at least twice as well after taking a hit
+  (not two turns in a row, not while trapped), and picks the best
+  replacement after a faint. It writes the menus' cursor variables from hooks
+  (`BattleMenu`, `MoveSelectionScreen`, `BattleMenuPKMN_Loop`,
+  `PickPartyMonInBattle`, where the party menu has already read
+  `wPartyMenuCursor`, so it sets `wMenuCursorY`), backs out of the party menu
+  when a switch fails, and a watchdog (down/A/B/A after 40 presses with no
+  hook) handles unexpected menus. Hook exceptions are counted (PyBoy swallows
+  them). `battle_matrix.sh` takes `PLAYER=smart`. Whitney 2 against the
+  user's party: 32 battles, all ended, Whitney won 24, no crashes or hook
+  errors, 4 watchdog triggers.

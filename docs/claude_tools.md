@@ -29,12 +29,23 @@ user's save files.
 - `smoke.py ROM RAM OUTDIR`: boot, title, Continue, overworld and menus, with
   a screenshot hash per step; diff two ROMs' output (the clock changes some).
   PyBoy draws Bill's PC as a white screen; test it through RAM.
-- `battle.py ROM SYM RAM "BUGSY 2" SEED [frames]`: one Challenge Mode battle
-  against a Smogon-AI trainer (player: Typhlosion with Tackle, Swords Dance,
-  Roar, Toxic). JSON line with crashes, AI routine counts and every enemy
-  switch-in. Run `make_battle_scripts.py` first. An injected battle needs
-  `winlosstext`.
-- `battle_matrix.sh OUTDIR RAM ROM1 [ROM2]` (`SEEDS=6`, `TRAINERS=...`): 9
+- `battle.py [--smart] ROM SYM RAM "BUGSY 2" SEED [frames]`: one Challenge
+  Mode battle against a Smogon-AI trainer. JSON line with crashes, AI routine
+  counts, the enemy's moves and every enemy switch-in. Run
+  `make_battle_scripts.py` first. An injected battle needs `winlosstext`.
+  - Default player: an unkillable Typhlosion (Tackle, Swords Dance, Roar,
+    Toxic) pressing random buttons. Good for crashes and stalls, not for win
+    rates.
+  - `--smart` (`smart_player.py`): the save's own party, healed at the start
+    and never again, played by a greedy policy: the strongest attack by the
+    damage formula, a switch when a teammate wins the KO race clearly better,
+    the best replacement after a faint. It sees the enemy's moves but uses no
+    status moves. It drives the menus by writing their cursor variables from
+    hooks; a watchdog gets it out of unexpected menus. `player_actions` in the
+    JSON counts its attacks, switches, replacements, watchdog triggers and
+    hook errors (should be 0; PyBoy swallows exceptions in hooks).
+- `battle_matrix.sh OUTDIR RAM ROM1 [ROM2]` (`SEEDS=6`, `TRAINERS=...`,
+  `PLAYER=smart` for `--smart`): 9
   trainers × 6 seeds, ~15 min per ROM; give the two ROMs different file
   names. Summaries: `battle_summary.py`, `battle_compare.py OLD NEW` (per
   trainer), `switch_report.py` (switch quality vs. Fire). Timeouts on

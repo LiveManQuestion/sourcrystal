@@ -112,7 +112,9 @@ Effect Commands need `farcall` or `newfarcall`.
 Details and usage: `docs/claude_tools.md`. The usual checks after a battle or
 AI change: `cmp_data.py` (expect `ALL IDENTICAL`), `damage_diff.py` (0
 mismatches), `ai_scenarios.py ROM SYM RAM` (`RESULT: ALL OK`) and
-`battle_matrix.sh` (no crashes; compare with `battle_compare.py`). Headless
+`battle_matrix.sh` (no crashes; compare with `battle_compare.py`; with
+`PLAYER=smart` the save's party plays a greedy policy, so AI win rates mean
+something). Headless
 tests use PyBoy (`~/.local/share/uv/tools/pyboy/bin/python`) and the first 32
 KB of the user's `sourcrystal.sav` as cartridge RAM. Never write over the
 user's save files.
