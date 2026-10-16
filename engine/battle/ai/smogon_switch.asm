@@ -402,6 +402,8 @@ AISmogon_ScoreMatchup:
 	ld de, wBattleMonAttack
 	ld a, [wEnemyScreens]
 	call AISmogon_SetupDamage
+	ld hl, wSmogonAIThreat
+	call AISmogon_StartAttacks
 	ld hl, wSmogonAITypes
 	call AISmogon_FillTypeMatchups
 
@@ -431,6 +433,7 @@ AISmogon_ScoreMatchup:
 	inc c
 .expected_no_stab
 	ld a, e
+	ld b, SMOGON_UNKNOWN_PP
 	call AISmogon_AttackDamage
 	jr .expected_loop
 
@@ -439,6 +442,7 @@ AISmogon_ScoreMatchup:
 	pop hl
 	ld c, TRUE
 	ld d, SMOGON_STAB_POWER
+	ld b, SMOGON_UNKNOWN_PP
 	ld a, [wBattleMonType1]
 	ld e, a
 	call AISmogon_AttackDamage
@@ -465,6 +469,10 @@ AISmogon_ScoreMatchup:
 	ld a, [hl]
 	and a
 	jr z, .player_moves_end
+	push af
+	call AISmogon_BasePP
+	ld b, a
+	pop af
 	ld hl, wBattleMonDVs
 	call AISmogon_GetAttack
 	pop hl
@@ -495,47 +503,28 @@ AISmogon_ScoreMatchup:
 	pop hl
 	pop de
 .player_moves_done
-	ld a, [wSmogonAIBestDamage]
-	ld h, a
-	ld a, [wSmogonAIBestDamage + 1]
-	ld l, a
 
-; A sleeping or frozen Pokemon can't attack, unless it uses Sleep Talk.
+; A sleeping or frozen Pokemon can't attack, unless it uses Sleep Talk:
+; count half its damage.
 	call AISmogon_PlayerCantAttack
 	jr z, .player_can_attack
-	ld d, h
-	ld e, l
-	srl d
-	rr e
+	ld c, FALSE
 ; One that usually has Sleep Talk may still have it: count 3/4 of its
-; damage (Sleep Talk calls an attack most of the time) instead of half.
+; damage (Sleep Talk calls an attack most of the time) instead.
 	ld a, [wBattleMonStatus]
 	and SLP_MASK
-	jr z, .halve_threat
+	jr z, .scale_threat
 	ld a, [wPlayerUsedMoves + NUM_MOVES - 1]
 	and a
-	jr nz, .halve_threat
+	jr nz, .scale_threat
 	call AISmogon_GetPlayerTraits
 	bit SMOGON_SLEEP_TALK_F, a
-	jr z, .halve_threat
-	srl d
-	rr e
-	ld a, l
-	sub e
-	ld l, a
-	ld a, h
-	sbc d
-	ld h, a
-	jr .player_can_attack
-
-.halve_threat
-	ld h, d
-	ld l, e
+	jr z, .scale_threat
+	inc c
+.scale_threat
+	ld hl, wSmogonAIThreat
+	call AISmogon_ScaleAttacks
 .player_can_attack
-	ld a, h
-	ld [wSmogonAIThreat], a
-	ld a, l
-	ld [wSmogonAIThreat + 1], a
 
 ; How hard can this Pokemon hit the player?
 	ld a, MON_ATK
@@ -545,6 +534,8 @@ AISmogon_ScoreMatchup:
 	ld hl, wBattleMonAttack
 	ld a, [wPlayerScreens]
 	call AISmogon_SetupDamage
+	ld hl, wSmogonAIPower
+	call AISmogon_StartAttacks
 	ld hl, wBattleMonType
 	call AISmogon_FillTypeMatchups
 
@@ -562,6 +553,10 @@ AISmogon_ScoreMatchup:
 	ld a, [hl]
 	and a
 	jr z, .our_moves_end
+	push af
+	call AISmogon_OurMovePP
+	ld b, a
+	pop af
 	push af
 	ld a, MON_DVS
 	call AISmogon_OTPartyAttr
@@ -593,10 +588,6 @@ AISmogon_ScoreMatchup:
 .our_moves_end
 	pop de
 .our_moves_done
-	ld a, [wSmogonAIBestDamage]
-	ld [wSmogonAIPower], a
-	ld a, [wSmogonAIBestDamage + 1]
-	ld [wSmogonAIPower + 1], a
 	call AISmogon_ApplyHealing
 
 ; Turns for this Pokemon to KO the player's (longer if the player's
@@ -731,19 +722,19 @@ AISmogon_ApplyHealing:
 	ld a, [hli]
 	ld d, a
 	ld e, [hl]
-	ld hl, .RecoveryMoves
+	ld hl, AISmogon_RecoveryMoves
 .our_recovery
 	ld a, [hli]
 	inc hl
 	cp REST
 	jr z, .our_rest
-	call .OurMovePP
+	call AISmogon_OurMovePP
 	jr nc, .our_recovery
 	call .Half
 	jr .got_our_heal
 
 .our_rest
-	call .OurMovePP
+	call AISmogon_OurMovePP
 	call .Quarter
 .got_our_heal
 	ld hl, wSmogonAIOurHeal
@@ -754,14 +745,14 @@ AISmogon_ApplyHealing:
 	cp LEFTOVERS
 	jr nz, .player
 	ld hl, wSmogonAIThreat
-	call .SubtractSixteenth
+	call AISmogon_SubtractSixteenth
 
 .player
 	ld a, [wBattleMonMaxHP]
 	ld d, a
 	ld a, [wBattleMonMaxHP + 1]
 	ld e, a
-	ld hl, .RecoveryMoves
+	ld hl, AISmogon_RecoveryMoves
 .player_recovery
 	ld a, [hli]
 	cp REST
@@ -789,7 +780,7 @@ AISmogon_ApplyHealing:
 	ld hl, wSmogonAIPlayerHeal
 	call .Store
 	ld hl, wSmogonAIPower
-	jp .SubtractSixteenth
+	jp AISmogon_SubtractSixteenth
 
 .Store:
 ; Store the healing bc and PP a at hl.
@@ -822,7 +813,7 @@ AISmogon_ApplyHealing:
 	rr c
 	ret
 
-.OurMovePP:
+AISmogon_OurMovePP:
 ; Return carry and the current PP of move a in a if wOTPartyMon
 ; [wSmogonAIMon] knows it.
 	push bc
@@ -868,33 +859,7 @@ AISmogon_ApplyHealing:
 	pop bc
 	ret
 
-.SubtractSixteenth:
-; Subtract de / 16 from the word at hl, down to 0.
-	push de
-	srl d
-	rr e
-	srl d
-	rr e
-	srl d
-	rr e
-	srl d
-	rr e
-	inc hl
-	ld a, [hl]
-	sub e
-	ld [hld], a
-	ld a, [hl]
-	sbc d
-	ld [hl], a
-	jr nc, .subtracted
-	xor a
-	ld [hli], a
-	ld [hl], a
-.subtracted
-	pop de
-	ret
-
-.RecoveryMoves:
+AISmogon_RecoveryMoves:
 ; move, base PP (Rest last)
 	db RECOVER,     20
 	db SOFTBOILED,  10
@@ -971,7 +936,7 @@ AISmogon_SideTurns:
 	ld l, e
 	ld d, b
 	ld e, c
-	call AISmogon_TurnsToKO
+	call AISmogon_TurnsWithPP
 	pop hl
 	ret
 
@@ -1045,35 +1010,369 @@ AISmogon_HealDelay:
 	pop bc
 	ret
 
-AISmogon_TurnsToKO:
-; Return in a how many hits of the damage word at hl it takes to KO a
-; Pokemon with de HP, from 1 to SMOGON_MAX_TURNS.
+AISmogon_StartAttacks:
+; Start a new attack list at hl (ATTACKS_*) for AISmogon_AttackDamage.
+	ld a, l
+	ld [wSmogonAIAttacks], a
+	ld a, h
+	ld [wSmogonAIAttacks + 1], a
+	assert ATTACKS_BEST == 0 && ATTACKS_COUNT == 2
+	xor a
+	ld [hli], a
+	ld [hli], a
+	ld [hl], a
+	ret
+
+AISmogon_AddAttack:
+; Add damage de with b PP to the current attack list, and keep the best
+; damage. An attack doing the same damage as one already there (the same
+; move, expected and revealed) only keeps the higher PP.
+	ld a, [wSmogonAIAttacks]
+	ld l, a
+	ld a, [wSmogonAIAttacks + 1]
+	ld h, a
 	ld a, [hli]
-	ld b, a
+	cp d
+	jr c, .new_best
+	jr nz, .not_best
+	ld a, [hl]
+	cp e
+	jr nc, .not_best
+.new_best
+	ld a, e
+	ld [hld], a
+	ld [hl], d
+	inc hl
+.not_best
+	inc hl
+	assert ATTACKS_LIST == ATTACKS_COUNT + 1
+	; c = count, hl = the list
 	ld c, [hl]
-	or c
-	ld a, SMOGON_MAX_TURNS
+	push hl
+	inc hl
+	ld a, c
+	and a
+	jr z, .append
+.find
+	ld a, [hli]
+	cp d
+	jr nz, .next
+	ld a, [hl]
+	cp e
+	jr nz, .next
+	inc hl
+	ld a, [hl]
+	cp b
+	jr nc, .done
+	ld [hl], b
+	jr .done
+
+.next
+	inc hl
+	inc hl
+	dec c
+	jr nz, .find
+.append
+; hl points past the list
+	pop hl
+	push hl
+	ld a, [hl]
+	cp SMOGON_MAX_ATTACKS
+	jr nc, .done
+	inc [hl]
+	; hl += 1 + 3 * count
+	ld c, a
+	add a
+	add c
+	inc a
+	add l
+	ld l, a
+	adc h
+	sub l
+	ld h, a
+	ld [hl], d
+	inc hl
+	ld [hl], e
+	inc hl
+	ld [hl], b
+.done
+	pop hl
+	ret
+
+AISmogon_ForEachDamage:
+; Call the routine at bc with hl pointing to each damage word of the attack
+; list at hl: the best damage, then each attack's. The routine keeps bc.
+	push hl
+	call .Call
+	pop hl
+	inc hl
+	inc hl
+	ld a, [hli]
+	and a
 	ret z
-; ceil(HP / damage)
-	ld h, d
-	ld l, e
-	dec bc
-	add hl, bc
-	inc bc
+.loop
+	push af
+	push hl
+	call .Call
+	pop hl
+	pop af
+	inc hl
+	inc hl
+	inc hl
+	dec a
+	jr nz, .loop
+	ret
+
+.Call:
+	push bc
+	ret
+
+AISmogon_ScaleAttacks:
+; Scale every damage in the attack list at hl to half, or 3/4 if c is TRUE.
+	ld a, c
+	and a
+	ld bc, .Half
+	jr z, AISmogon_ForEachDamage
+	ld bc, .ThreeQuarters
+	jr AISmogon_ForEachDamage
+
+.Half:
+	ld a, [hl]
+	srl a
+	ld [hli], a
+	ld a, [hl]
+	rra
+	ld [hl], a
+	ret
+
+.ThreeQuarters:
+	ld a, [hli]
+	ld d, a
+	ld e, [hl]
+	srl d
+	rr e
+	srl d
+	rr e
+	ld a, [hl]
+	sub e
+	ld [hld], a
+	ld a, [hl]
+	sbc d
+	ld [hl], a
+	ret
+
+AISmogon_SubtractSixteenth:
+; Subtract de / 16 (Leftovers) from every damage in the attack list at hl,
+; down to 0.
+	push de
+	srl d
+	rr e
+	srl d
+	rr e
+	srl d
+	rr e
+	srl d
+	rr e
+	ld a, d
+	ld [wSmogonAIMovePP], a
+	ld a, e
+	ld [wSmogonAIMovePP + 1], a
+	ld bc, .Subtract
+	call AISmogon_ForEachDamage
+	pop de
+	ret
+
+.Subtract:
+	inc hl
+	ld a, [wSmogonAIMovePP + 1]
+	ld e, a
+	ld a, [hl]
+	sub e
+	ld [hld], a
+	ld a, [wSmogonAIMovePP]
+	ld d, a
+	ld a, [hl]
+	sbc d
+	ld [hl], a
+	ret nc
+	xor a
+	ld [hli], a
+	ld [hl], a
+	ret
+
+AISmogon_BasePP:
+; Return the base PP of move a.
+	push bc
+	push hl
+	ld hl, Moves + MOVE_PP - MOVE_LENGTH
+	ld bc, MOVE_LENGTH
+	call AddNTimes
+	ld a, BANK(Moves)
+	call GetFarByte
+	pop hl
+	pop bc
+	ret
+
+AISmogon_TurnsWithPP:
+; Return in a how many turns the attacker with the attack list at hl takes
+; to KO a side with de HP, from 1 to SMOGON_MAX_TURNS. It uses its strongest
+; attack until its PP runs out, then the next; if all of them together
+; can't do it, the side can't be KOed.
+	ld a, d
+	ld [wSmogonAIRemaining], a
+	ld a, e
+	ld [wSmogonAIRemaining + 1], a
+	xor a
+	ld [wSmogonAITurns], a
+	inc hl
+	inc hl
+	ld b, [hl]
+	inc hl
+	; c = the attacks still unused (a bit each)
+	ld c, $ff
+.round
+; Find the strongest unused attack with PP: its address goes in
+; hMathBuffer + 3 (high) and + 4 (low).
+	push bc
+	push hl
+	xor a
+	ldh [hMathBuffer + 3], a
+	ld d, a
+	ld e, a
+	inc b
+.find
+	dec b
+	jr z, .found
+	srl c
+	jr nc, .skip
+	inc hl
+	inc hl
+	ld a, [hld]
+	dec hl
+	and a
+	jr z, .skip
+	ld a, [hli]
+	cp d
+	jr c, .skip_dec
+	jr nz, .stronger
+	ld a, [hl]
+	cp e
+	jr c, .skip_dec
+	jr z, .skip_dec
+.stronger
+	ld e, [hl]
+	dec hl
+	ld d, [hl]
+	ld a, l
+	ldh [hMathBuffer + 4], a
+	ld a, h
+	ldh [hMathBuffer + 3], a
+	jr .skip
+
+.skip_dec
+	dec hl
+.skip
+	inc hl
+	inc hl
+	inc hl
+	jr .find
+
+.found
+	pop hl
+	pop bc
+	; none left?
+	ldh a, [hMathBuffer + 3]
+	and a
+	jp z, .max
+; Mark it used: bit (its address - hl) / 3 of c.
+	push hl
+	ldh a, [hMathBuffer + 4]
+	sub l
+	ld l, a
+	ld a, 1
+.bit
+	dec l
+	dec l
+	dec l
+	bit 7, l
+	jr nz, .got_bit
+	add a
+	jr .bit
+
+.got_bit
+	cpl
+	and c
+	ld c, a
+	; its PP
+	ldh a, [hMathBuffer + 4]
+	ld l, a
+	ldh a, [hMathBuffer + 3]
+	ld h, a
+	inc hl
+	inc hl
+	ld a, [hl]
+	pop hl
+	push bc
+	push hl
+	ld b, a
+; hits needed = ceil(remaining / damage)
+	ld a, [wSmogonAIRemaining]
+	ld h, a
+	ld a, [wSmogonAIRemaining + 1]
+	ld l, a
+	dec de
+	add hl, de
+	inc de
 	xor a
 	ldh [hMathBuffer + 1], a
 	ld a, h
 	ldh [hMathBuffer + 2], a
 	ld a, l
 	ldh [hMathBuffer + 3], a
-	ld d, b
-	ld e, c
+	push bc
 	call AISmogon_Divide24
+	pop bc
 	ld a, h
 	and a
-	jr nz, .max
-	ld a, l
-	and a
+	jr nz, .use_all_pp
+	ld a, b
+	cp l
+	jr nc, .enough
+.use_all_pp
+; Use all its PP: turns += PP, remaining -= PP * damage.
+	ld a, b
+	ldh [hMultiplier], a
+	xor a
+	ldh [hMultiplicand], a
+	ld a, d
+	ldh [hMultiplicand + 1], a
+	ld a, e
+	ldh [hMultiplicand + 2], a
+	call Multiply
+	ldh a, [hProduct + 3]
+	ld e, a
+	ld a, [wSmogonAIRemaining + 1]
+	sub e
+	ld [wSmogonAIRemaining + 1], a
+	ldh a, [hProduct + 2]
+	ld e, a
+	ld a, [wSmogonAIRemaining]
+	sbc e
+	ld [wSmogonAIRemaining], a
+	ld a, [wSmogonAITurns]
+	add b
+	ld [wSmogonAITurns], a
+	pop hl
+	pop bc
+	cp SMOGON_MAX_TURNS
+	jr nc, .max
+	jp .round
+
+.enough
+	ld a, [wSmogonAITurns]
+	add l
+	pop hl
+	pop bc
 	jr z, .min
 	cp SMOGON_MAX_TURNS + 1
 	ret c
@@ -1152,8 +1451,7 @@ AISmogon_SetupDamage:
 ; de = the attacker's Attack, hl = the defender's Attack, each followed by
 ; Defense, Speed, Sp.Atk and Sp.Def as big-endian words, with the level 7
 ; bytes before (as in party and battle structs), and a = the defending
-; side's screens. Store what AISmogon_AttackDamage needs, and reset
-; wSmogonAIBestDamage.
+; side's screens. Store what AISmogon_AttackDamage needs.
 	assert MON_ATK - MON_LEVEL == wBattleMonAttack - wBattleMonLevel
 	assert wBattleMonSpclDef - wBattleMonAttack == MON_SDF - MON_ATK
 	assert wBattleMonSpclAtk - wBattleMonAttack == MON_SAT - MON_ATK
@@ -1236,10 +1534,6 @@ AISmogon_SetupDamage:
 	ld [wSmogonAISpclFactor], a
 	ld a, l
 	ld [wSmogonAISpclFactor + 1], a
-
-	xor a
-	ld [wSmogonAIBestDamage], a
-	ld [wSmogonAIBestDamage + 1], a
 	pop hl
 	pop de
 	pop bc
@@ -1378,15 +1672,19 @@ AISmogon_FillTypeMatchups:
 	ret
 
 AISmogon_AttackDamage:
-; Estimate the damage of an attack of type a and power d, with STAB if c is
-; nonzero, using AISmogon_SetupDamage and AISmogon_FillTypeMatchups, and
-; keep the highest in wSmogonAIBestDamage.
+; Estimate the damage of an attack of type a and power d with b PP, with
+; STAB if c is nonzero, using AISmogon_SetupDamage and
+; AISmogon_FillTypeMatchups, and add it to the attack list from
+; AISmogon_StartAttacks.
 ; Fixed-damage moves like Seismic Toss (power 1) do the attacker's level.
 ; The random factor, critical hits and accuracy are left out.
 	push bc
 	push de
 	push hl
 	ld e, a
+	ld a, b
+	ld [wSmogonAIMovePP], a
+	ld a, e
 	ld hl, wSmogonAITypeEffectiveness
 	add l
 	ld l, a
@@ -1488,18 +1786,14 @@ AISmogon_AttackDamage:
 	rr l
 
 .keep
-	ld a, [wSmogonAIBestDamage]
-	cp h
-	jr c, .store
-	jr nz, .done
-	ld a, [wSmogonAIBestDamage + 1]
-	cp l
-	jr nc, .done
-.store
 	ld a, h
-	ld [wSmogonAIBestDamage], a
-	ld a, l
-	ld [wSmogonAIBestDamage + 1], a
+	or l
+	jr z, .done
+	ld d, h
+	ld e, l
+	ld a, [wSmogonAIMovePP]
+	ld b, a
+	call AISmogon_AddAttack
 .done
 	pop hl
 	pop de

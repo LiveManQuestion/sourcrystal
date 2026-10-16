@@ -373,3 +373,17 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   crashes; switch decisions still take at most 7 frames. `ai_scenarios.py`
   ALL OK, `cmp_data.py` ALL IDENTICAL, 9-trainer battle test no crashes (AI
   wins 3 -> 1 of 54, timeouts 6 -> 2). Attack PP isn't modeled.
+- **2026-10-16**: Attack PP in the Smogon KO race. Each side now keeps a
+  list of its attacks' damage and PP (`ATTACKS_*` in `wSmogonAIThreat` and
+  `wSmogonAIPower`, filled by `AISmogon_AddAttack`; an attack expected and
+  revealed is kept once). `AISmogon_TurnsWithPP` uses the strongest attack
+  until its PP runs out, then the next; if all of them together can't get
+  through the target's HP and heals, it can't KO. Leftovers and the
+  sleeping-player discount apply to every attack in the list. The AI's own
+  moves count their current PP, the player's revealed moves their base PP,
+  and its expected attacks `SMOGON_UNKNOWN_PP` (10). Example: Blissey
+  against Vaporeon is now a stalemate (128): neither side can get through
+  with its PP. Against the user's save party (48 battles): Whitney won 44,
+  no crashes; switch decisions take at most 8 frames (7 before).
+  `ai_scenarios.py` ALL OK, `cmp_data.py` ALL IDENTICAL, 9-trainer battle
+  test no crashes (AI wins 1 -> 3 of 54, timeouts 2 -> 5).

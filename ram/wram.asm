@@ -609,8 +609,10 @@ wGivingExperienceToExpShareHolders:: db
 ; Smogon AI matchup scoring (see engine/battle/ai/smogon_switch.asm)
 wSmogonAIMon::       db
 wSmogonAITypes::     ds 2
-wSmogonAIThreat::    dw ; the player's best damage on wSmogonAIMon, in HP
-wSmogonAIPower::     dw ; wSmogonAIMon's best damage on the player's, in HP
+; attack lists (ATTACKS_*): the best damage in HP, then each attack's
+; damage and PP
+wSmogonAIThreat::    ds ATTACKS_LENGTH ; the player's on wSmogonAIMon
+wSmogonAIPower::     ds ATTACKS_LENGTH ; wSmogonAIMon's on the player's
 wSmogonAIBestMon::   db
 wSmogonAIBestScore:: db
 ; set by AISmogon_SetupDamage for AISmogon_AttackDamage
@@ -619,7 +621,10 @@ wSmogonAILevelFactor:: db
 wSmogonAIScreens::     db
 wSmogonAIPhysFactor::  dw
 wSmogonAISpclFactor::  dw
-wSmogonAIBestDamage::  dw
+wSmogonAIAttacks::    dw ; the attack list AISmogon_AttackDamage adds to
+wSmogonAIMovePP::     dw ; a temporary
+wSmogonAIRemaining::  dw ; for AISmogon_TurnsWithPP
+wSmogonAITurns::      db
 ; each side's healing block (AISmogon_ApplyHealing): HP a recovery move
 ; heals per use (big-endian), its PP left, and the current HP
 wSmogonAIOurHeal::     ds HEAL_BLOCK_LENGTH

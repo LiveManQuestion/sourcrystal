@@ -35,7 +35,12 @@ How the trainer AI is organized (see also `CLAUDE.md`).
   takes longer by the turns spent healing, at most its PP
   (`AISmogon_HealDelay`). The AI knows its own Pokemon's PP; the player's
   Pokemon counts its revealed recovery moves, or Rest if its `SmogonTraits`
-  say so, with their base PP. For speed,
+  say so, with their base PP. Attack PP counts too: each side keeps a list
+  of its attacks' damage and PP (`ATTACKS_*`, `AISmogon_AddAttack`), and
+  `AISmogon_TurnsWithPP` uses the strongest until its PP runs out, then the
+  next; a side that can't get through with all its PP can't KO. The AI's own
+  moves use their current PP, the player's revealed moves their base PP, and
+  its expected attacks `SMOGON_UNKNOWN_PP`. For speed,
   `AISmogon_SetupDamage` precomputes the formula without the power,
   `AISmogon_FillTypeMatchups` fills each attack type's effectiveness from a
   copy of the type chart in the AI bank (`data/types/type_matchups_table.asm`

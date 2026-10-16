@@ -41,6 +41,16 @@ DEF SMOGON_MATCHUP_GOOD      EQU SMOGON_MATCHUP_EVEN + 16
 DEF SMOGON_STAB_POWER        EQU 80  ; assumed power of unrevealed STAB attacks
 DEF SMOGON_MAX_TURNS         EQU 63  ; turns to KO are capped here (at most 63)
 
+DEF SMOGON_UNKNOWN_PP        EQU 10  ; PP of the player's attacks it hasn't used
+DEF SMOGON_MAX_ATTACKS       EQU 8   ; attacks kept per side
+
+; Smogon AI attack lists (wSmogonAIThreat, wSmogonAIPower)
+rsreset
+DEF ATTACKS_BEST      rw
+DEF ATTACKS_COUNT     rb
+DEF ATTACKS_LIST      rb SMOGON_MAX_ATTACKS * 3 ; damage (big-endian), PP
+DEF ATTACKS_LENGTH    EQU _RS
+
 ; Smogon AI healing blocks (wSmogonAIOurHeal, wSmogonAIPlayerHeal)
 rsreset
 DEF HEAL_AMOUNT       rw
