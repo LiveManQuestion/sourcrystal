@@ -9,8 +9,11 @@ the random Typhlosion with --random) and prints one JSON line:
 - decisions: every SwitchSmogon call, with the branch labels it went
   through (SwitchSmogon.escape, .matchup, .switch, DontSwitch...), the
   active and best switch-in scores, the move the AI had picked, its spent
-  flag, Spikes on each side, and both sides' Pokemon (species, level, HP,
-  stats, types, moves, PP, DVs, status),
+  flag, Spikes on each side, both sides' Pokemon (species, level, HP,
+  stats, types, moves, PP, DVs, status, item), item_used when the AI used an
+  item instead, player_switched when the player switched this turn (the
+  AI's move was picked before, against the previous Pokemon), and in 'state' the rest engine_judge.py needs (the player's
+  party, stats before stat changes, substatuses, screens, weather),
 - candidates: every switch-in the AI scored (AISmogon_FindBestSwitchIn), with
   its raw matchup score and penalty, the attack lists (ATTACKS_*: best damage
   and each attack's damage and PP) and healing blocks (HEAL_*) the score came
@@ -60,7 +63,8 @@ def run(argv):
                 'max_hp': word(at('MaxHP')), 'stats': [word(at('Attack') + 2 * k) for k in range(5)],
                 'types': types, 'moves': [mem[at('Moves') + k] for k in range(4)],
                 'pp': [mem[at('PP') + k] for k in range(4)],
-                'dvs': [mem[at('DVs')], mem[at('DVs') + 1]], 'status': mem[at('Status')]}
+                'dvs': [mem[at('DVs')], mem[at('DVs') + 1]], 'status': mem[at('Status')],
+                'item': mem[at('Item')]}
 
     def block(label, size):
         return [mem[W(label) + k] for k in range(size)]
@@ -79,8 +83,36 @@ def run(argv):
              'spikes_ai': bool(mem[W('wEnemyScreens')] & 1 << CONST['SCREENS_SPIKES']),
              'spikes_player': bool(mem[W('wPlayerScreens')] & 1 << CONST['SCREENS_SPIKES']),
              'revealed': block('wPlayerUsedMoves', 4), 'path': []}
+        # The rest of the battle state, for engine_judge.py: the actives' own
+        # moves, PP, item and status (the party copies can be stale), their
+        # stats before stat changes, the player's party, volatile statuses,
+        # screens and weather.
+        enemy = mon('wEnemyMon')
+        for key in ('moves', 'pp', 'status', 'item', 'types'):
+            active[key] = enemy[key]
+        d['state'] = {
+            'player_party': [mon('wPartyMon', i) for i in range(mem[W('wPartyCount')])],
+            'player_active': mem[W('wCurBattleMon')],
+            'unboosted': {side: [word(W(f'w{side}Stats') + 2 * k) for k in range(5)]
+                          for side in ('Player', 'Enemy')},
+            'substatus': {side: block(f'w{side}SubStatus1', 5) for side in ('Player', 'Enemy')},
+            'counts': {side: dict(zip(('rollout', 'confuse', 'toxic', 'disable', 'encore', 'perish'),
+                                      block(f'w{side}RolloutCount', 6))) for side in ('Player', 'Enemy')},
+            'substitute_hp': {side: mem[W(f'w{side}SubstituteHP')] for side in ('Player', 'Enemy')},
+            'screens': {side: mem[W(f'w{side}Screens')] for side in ('Player', 'Enemy')},
+            'screen_counts': {side: dict(zip(('safeguard', 'light_screen', 'reflect'),
+                                             block(f'w{side}SafeguardCount', 3))) for side in ('Player', 'Enemy')},
+            'disabled': {'Player': mem[W('wDisabledMove')], 'Enemy': mem[W('wEnemyDisabledMove')]},
+            'weather': mem[W('wBattleWeather')], 'weather_count': mem[W('wWeatherCount')]}
+        # AIChooseMove picks the move at the start of the turn, but
+        # SwitchSmogon runs after the player's switch: then the move is
+        # locked in, picked against the previous Pokemon.
+        d['player_switched'] = current.get('chose_vs') not in (None, mem[W('wCurBattleMon')])
         decisions.append(d)
         current['d'] = d
+
+    def on_choose(ctx):
+        current['chose_vs'] = mem[W('wCurBattleMon')]
 
     def on_branch(label):
         def cb(ctx):
@@ -123,7 +155,13 @@ def run(argv):
         if decisions and decisions[-1].get('switched'):
             decisions[-1]['loaded'] = True
 
+    def on_item(ctx):
+        if decisions:
+            decisions[-1]['item_used'] = True
+
+    battle.on('AIChooseMove', on_choose)
     battle.on('SwitchSmogon', on_decide)
+    battle.on('AIUsedItemSound', on_item)
     for label in BRANCHES:
         if label in battle.sym:
             battle.on(label, on_branch(label))
@@ -185,7 +223,8 @@ def report(paths):
                 continue
             total += 1
             party = d['party']
-            player = as_mon(d['player'], d['player_stages'])
+            # (wBattleMon's stats already include the stat changes)
+            player = d['player']
             here = race(as_mon(party[d['active']], d['enemy_stages']), player, False)
             alts = [race(m, player, True) for i, m in enumerate(party) if i != d['active'] and m['hp']]
             if here < -1 and alts and max(alts) > 0:

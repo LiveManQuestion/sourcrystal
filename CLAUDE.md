@@ -124,6 +124,8 @@ user's save files.
   Whitney 2 and Jasmine 2 (the others never beat the user's party), 48+
   seeds; `battle_compare.py` prints z, and below 2 is noise. Explain a
   change with `ai_trace.py` and check its cost with `ai_profile.py`.
+  `engine_judge.py` (Foul Play's Gen 2 engine, poke-engine, in
+  `bots/pe-venv`) rates each traced decision and lists the worst ones.
 - PyBoy: one hook per address (share them with `battle_harness.Battle.on`),
   and exceptions in hooks are swallowed silently, so count or log them. Some
   menus (party, PC) draw as a white screen; check state through RAM.

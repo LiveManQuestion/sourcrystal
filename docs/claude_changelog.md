@@ -454,3 +454,17 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   and reports the Smogon AI's switch decisions and candidate scores;
   `ai_profile.py` times AI code in scanlines. `battle_compare.py` prints z
   (standard deviations of the change) for win rates and Pokemon left.
+- **2026-10-16**: `engine_judge.py`: poke-engine (Foul Play's search engine,
+  built for Gen 2 in `bots/pe-venv`) judges the Smogon AI's traced decisions.
+  `ai_trace.py` now logs the full battle state for it (player's party, items,
+  stats before stat changes, substatuses, screens, weather) and marks turns
+  the AI used an item or the player had switched (`player_switched`: the
+  AI's move was picked before the switch); its report no longer applies the
+  player's stat changes twice (`wBattleMon`'s stats already include them).
+  Checked: every move and species maps to an engine id, engine damage
+  matches the cartridge formula on 103 of 106 real matchups, and two runs
+  agree on 352 of 363 decisions. Against the user's OU team (48 battles,
+  1336 decisions): mean regret 0.015, 42 clear disagreements (regret > 0.1).
+  The patterns: a less accurate attack for a KO, switching out with a KO
+  available (Tauros), Blissey healing instead of finishing a weakened
+  Cloyster, and Rest users staying in asleep without Sleep Talk.

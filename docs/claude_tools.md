@@ -84,6 +84,37 @@ user's save files.
   TRACES...`: switches, replacements, each candidate's average score against
   each player Pokemon, and stay-ins that an independent damage race
   (`smart_player.race`) calls clearly wrong.
+- `engine_judge.py TRACE.jsonl... [--ms 500] [--threads 4] [--json OUT]`: a
+  second opinion on every `SwitchSmogon` decision in `ai_trace.py` traces
+  from poke-engine, the Gen 2 search engine behind the Foul Play bot
+  (`bots/foul-play-main`). It rebuilds each position (both parties, items,
+  stat changes, volatiles, screens, Spikes, weather), runs MCTS with the AI as
+  side one and prints the agreement rate, regret (the engine's value of its
+  own action minus its value of the AI's, as win chances 0 to 1), the biggest
+  disagreements and the stay/switch disagreements by matchup. `--report OUT`
+  prints saved results again; `--check` confirms that every move, species and
+  item maps to an engine id (unknown ids silently become NONE). Moves are
+  all the same "stay" while the AI's Pokemon is asleep or frozen, except
+  Sleep Talk and Snore. After the player switches, the AI's move was already
+  picked (`AIChooseMove` runs at the start of the turn, `SwitchSmogon` after
+  the player's switch), so only staying in with that move and the switches
+  are compared. With 500 ms per decision the engine picks the same
+  action in about 97% of reruns.
+  - Setup: run it with `bots/pe-venv/bin/python`, a uv venv (Python 3.13)
+    with `poke-engine==0.0.48` built from source for Gen 2 (needs cargo):
+    `uv venv -p 3.13 bots/pe-venv && VIRTUAL_ENV=bots/pe-venv uv pip install
+    -p bots/pe-venv/bin/python poke-engine==0.0.48 --no-binary poke-engine
+    --config-settings="build-args=--features poke-engine/gen2
+    --no-default-features"`. The PyPI wheel is Gen 4.
+  - Caveats: the engine sees the player's whole party, so some disagreements
+    are ones the AI couldn't have avoided. It simulates Showdown's Gen 2: its
+    damage matched the cartridge formula's max roll on 103 of 106 real
+    matchups (the rest were 1-point rounding), but Fly (90), Petal Dance
+    (120) and Tackle (40) keep their later power; Hidden Power counts as 70
+    power and sleep turns start from 0. Items it doesn't know, like the
+    Sitrus Berry, do nothing (`--check` lists the ones it knows; Sour
+    Crystal's renamed items, like the Lum Berry, are mapped back to Gen 2's).
+  - Oak and Safari (also in `bots/`) only simulate Gen 1.
 - `ai_profile.py ROM SYM RAM TRAINER SEED [SPAN...]`: time AI code in
   scanlines (154 per frame): by default the switch decision, the switch-in
   search and the parts of a matchup score; `START:END1|END2=name` for others.
