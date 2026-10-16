@@ -14,7 +14,12 @@
       "Bash(pacman -Q *)",
       "Bash(pacman -Qi *)",
       "Bash(pacman -Qs *)",
-      "Bash(pacman -Ss *)"
+      "Bash(pacman -Ss *)",
+      "Bash(git grep *)",
+      "Bash(flatpak list)",
+      "Bash(flatpak list *)",
+      "Bash(git check-ignore *)",
+      "Bash(git merge-base *)"
     ]
   }
 }
