@@ -27,7 +27,13 @@ How the trainer AI is organized (see also `CLAUDE.md`).
   it into hits needed from current HP, and the score is
   `SMOGON_MATCHUP_EVEN` + 16 × log2(the player's half turns / ours): the
   faster side gets half a turn, and a switch-in takes a hit on the way in
-  (not when replacing a fainted Pokemon). Healing isn't modeled. For speed,
+  (not when replacing a fainted Pokemon). `AISmogon_ApplyHealing` adds
+  healing: Leftovers comes off the damage taken (the player's Pokemon is
+  assumed to hold it), and a recovery move (half max HP per turn, Rest a
+  quarter) that outheals the damage taken means it can't be KOed, while its
+  own KO takes longer by the turns spent healing (`AISmogon_HealDelay`).
+  The player's Pokemon counts its revealed recovery moves, or Rest if its
+  `SmogonTraits` say so. For speed,
   `AISmogon_SetupDamage` precomputes the formula without the power,
   `AISmogon_FillTypeMatchups` fills each attack type's effectiveness from a
   copy of the type chart in the AI bank (`data/types/type_matchups_table.asm`

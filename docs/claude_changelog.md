@@ -345,3 +345,18 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   `ai_scenarios.py` ALL OK, `cmp_data.py` ALL IDENTICAL, 9-trainer battle
   test no crashes (AI wins 2 -> 0 of 54, timeouts 3 -> 3, both noise).
   Healing (Softboiled, Recover, Leftovers) isn't part of the race yet.
+- **2026-10-16**: Healing in the Smogon KO race (`AISmogon_ApplyHealing`,
+  `AISmogon_HealOutlasts`, `AISmogon_HealDelay`). Leftovers comes off the
+  damage each side takes (the player's Pokemon is assumed to hold it). A
+  recovery move (Recover, Softboiled, Milk Drink, Moonlight, Morning Sun,
+  Synthesis: half max HP per turn; Rest: a quarter) that outheals the damage
+  taken makes that side impossible to KO, and its own KO takes turns *
+  healing / (healing - damage taken). The player's side counts revealed
+  recovery moves, or Rest from `SmogonTraits`. Whitney's Blissey now scores
+  183 against Zapdos (Snorlax 128) and 191 against Cloyster, but still 17
+  against Snorlax's Double-Edge. Against the user's save party (48 battles):
+  Whitney won 43, no crashes; switch decisions still take at most 7 frames.
+  `ai_scenarios.py` ALL OK, `cmp_data.py` ALL IDENTICAL, 9-trainer battle
+  test no crashes (AI wins 0 -> 3 of 54, timeouts 3 -> 6, within noise).
+  PP isn't modeled, so two Pokemon that both outheal each other come out
+  even.

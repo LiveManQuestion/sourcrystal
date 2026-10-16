@@ -597,14 +597,25 @@ AISmogon_ScoreMatchup:
 	ld [wSmogonAIPower], a
 	ld a, [wSmogonAIBestDamage + 1]
 	ld [wSmogonAIPower + 1], a
+	call AISmogon_ApplyHealing
 
-; Turns for this Pokemon to KO the player's...
+; Turns for this Pokemon to KO the player's: none if the player's heals
+; faster than it takes damage, and more if this one spends turns healing...
 	ld hl, wBattleMonHP
 	ld a, [hli]
 	ld d, a
 	ld e, [hl]
 	ld hl, wSmogonAIPower
 	call AISmogon_TurnsToKO
+	ld hl, wSmogonAIPlayerHeal
+	ld de, wSmogonAIPower
+	call AISmogon_HealOutlasts
+	jr nc, .player_falls
+	ld a, SMOGON_MAX_TURNS
+.player_falls
+	ld hl, wSmogonAIOurHeal
+	ld de, wSmogonAIThreat
+	call AISmogon_HealDelay
 	add a
 	push af
 
@@ -623,6 +634,15 @@ AISmogon_ScoreMatchup:
 	ld e, [hl]
 	ld hl, wSmogonAIThreat
 	call AISmogon_TurnsToKO
+	ld hl, wSmogonAIOurHeal
+	ld de, wSmogonAIThreat
+	call AISmogon_HealOutlasts
+	jr nc, .we_fall
+	ld a, SMOGON_MAX_TURNS
+.we_fall
+	ld hl, wSmogonAIPlayerHeal
+	ld de, wSmogonAIPower
+	call AISmogon_HealDelay
 	add a
 	ld b, a
 
@@ -701,6 +721,209 @@ AISmogon_ScoreMatchup:
 	ld a, SMOGON_MATCHUP_EVEN
 	add d
 	sub b
+	pop hl
+	pop de
+	pop bc
+	ret
+
+AISmogon_ApplyHealing:
+; Take Leftovers off the damage each side takes per turn, and store how much
+; each side can heal per turn with a recovery move: half its max HP, or a
+; quarter with Rest (which costs sleeping turns). The AI knows its own
+; Pokemon's moves and item; the player's Pokemon heals with the recovery
+; moves it has revealed or Rest if it usually has it, and is assumed to
+; hold Leftovers like most GSC OU Pokemon.
+	ld a, MON_MAXHP
+	call AISmogon_OTPartyAttr
+	ld a, [hli]
+	ld d, a
+	ld e, [hl]
+	ld hl, .RecoveryMoves
+.our_recovery
+	ld a, [hli]
+	cp -1
+	jr z, .our_rest
+	call AISmogon_OTMonHasMove
+	jr nc, .our_recovery
+	call .Half
+	jr .got_our_heal
+
+.our_rest
+	ld a, REST
+	call AISmogon_OTMonHasMove
+	call .Quarter
+.got_our_heal
+	ld a, b
+	ld [wSmogonAIOurHeal], a
+	ld a, c
+	ld [wSmogonAIOurHeal + 1], a
+	ld a, MON_ITEM
+	call AISmogon_OTPartyAttr
+	ld a, [hl]
+	cp LEFTOVERS
+	jr nz, .player
+	ld hl, wSmogonAIThreat
+	call .SubtractSixteenth
+
+.player
+	ld a, [wBattleMonMaxHP]
+	ld d, a
+	ld a, [wBattleMonMaxHP + 1]
+	ld e, a
+	ld hl, .RecoveryMoves
+.player_recovery
+	ld a, [hli]
+	cp -1
+	jr z, .player_rest
+	call AISmogon_PlayerRevealedMove
+	jr nc, .player_recovery
+	call .Half
+	jr .got_player_heal
+
+.player_rest
+	ld a, REST
+	call AISmogon_PlayerRevealedMove
+	jr c, .player_rests
+	ld a, [wPlayerUsedMoves + NUM_MOVES - 1]
+	and a
+	jr nz, .player_rests
+	call AISmogon_GetPlayerTraits
+	and SMOGON_REST
+	jr z, .player_rests
+	scf
+.player_rests
+	call .Quarter
+.got_player_heal
+	ld a, b
+	ld [wSmogonAIPlayerHeal], a
+	ld a, c
+	ld [wSmogonAIPlayerHeal + 1], a
+	ld hl, wSmogonAIPower
+	jp .SubtractSixteenth
+
+.Half:
+; bc = de / 2
+	ld b, d
+	ld c, e
+	srl b
+	rr c
+	ret
+
+.Quarter:
+; bc = de / 4 if carry, else 0
+	ld bc, 0
+	ret nc
+	call .Half
+	srl b
+	rr c
+	ret
+
+.SubtractSixteenth:
+; Subtract de / 16 from the word at hl, down to 0.
+	push de
+	srl d
+	rr e
+	srl d
+	rr e
+	srl d
+	rr e
+	srl d
+	rr e
+	inc hl
+	ld a, [hl]
+	sub e
+	ld [hld], a
+	ld a, [hl]
+	sbc d
+	ld [hl], a
+	jr nc, .subtracted
+	xor a
+	ld [hli], a
+	ld [hl], a
+.subtracted
+	pop de
+	ret
+
+.RecoveryMoves:
+	db RECOVER
+	db SOFTBOILED
+	db MILK_DRINK
+	db MOONLIGHT
+	db MORNING_SUN
+	db SYNTHESIS
+	db -1 ; end
+
+AISmogon_HealOutlasts:
+; Return carry if the healing per turn at hl is more than the damage per
+; turn at de (both words): that side can't be KOed. Preserves a.
+	push bc
+	ld b, a
+	ld a, [de]
+	cp [hl]
+	jr nz, .done
+	inc de
+	inc hl
+	ld a, [de]
+	cp [hl]
+	dec de
+	dec hl
+.done
+	ld a, b
+	pop bc
+	ret
+
+AISmogon_HealDelay:
+; a = turns to KO the other side. If this side heals faster than it takes
+; damage (healing at hl, damage at de), it spends some turns healing
+; instead of attacking: return a * healing / (healing - damage), at most
+; SMOGON_MAX_TURNS.
+	call AISmogon_HealOutlasts
+	ret nc
+	push bc
+	push de
+	push hl
+	ld c, a
+	xor a
+	ldh [hMultiplicand], a
+	ld a, [hli]
+	ldh [hMultiplicand + 1], a
+	ld a, [hl]
+	ldh [hMultiplicand + 2], a
+	ld a, c
+	ldh [hMultiplier], a
+	call Multiply
+	; de = healing - damage
+	ld a, [hld]
+	ld c, a
+	inc de
+	ld a, [de]
+	ld b, a
+	ld a, c
+	sub b
+	ld c, a
+	dec de
+	ld a, [de]
+	ld b, a
+	ld a, [hl]
+	sbc b
+	ld d, a
+	ld e, c
+	ldh a, [hProduct + 1]
+	ldh [hMathBuffer + 1], a
+	ldh a, [hProduct + 2]
+	ldh [hMathBuffer + 2], a
+	ldh a, [hProduct + 3]
+	ldh [hMathBuffer + 3], a
+	call AISmogon_Divide24
+	ld a, h
+	and a
+	jr nz, .max
+	ld a, l
+	cp SMOGON_MAX_TURNS + 1
+	jr c, .done
+.max
+	ld a, SMOGON_MAX_TURNS
+.done
 	pop hl
 	pop de
 	pop bc
