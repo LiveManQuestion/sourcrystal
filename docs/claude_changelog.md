@@ -285,3 +285,11 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
     build). Battle matrix 9 x 12: AI wins 26 -> 26, no crashes; the only
     trainers that phaze (Brock 0 -> 2, Jasmine 2 -> 4) improved. Rival 10 -> 5
     is RNG timing: its team has none of the affected moves.
+- **2026-10-16**: Whitney's Challenge Mode rematch was too easy: an all-Normal
+  team with no phazing, no Rapid Spin and little damage (Rollout Miltank,
+  Present/Flamethrower Smeargle, passive Chansey and Blissey). New OU-style
+  team: Smeargle (Spore/Spikes/Rapid Spin/Roar), Tauros (Return/EQ/Thunderbolt/
+  Fire Blast), Porygon2, Curse Snorlax, Blissey (Heal Bell, Ice Beam,
+  Flamethrower) and Curse/EQ Miltank. Every move was checked against the
+  learnsets. With the player's real save party and random inputs (no healing),
+  over 32 seeds she went from 3 wins to 24, with no crashes.
