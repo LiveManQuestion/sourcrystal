@@ -20,62 +20,13 @@ the cursor variable the menu is about to read, then presses A. It backs out
 of the party menu with B when it didn't mean to be there or a switch failed,
 and a watchdog cycles down/A/B/A when no hook has fired for a while, so an
 unexpected menu can't stall a battle (counted in actions['watchdog'])."""
-import math, os, re
+import math
 
-ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
+from pokedata import BASE_TYPES, CONST, MOVES, SPECIAL, TYPES, effectiveness, hidden_power
 
-
-def consts(path):
-    d = {}
-    i = 0
-    for line in open(os.path.join(ROOT, path)):
-        m = re.match(r'\s*const_def\s*(-?\d*)', line)
-        if m:
-            i = int(m.group(1) or 0)
-            continue
-        m = re.match(r'\s*const_next\s*(\d+)', line)
-        if m:
-            i = int(m.group(1))
-            continue
-        if re.match(r'\s*const_skip', line):
-            i += 1
-            continue
-        m = re.match(r'\s*const (\w+)', line)
-        if m:
-            d[m.group(1)] = i
-            i += 1
-    return d
-
-
-TYPES = consts('constants/type_constants.asm')
-SPECIES = consts('constants/pokemon_constants.asm')
-SPECIAL = TYPES['FIRE']
-MOVES = {}
-for line in open(os.path.join(ROOT, 'data/moves/moves.asm')):
-    m = re.match(r'\s*move (\w+),\s*(\w+),\s*(\d+),\s*(\w+),\s*(\d+),\s*(\d+)', line)
-    if m:
-        MOVES[len(MOVES) + 1] = dict(name=m.group(1), effect=m.group(2), power=int(m.group(3)),
-                                     type=TYPES[m.group(4)], acc=int(m.group(5)) / 100,
-                                     pp=int(m.group(6)))
-CHART = {}
-for line in open(os.path.join(ROOT, 'data/types/type_matchups_table.asm')):
-    m = re.match(r'\s*db (\w+),\s*(\w+),\s*(\w+)', line)
-    if m and m.group(1) in TYPES:
-        CHART[TYPES[m.group(1)], TYPES[m.group(2)]] = {
-            'SUPER_EFFECTIVE': 2, 'NOT_VERY_EFFECTIVE': .5, 'NO_EFFECT': 0}[m.group(3)]
-BASE_TYPES = {}
-for name, n in SPECIES.items():
-    path = os.path.join(ROOT, 'data/pokemon/base_stats', name.lower() + '.asm')
-    if os.path.exists(path):
-        for line in open(path):
-            m = re.match(r'\s*db (\w+),\s*(\w+)\s*; type', line)
-            if m:
-                BASE_TYPES[n] = (TYPES[m.group(1)], TYPES[m.group(2)])
-HP_TYPES = ['FIGHTING', 'FLYING', 'POISON', 'GROUND', 'ROCK', 'BUG', 'GHOST', 'STEEL',
-            'FIRE', 'WATER', 'GRASS', 'ELECTRIC', 'PSYCHIC_TYPE', 'ICE', 'DRAGON', 'DARK']
 SKIP = {'EFFECT_SELFDESTRUCT', 'EFFECT_COUNTER', 'EFFECT_MIRROR_COAT'}
-CANT_RUN = consts('constants/battle_constants.asm')['SUBSTATUS_CANT_RUN']
-SCREENS_SPIKES = consts('constants/battle_constants.asm')['SCREENS_SPIKES']
+CANT_RUN = CONST['SUBSTATUS_CANT_RUN']
+SCREENS_SPIKES = CONST['SCREENS_SPIKES']
 TWO_TURN = {'EFFECT_RAZOR_WIND', 'EFFECT_SKY_ATTACK', 'EFFECT_SKULL_BASH', 'EFFECT_SOLARBEAM',
             'EFFECT_HYPER_BEAM'}
 
@@ -92,19 +43,14 @@ def damage(att, dfn, move, dvs):
         return 0
     power, typ = mv['power'], mv['type']
     if mv['name'] == 'HIDDEN_POWER':
-        ad, ss = dvs
-        top = (ad >> 7 & 1) << 3 | (ad >> 3 & 1) << 2 | (ss >> 7 & 1) << 1 | (ss >> 3 & 1)
-        power = (top * 5 + (ss & 3)) // 2 + 31
-        typ = TYPES[HP_TYPES[(ad >> 4 & 3) << 2 | (ad & 3)]]
+        power, typ = hidden_power(*dvs)
     elif mv['name'] in ('RETURN', 'FRUSTRATION'):
         power = 102
     elif mv['name'] == 'MAGNITUDE':
         power = 71
     if power == 0:
         return 0
-    eff = 1
-    for t in set(dfn['types']):
-        eff *= CHART.get((typ, t), 1)
+    eff = effectiveness(typ, dfn['types'])
     if eff == 0:
         return 0
     if power == 1:
@@ -160,7 +106,9 @@ def heal_party(mem, W):
 
 
 class SmartPlayer:
-    def __init__(self, pb, sym):
+    def __init__(self, pb, sym, hook=None):
+        # hook(label, fn): battle_harness.Battle.on, or a plain PyBoy hook
+        hook = hook or (lambda label, fn: pb.hook_register(*sym[label], fn, None))
         self.pb, self.m = pb, pb.memory
         self.sym = sym
         self.W = lambda n: sym[n][1]
@@ -175,7 +123,7 @@ class SmartPlayer:
                         'errors': 0, 'spikes': 0}
         for name, cb in (('BattleMenu', self.on_menu), ('MoveSelectionScreen', self.on_moves),
                          ('BattleMenuPKMN_Loop', self.on_pkmn), ('PickPartyMonInBattle', self.on_pick)):
-            pb.hook_register(*sym[name], self.guarded(cb), None)
+            hook(name, self.guarded(cb))
 
     def guarded(self, cb):
         # PyBoy swallows exceptions in hooks: count them instead

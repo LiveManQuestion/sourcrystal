@@ -81,6 +81,8 @@ tools/claude/battle_scripts.json
 
 # vanilla Crystal reference build (tools/claude/build_vanilla.sh)
 /.vanilla/
+# old-commit builds (tools/claude/build_rev.sh)
+/.revbuild/
 
 # tools/claude/stadium2/build_core.sh
 .stadium2/

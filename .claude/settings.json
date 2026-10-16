@@ -19,7 +19,11 @@
       "Bash(flatpak list)",
       "Bash(flatpak list *)",
       "Bash(git check-ignore *)",
-      "Bash(git merge-base *)"
+      "Bash(git merge-base *)",
+      "Bash(~/.local/share/uv/tools/pyboy/bin/python tools/claude/battle.py *)",
+      "Bash(~/.local/share/uv/tools/pyboy/bin/python tools/claude/ai_profile.py *)",
+      "Bash(~/.local/share/uv/tools/pyboy/bin/python tools/claude/ai_trace.py *)",
+      "Bash(python3 tools/claude/ai_trace.py report *)"
     ]
   }
 }

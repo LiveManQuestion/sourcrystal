@@ -444,3 +444,13 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   (Koga 2 51 -> 40 with near-identical switch patterns, Misty 22 -> 26).
   A first run where the bot never laid Spikes, so the new code never ran,
   moved 45 -> 42 of 96 from RNG timing alone.
+- **2026-10-16**: Tooling for future AI sessions. `build_rev.sh REV OUT`
+  builds any commit (cached in `.revbuild/`). `pokedata.py` parses the game's
+  constants and data for every Python tool (following `const_skip`,
+  `const_next` and `shift_const`; `smart_player.py` uses it).
+  `battle_harness.py` holds the battle setup and loop from `battle.py`
+  (unchanged results, checked on 4 battles in both player modes) with
+  `Battle.on()` so several callbacks can share a hook. `ai_trace.py` records
+  and reports the Smogon AI's switch decisions and candidate scores;
+  `ai_profile.py` times AI code in scanlines. `battle_compare.py` prints z
+  (standard deviations of the change) for win rates and Pokemon left.
