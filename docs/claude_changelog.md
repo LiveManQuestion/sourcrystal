@@ -187,3 +187,15 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   against the GSC illegal-combination lists in `illegalmovecombos/` (4092
   rules, 178 species): only Chuck's Granbull (Crunch + Metronome) hit, now
   Ice Punch. All four ROMs build; `ai_scenarios.py` ALL OK.
+- **2026-10-15**: Stadium 2 GB Tower in mupen64plus. Traced why it fails
+  (the Transfer Pak check without upstream's fix, then a hang without RMG's
+  RSP/RDP patch; vanilla Crystal too) and added
+  `tools/claude/stadium2/build_core.sh` and `play.sh` (see
+  `docs/stadium2.md`). Tested headlessly: Sour Crystal boots in the GB Tower,
+  loads the save and reaches the overworld.
+- **2026-10-16**: GB Tower graphics glitches (blank intro, garbled party
+  icon, NPCs changing sprites, also in ares) come from GDMA, which Stadium's
+  Game Boy emulator doesn't handle; `sourcrystal_GBTower.gbc` already skips
+  it. Bill's PC called `SafeHDMATransfer` directly; `BillsPC_Get2bpp` now
+  skips GDMA under `_GBTOWER` too. Only the GBTower ROM changed. Checked
+  in mupen64plus's GB Tower: intro, title and party icons correct.

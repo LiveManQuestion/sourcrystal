@@ -522,6 +522,10 @@ BillsPC_SafeGet2bpp:
 
 BillsPC_Get2bpp:
 ; Get2bpp using GDMA.
+IF DEF(_GBTOWER)
+	; Stadium 2's GB Tower doesn't emulate GDMA (see CheckGDMA).
+	jp Get2bpp
+ENDC
 	; Check if we can actually use GDMA for this.
 
 	; The 4 least significant bits must be zero.

@@ -33,6 +33,45 @@ tracing what it reads and writes on the Game Boy cartridge (2026-10-15).
   that. Tested: re-ordering boxes, and moving the current box to an N64 box
   (with the Pokédex flags set in a test save); the game loads both correctly.
 
+## GB Tower
+
+Use `sourcrystal_GBTower.gbc` (built by `make all`, `-D _GBTOWER`) in the GB
+Tower. Stadium's Game Boy emulator doesn't handle GDMA (`SafeHDMATransfer`,
+which waits for HBlank on `rSTAT`), so with `sourcrystal.gbc` the intro is
+blank, party icons are garbled and NPCs turn into other sprites. The
+GBTower build skips GDMA (`CheckGDMA`, `BillsPC_Get2bpp`) and the battle
+start delay that it needed. Tested in mupen64plus: intro, title, party menu.
+Same glitches in ares, so this is Stadium, not the emulator.
+
+ares (148) runs the GB Tower at full speed. It reads the Game Boy save from
+`<ROM name>.ram` and the clock from `<ROM name>.rtc` next to the ROM (not
+`.sav`): `head -c 32768 sourcrystal.sav > sourcrystal_GBTower.ram`.
+
+In mupen64plus, emulators need two mupen64plus-core fixes and an LLE RSP:
+
+- Without the Transfer Pak fix (the system mupen64plus 2.6.0 lacks it),
+  Stadium reads the whole ROM and then says "The Transfer Pak is not set
+  properly". Upstream mupen64plus-core and RMG 0.8.2+ have it.
+- Without RMG's RSP/RDP timing patch (Rosalie241/RMG `e8d4d6341b`, not
+  upstream), it reads ROM banks 1-4, $27 and $7F and then hangs on a white
+  screen. HLE RSP hangs too.
+- Vanilla Crystal behaves the same, so these are emulator problems.
+
+`tools/claude/stadium2/build_core.sh` builds upstream mupen64plus-core plus
+that patch into `.stadium2/` (git-ignored; the dynarec needs `nasm`, without
+it the core falls back to the much slower cached interpreter).
+`play.sh [STADIUM2.n64 GBROM GBSAV]` (default: the US ROM, `sourcrystal.gbc`,
+`sourcrystal.sav`) plays with it: RMG's cxd4 RSP and GLideN64 (`GFX=parallel`
+for RMG's parallel-RDP), the first gamepad as controller 1 with the Transfer
+Pak, and a backup of GBSAV first. For headless runs, pass
+the same `--corelib`, `--rsp` and cxd4 settings to `run.sh`.
+
+The "Out of bound read from GB RAM 8000" warning is Stadium reading SRAM
+bank 4 during the Game Pak check (a real MBC3 mirrors bank 0 there); it's
+harmless. mupen64plus also saves only the 32 KB of SRAM, dropping the
+48-byte clock footer of a 32816-byte `.sav`, so the game asks to reset the
+clock afterwards.
+
 ## Testing
 
 Needs `mupen64plus` and `xorg-server-xvfb`, and a Stadium 2 (US) ROM in `.z64`
