@@ -276,16 +276,10 @@ SwitchSmogon:
 	jp DontSwitch
 
 .matchup
-; Only switch for a clearly better matchup. Spikes make every switch-in lose
-; 1/8 of its HP, and switching right after coming in just goes back and forth.
+; Only switch for a clearly better matchup (the switch-in's score already
+; counts the hit and Spikes it takes coming in), and not right after coming
+; in, which just goes back and forth.
 	ld c, SMOGON_SWITCH_MARGIN
-	ld a, [wEnemyScreens]
-	bit SCREENS_SPIKES, a
-	jr z, .no_spikes
-	ld a, c
-	add SMOGON_SPIKES_MARGIN
-	ld c, a
-.no_spikes
 	ld a, [wEnemyTurnsTaken]
 	and a
 	jr nz, .settled_in

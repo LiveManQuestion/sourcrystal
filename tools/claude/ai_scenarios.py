@@ -171,7 +171,8 @@ heal_cases = [
 # Switch-in phase: (name, player types, [(species, moves)...], expected index
 # [, extra]). The player's Pokemon is a Magikarp (no expected attacks in
 # SmogonExpectedAttacks, so its types decide) unless extra sets 'species'.
-# Other extra keys: 'used' (revealed moves), 'php' (HP out of 100), 'escreens'.
+# Other extra keys: 'used' (revealed moves), 'php' (HP out of 100), 'chp'
+# (the candidates' HP out of 200), 'escreens'.
 switch_cases = [
     ('switch vs fire: water over 4x weak', (C['FIRE'], C['FIRE']),
      [(C['FORRETRESS'], M('TACKLE')), (C['STARMIE'], M('SURF'))], 1),
@@ -208,6 +209,13 @@ switch_cases = [
     ('switch vs lapras: no sleep expected', (C['WATER'], C['ICE']),
      [(C['SNORLAX'], M('THUNDERBOLT')), (C['SNORLAX'], M('THUNDERBOLT', 'SLEEP_TALK'))], 0,
      dict(species=C['LAPRAS'])),
+    # Equal matchups: Spikes on the AI's side hurt the non-Flying switch-in.
+    # (at 120 of 200 HP, Spikes' 25 HP leave it one hit from fainting)
+    ('switch vs water, no spikes: tie keeps the first', (C['WATER'], C['WATER']),
+     [(C['RATICATE'], M('BODY_SLAM')), (C['PIDGEOT'], M('BODY_SLAM'))], 0, dict(chp=120)),
+    ('switch vs water with spikes: flying avoids them', (C['WATER'], C['WATER']),
+     [(C['RATICATE'], M('BODY_SLAM')), (C['PIDGEOT'], M('BODY_SLAM'))], 1,
+     dict(chp=120, escreens=1 << C['SCREENS_SPIKES'])),
 ]
 
 # Hidden Power phase: (Atk/Def DVs, Spd/Spc DVs) -> vanilla power and type
@@ -390,7 +398,7 @@ def on_switch_entry(ctx):
             for k in range(4):
                 mem[W('wOTPartyMon1Moves') + b + k] = moves[k] if k < len(moves) else 0
             mem[W('wOTPartyMon1Status') + b] = 0
-            word(W('wOTPartyMon1HP') + b, 200); word(W('wOTPartyMon1MaxHP') + b, 200)
+            word(W('wOTPartyMon1HP') + b, extra.get('chp', 200)); word(W('wOTPartyMon1MaxHP') + b, 200)
             for k in range(5):
                 word(W('wOTPartyMon1Attack') + b + 2 * k, 200)
             slots.append(i)

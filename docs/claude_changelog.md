@@ -422,3 +422,25 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   them). `battle_matrix.sh` takes `PLAYER=smart`. Whitney 2 against the
   user's party: 32 battles, all ended, Whitney won 24, no crashes or hook
   errors, 4 watchdog triggers.
+- **2026-10-16**: Smart-player comparison of the ROM before today's AI work
+  (279343fec) and after (3c7742bdc), 10 trainers x 12 seeds: AI wins 18 ->
+  19 of 120. Six trainers never beat the user's level 76-78 party, so they
+  give no signal; Koga 2 went 4 -> 10, Misty 2 5 -> 3, Whitney 2 6 -> 6,
+  Jasmine 2 3 -> 0. Jasmine rerun with 24 seeds: 4 -> 3 wins, the player's
+  Pokemon left 3.54 -> 3.33, so no regression (noise). Her behavior did
+  change: Forretress Explodes and Curses more, and the new replacement
+  choice sends Skarmory into the player's Steelix, where every attack is
+  resisted and Whirlwind (encouraged with Spikes down) wins. `battle.py` now
+  reports `player_left` and `enemy_left`.
+- **2026-10-16**: Spikes in the Smogon switch-in race. A switch-in (also
+  after a faint) now loses 1/8 of its max HP to Spikes on the AI's side
+  unless it's a Flying type (`AISmogon_ApplyHealing`), replacing the flat
+  `SMOGON_SPIKES_MARGIN` in `SwitchSmogon`, which ignored Flying types and
+  replacements after a faint. New `ai_scenarios.py` cases (and a `chp`
+  option for the candidates' HP): with equal matchups, Spikes make Pidgeot
+  beat Raticate. The smart player now lays Spikes when it can (so the AI's
+  side gets them at all); against it, 4 trainers x 72 seeds: AI wins 130 ->
+  126 of 288, the player's Pokemon left 2.20 -> 2.21: neutral within noise
+  (Koga 2 51 -> 40 with near-identical switch patterns, Misty 22 -> 26).
+  A first run where the bot never laid Spikes, so the new code never ran,
+  moved 45 -> 42 of 96 from RNG timing alone.

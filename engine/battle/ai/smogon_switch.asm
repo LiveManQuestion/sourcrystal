@@ -726,6 +726,44 @@ AISmogon_ApplyHealing:
 	ld a, [hli]
 	ld d, a
 	ld e, [hl]
+
+; A switch-in (also after a faint) loses 1/8 of its max HP to Spikes on the
+; way in, unless it's a Flying type.
+	ld a, [wCurOTMon]
+	ld c, a
+	ld a, [wSmogonAIMon]
+	cp c
+	jr z, .no_spikes
+	ld a, [wEnemyScreens]
+	bit SCREENS_SPIKES, a
+	jr z, .no_spikes
+	ld a, [wSmogonAITypes]
+	cp FLYING
+	jr z, .no_spikes
+	ld a, [wSmogonAITypes + 1]
+	cp FLYING
+	jr z, .no_spikes
+	push de
+	srl d
+	rr e
+	srl d
+	rr e
+	srl d
+	rr e
+	ld hl, wSmogonAIOurHeal + HEAL_HP + 1
+	ld a, [hl]
+	sub e
+	ld [hld], a
+	ld a, [hl]
+	sbc d
+	ld [hl], a
+	jr nc, .spiked
+	xor a
+	ld [hli], a
+	ld [hl], a
+.spiked
+	pop de
+.no_spikes
 	ld hl, AISmogon_RecoveryMoves
 .our_recovery
 	ld a, [hli]

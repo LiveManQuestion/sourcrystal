@@ -68,7 +68,6 @@ DEF SMOGON_PENALTY_POISON_BRN EQU 2
 
 ; Smogon AI switching thresholds (see SwitchSmogon)
 DEF SMOGON_SWITCH_MARGIN     EQU 20 ; matchup gain needed to switch
-DEF SMOGON_SPIKES_MARGIN     EQU 10 ; extra gain needed with Spikes down
 DEF SMOGON_JUST_IN_MARGIN    EQU 10 ; extra gain needed right after switching in
 DEF SMOGON_SURE_SWITCH       EQU 12 ; gain past the margin that always switches
 DEF SMOGON_ESCAPE_TOLERANCE  EQU 16 ; how much worse an escape switch-in may be
