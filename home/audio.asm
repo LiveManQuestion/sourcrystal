@@ -286,11 +286,6 @@ MinVolume::
 	ld [wVolume], a
 	ret
 
-FadeOutToMusic:: ; unreferenced
-	ld a, 4
-	ld [wMusicFade], a
-	ret
-
 FadeInToMusic::
 	ld a, 4 | (1 << MUSIC_FADE_IN_F)
 	ld [wMusicFade], a
@@ -304,33 +299,6 @@ SkipMusic::
 	dec a
 	call UpdateSound
 	jr .loop
-
-FadeToMapMusic::
-	push hl
-	push de
-	push bc
-	push af
-
-	call GetMapMusic_MaybeSpecial
-	ld a, [wMapMusic]
-	cp e
-	jr z, .done
-
-	ld a, 8
-	ld [wMusicFade], a
-	ld a, e
-	ld [wMusicFadeID], a
-	ld a, d
-	ld [wMusicFadeID + 1], a
-	ld a, e
-	ld [wMapMusic], a
-
-.done
-	pop af
-	pop bc
-	pop de
-	pop hl
-	ret
 
 PlayMapMusic::
 	push hl

@@ -1023,7 +1023,7 @@ AI_Smart_ForceSwitch:
 ; Consider player's type(s) if its moves are unknown.
 
 	push hl
-	callfar CheckPlayerMoveTypeMatchups
+	call CheckPlayerMoveTypeMatchups
 	ld a, [wEnemyAISwitchScore]
 	cp BASE_AI_SWITCH_SCORE
 	pop hl
@@ -1827,7 +1827,7 @@ AI_Smart_MeanLook:
 
 ; Otherwise, discourage this move unless the player only has not very effective moves against the enemy.
 	push hl
-	callfar CheckPlayerMoveTypeMatchups
+	call CheckPlayerMoveTypeMatchups
 	ld a, [wEnemyAISwitchScore]
 	cp BASE_AI_SWITCH_SCORE + 1 ; not very effective
 	pop hl
@@ -2082,7 +2082,7 @@ AI_Smart_PerishSong:
 	jr nz, .yes
 
 	push hl
-	callfar CheckPlayerMoveTypeMatchups
+	call CheckPlayerMoveTypeMatchups
 	ld a, [wEnemyAISwitchScore]
 	cp BASE_AI_SWITCH_SCORE
 	pop hl
@@ -2325,7 +2325,7 @@ AI_Smart_BatonPass:
 ; Consider player's type(s) if its moves are unknown.
 
 	push hl
-	callfar CheckPlayerMoveTypeMatchups
+	call CheckPlayerMoveTypeMatchups
 	ld a, [wEnemyAISwitchScore]
 	cp BASE_AI_SWITCH_SCORE
 	pop hl

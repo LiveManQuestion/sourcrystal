@@ -21,14 +21,14 @@ CheckPlayerMoveTypeMatchups:
 	push hl
 	dec a
 	ld hl, Moves + MOVE_POWER
-	call GetMoveAttr
+	newfarcall GetMoveAttr
 	and a
 	jr z, .next
 
 	inc hl
-	call GetMoveByte
+	newfarcall GetMoveByte
 	ld hl, wEnemyMonType
-	call CheckTypeMatchup
+	newfarcall CheckTypeMatchup
 	ld a, [wTypeMatchup]
 	cp EFFECTIVE + 1 ; 1.0 + 0.1
 	jr nc, .super_effective
@@ -73,7 +73,7 @@ CheckPlayerMoveTypeMatchups:
 	ld a, [wBattleMonType1]
 	ld b, a
 	ld hl, wEnemyMonType1
-	call CheckTypeMatchup
+	newfarcall CheckTypeMatchup
 	ld a, [wTypeMatchup]
 	cp EFFECTIVE + 1 ; 1.0 + 0.1
 	jr c, .ok
@@ -82,7 +82,7 @@ CheckPlayerMoveTypeMatchups:
 	ld a, [wBattleMonType2]
 	cp b
 	jr z, .ok2
-	call CheckTypeMatchup
+	newfarcall CheckTypeMatchup
 	ld a, [wTypeMatchup]
 	cp EFFECTIVE + 1 ; 1.0 + 0.1
 	jr c, .ok2
@@ -114,14 +114,14 @@ CheckPlayerMoveTypeMatchups:
 	inc de
 	dec a
 	ld hl, Moves + MOVE_POWER
-	call GetMoveAttr
+	newfarcall GetMoveAttr
 	and a
 	jr z, .loop2
 
 	inc hl
-	call GetMoveByte
+	newfarcall GetMoveByte
 	ld hl, wBattleMonType1
-	call CheckTypeMatchup
+	newfarcall CheckTypeMatchup
 
 	ld a, [wTypeMatchup]
 	; immune
@@ -176,7 +176,7 @@ CheckPlayerMoveTypeMatchups:
 CheckAbleToSwitch:
 	xor a
 	ld [wEnemySwitchMonParam], a
-	call FindAliveEnemyMons
+	newfarcall FindAliveEnemyMons
 	ret c
 
 	ld a, [wEnemySubStatus1]
@@ -189,7 +189,7 @@ CheckAbleToSwitch:
 
 	; Perish count is 1
 
-	call FindAliveEnemyMons
+	newfarcall FindAliveEnemyMons
 	call FindEnemyMonsWithAtLeastQuarterMaxHP
 	call FindEnemyMonsThatResistPlayer
 	call FindAliveEnemyMonsWithASuperEffectiveMove
@@ -204,7 +204,7 @@ CheckAbleToSwitch:
 	ret
 
 .not_2
-	call FindAliveEnemyMons
+	newfarcall FindAliveEnemyMons
 	sla c
 	sla c
 	ld b, $ff
@@ -275,7 +275,7 @@ CheckAbleToSwitch:
 	cp 10
 	ret nc
 
-	call FindAliveEnemyMons
+	newfarcall FindAliveEnemyMons
 	call FindEnemyMonsWithAtLeastQuarterMaxHP
 	call FindEnemyMonsThatResistPlayer
 	call FindAliveEnemyMonsWithASuperEffectiveMove
@@ -287,56 +287,6 @@ CheckAbleToSwitch:
 	ld a, [wEnemyAISwitchScore]
 	add $10
 	ld [wEnemySwitchMonParam], a
-	ret
-
-FindAliveEnemyMons:
-	ld a, [wOTPartyCount]
-	cp 2
-	jr c, .only_one
-
-	ld d, a
-	ld e, 0
-	ld b, 1 << (PARTY_LENGTH - 1)
-	ld c, 0
-	ld hl, wOTPartyMon1HP
-
-.loop
-	ld a, [wCurOTMon]
-	cp e
-	jr z, .next
-
-	push bc
-	ld b, [hl]
-	inc hl
-	ld a, [hld]
-	or b
-	pop bc
-	jr z, .next
-
-	ld a, c
-	or b
-	ld c, a
-
-.next
-	srl b
-	push bc
-	ld bc, PARTYMON_STRUCT_LENGTH
-	add hl, bc
-	pop bc
-	inc e
-	dec d
-	jr nz, .loop
-
-	ld a, c
-	and a
-	jr nz, .more_than_one
-
-.only_one
-	scf
-	ret
-
-.more_than_one
-	and a
 	ret
 
 FindEnemyMonsImmuneToLastCounterMove:
@@ -374,15 +324,15 @@ FindEnemyMonsImmuneToLastCounterMove:
 	ld a, [wLastPlayerCounterMove]
 	dec a
 	ld hl, Moves + MOVE_POWER
-	call GetMoveAttr
+	newfarcall GetMoveAttr
 	and a
 	jr z, .next
 
 	; and the Pokemon is immune to it...
 	inc hl
-	call GetMoveByte
+	newfarcall GetMoveByte
 	ld hl, wBaseType
-	call CheckTypeMatchup
+	newfarcall CheckTypeMatchup
 	ld a, [wTypeMatchup]
 	and a
 	jr nz, .next
@@ -464,15 +414,15 @@ FindEnemyMonsWithASuperEffectiveMove:
 	; if move has no power: continue
 	dec a
 	ld hl, Moves + MOVE_POWER
-	call GetMoveAttr
+	newfarcall GetMoveAttr
 	and a
 	jr z, .nope
 
 	; check type matchups
 	inc hl
-	call GetMoveByte
+	newfarcall GetMoveByte
 	ld hl, wBattleMonType1
-	call CheckTypeMatchup
+	newfarcall CheckTypeMatchup
 
 	; if immune or not very effective: continue
 	ld a, [wTypeMatchup]
@@ -563,18 +513,18 @@ FindEnemyMonsThatResistPlayer:
 
 	dec a
 	ld hl, Moves + MOVE_POWER
-	call GetMoveAttr
+	newfarcall GetMoveAttr
 	and a
 	jr z, .skip_move
 
 	inc hl
-	call GetMoveByte
+	newfarcall GetMoveByte
 	jr .check_type
 
 .skip_move
 	ld a, [wBattleMonType1]
 	ld hl, wBaseType
-	call CheckTypeMatchup
+	newfarcall CheckTypeMatchup
 	ld a, [wTypeMatchup]
 	cp 10 + 1
 	jr nc, .dont_choose_mon
@@ -582,7 +532,7 @@ FindEnemyMonsThatResistPlayer:
 
 .check_type
 	ld hl, wBaseType
-	call CheckTypeMatchup
+	newfarcall CheckTypeMatchup
 	ld a, [wTypeMatchup]
 	cp EFFECTIVE + 1
 	jr nc, .dont_choose_mon

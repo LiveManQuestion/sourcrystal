@@ -206,3 +206,18 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   `CheckGDMA`, `BillsPC_Get2bpp` and the battle start delay. `sourcrystal.gbc`
   now works in the GB Tower: intro and party icons correct in mupen64plus;
   PyBoy keeps `hGBTower` off; `cmp_data.py` ALL IDENTICAL.
+- **2026-10-16**: Free space in the full banks (link, serial and printer code
+  untouched). Room in the pinned sections: Home 87 -> 539 bytes, Effect Commands
+  298 -> 1111, Battle Core 287 -> 1721; Enemy Trainers 6074 -> 5321.
+  - Exp gain/exp bar (`GiveExperiencePoints`, `AnimateExpBar`,
+    `FillInExpBar`...) moved to `engine/battle/exp.asm` ("Battle Exp").
+  - `engine/battle/ai/switch.asm` moved from Effect Commands to the AI bank,
+    except `FindAliveEnemyMons`.
+  - Home: `ScrollMap*`/`BackupBGMap*`/`UpdateBGMap*` moved to
+    `player_step.asm`; `SaveScreen`, `LoadConnectionBlockData` and
+    `FadeToMapMusic` (map setup commands, far-called) to `map_setup.asm`.
+  - Deleted unreferenced functions in banks 0, $0e and $0f.
+  - Checked: all four ROMs build, `cmp_data.py` ALL IDENTICAL, `damage_diff.py`
+    0 mismatches, `ai_scenarios.py` ALL OK, smoke and a 5100-frame walk with
+    every screen identical to the old ROM, 12 battles with exp and a level-up
+    (same exp as the old ROM, no crashes).

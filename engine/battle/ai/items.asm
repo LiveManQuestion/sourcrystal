@@ -54,7 +54,7 @@ DontSwitch:
 	ret
 
 SwitchOften:
-	callfar CheckAbleToSwitch
+	call CheckAbleToSwitch
 	ld a, [wEnemySwitchMonParam]
 	and $f0
 	jr z, DontSwitch
@@ -89,7 +89,7 @@ SwitchOften:
 	jp AI_TrySwitch
 
 SwitchRarely:
-	callfar CheckAbleToSwitch
+	call CheckAbleToSwitch
 	ld a, [wEnemySwitchMonParam]
 	and $f0
 	jr z, DontSwitch
@@ -123,7 +123,7 @@ SwitchRarely:
 	jp AI_TrySwitch
 
 SwitchSometimes:
-	callfar CheckAbleToSwitch
+	call CheckAbleToSwitch
 	ld a, [wEnemySwitchMonParam]
 	and $f0
 	jp z, DontSwitch
@@ -155,11 +155,6 @@ SwitchSometimes:
 	inc a
 	ld [wEnemySwitchMonIndex], a
 	jp AI_TrySwitch
-
-CheckSubstatusCantRun: ; unreferenced
-	ld a, [wEnemySubStatus5]
-	bit SUBSTATUS_CANT_RUN, a
-	ret
 
 SwitchSmogon:
 ; Switch like a GSC OU player: compare the active Pokemon's matchup against
@@ -917,12 +912,6 @@ EnemyWithdrewText:
 	text_far _EnemyWithdrewText
 	text_end
 
-EnemyUsedFullHealRed: ; unreferenced
-	call AIUsedItemSound
-	call AI_HealStatus
-	ld a, FULL_HEAL_RED ; X_SPEED
-	jp PrintText_UsedItemOn_AND_AIUpdateHUD
-
 AI_HealStatus:
 	ld a, [wCurOTMon]
 	ld hl, wOTPartyMon1Status
@@ -961,38 +950,6 @@ EnemyUsedDireHit:
 	set SUBSTATUS_FOCUS_ENERGY, [hl]
 	ld a, DIRE_HIT
 	jr PrintText_UsedItemOn_AND_AIUpdateHUD
-
-AICheckEnemyFractionMaxHP: ; unreferenced
-; Input: a = divisor
-; Work: bc = [wEnemyMonMaxHP] / a
-; Work: de = [wEnemyMonHP]
-; Output:
-; -  c, nz if [wEnemyMonHP] > [wEnemyMonMaxHP] / a
-; - nc,  z if [wEnemyMonHP] = [wEnemyMonMaxHP] / a
-; - nc, nz if [wEnemyMonHP] < [wEnemyMonMaxHP] / a
-	ldh [hDivisor], a
-	ld hl, wEnemyMonMaxHP
-	ld a, [hli]
-	ldh [hDividend], a
-	ld a, [hl]
-	ldh [hDividend + 1], a
-	ld b, 2
-	call Divide
-	ldh a, [hQuotient + 3]
-	ld c, a
-	ldh a, [hQuotient + 2]
-	ld b, a
-	ld hl, wEnemyMonHP + 1
-	ld a, [hld]
-	ld e, a
-	ld a, [hl]
-	ld d, a
-	ld a, d
-	sub b
-	ret nz
-	ld a, e
-	sub c
-	ret
 
 EnemyUsedXAttack:
 	ld b, ATTACK

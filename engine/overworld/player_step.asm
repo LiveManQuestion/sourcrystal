@@ -268,3 +268,165 @@ UpdateOverworldMap:
 	ret nc
 	inc [hl]
 	ret
+
+ScrollMapUp:
+	hlcoord 0, 0
+	ld de, wBGMapBuffer
+	call BackupBGMapRow
+	ld c, 2 * SCREEN_WIDTH
+	call ScrollBGMapPalettes
+	ld a, [wBGMapAnchor]
+	ld e, a
+	ld a, [wBGMapAnchor + 1]
+	ld d, a
+	call UpdateBGMapRow
+	ld a, $1
+	ldh [hBGMapUpdate], a
+	ret
+
+ScrollMapDown:
+	hlcoord 0, SCREEN_HEIGHT - 2
+	ld de, wBGMapBuffer
+	call BackupBGMapRow
+	ld c, 2 * SCREEN_WIDTH
+	call ScrollBGMapPalettes
+	ld a, [wBGMapAnchor]
+	ld l, a
+	ld a, [wBGMapAnchor + 1]
+	ld h, a
+	ld bc, BG_MAP_WIDTH tiles
+	add hl, bc
+; cap d at HIGH(vBGMap0)
+	ld a, h
+	and %00000011
+	or HIGH(vBGMap0)
+	ld e, l
+	ld d, a
+	call UpdateBGMapRow
+	ld a, $1
+	ldh [hBGMapUpdate], a
+	ret
+
+ScrollMapLeft:
+	hlcoord 0, 0
+	ld de, wBGMapBuffer
+	call BackupBGMapColumn
+	ld c, 2 * SCREEN_HEIGHT
+	call ScrollBGMapPalettes
+	ld a, [wBGMapAnchor]
+	ld e, a
+	ld a, [wBGMapAnchor + 1]
+	ld d, a
+	call UpdateBGMapColumn
+	ld a, $1
+	ldh [hBGMapUpdate], a
+	ret
+
+ScrollMapRight:
+	hlcoord SCREEN_WIDTH - 2, 0
+	ld de, wBGMapBuffer
+	call BackupBGMapColumn
+	ld c, 2 * SCREEN_HEIGHT
+	call ScrollBGMapPalettes
+	ld a, [wBGMapAnchor]
+	ld e, a
+	and %11100000
+	ld b, a
+	ld a, e
+	add SCREEN_HEIGHT
+	and %00011111
+	or b
+	ld e, a
+	ld a, [wBGMapAnchor + 1]
+	ld d, a
+	call UpdateBGMapColumn
+	ld a, $1
+	ldh [hBGMapUpdate], a
+	ret
+
+BackupBGMapRow:
+	ld c, 2 * SCREEN_WIDTH
+.loop
+	ld a, [hli]
+	ld [de], a
+	inc de
+	dec c
+	jr nz, .loop
+	ret
+
+BackupBGMapColumn:
+	ld c, SCREEN_HEIGHT
+.loop
+	ld a, [hli]
+	ld [de], a
+	inc de
+	ld a, [hl]
+	ld [de], a
+	inc de
+	ld a, SCREEN_WIDTH - 1
+	add l
+	ld l, a
+	jr nc, .skip
+	inc h
+
+.skip
+	dec c
+	jr nz, .loop
+	ret
+
+UpdateBGMapRow:
+	ld hl, wBGMapBufferPointers
+	push de
+	call .iteration
+	pop de
+	ld a, BG_MAP_WIDTH
+	add e
+	ld e, a
+
+.iteration
+	ld c, 10
+.loop
+	ld a, e
+	ld [hli], a
+	ld a, d
+	ld [hli], a
+	ld a, e
+	inc a
+	inc a
+	and $1f
+	ld b, a
+	ld a, e
+	and $e0
+	or b
+	ld e, a
+	dec c
+	jr nz, .loop
+	ld a, SCREEN_WIDTH
+	ldh [hBGMapTileCount], a
+	ret
+
+UpdateBGMapColumn:
+	ld hl, wBGMapBufferPointers
+	ld c, SCREEN_HEIGHT
+.loop
+	ld a, e
+	ld [hli], a
+	ld a, d
+	ld [hli], a
+	ld a, BG_MAP_WIDTH
+	add e
+	ld e, a
+	jr nc, .skip
+	inc d
+; cap d at HIGH(vBGMap0)
+	ld a, d
+	and %11
+	or HIGH(vBGMap0)
+	ld d, a
+
+.skip
+	dec c
+	jr nz, .loop
+	ld a, SCREEN_HEIGHT
+	ldh [hBGMapTileCount], a
+	ret

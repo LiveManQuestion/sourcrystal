@@ -1503,7 +1503,55 @@ BattleCommand_ResetTypeMatchup:
 	ld [wTypeMatchup], a
 	ret
 
-INCLUDE "engine/battle/ai/switch.asm"
+FindAliveEnemyMons:
+	ld a, [wOTPartyCount]
+	cp 2
+	jr c, .only_one
+
+	ld d, a
+	ld e, 0
+	ld b, 1 << (PARTY_LENGTH - 1)
+	ld c, 0
+	ld hl, wOTPartyMon1HP
+
+.loop
+	ld a, [wCurOTMon]
+	cp e
+	jr z, .next
+
+	push bc
+	ld b, [hl]
+	inc hl
+	ld a, [hld]
+	or b
+	pop bc
+	jr z, .next
+
+	ld a, c
+	or b
+	ld c, a
+
+.next
+	srl b
+	push bc
+	ld bc, PARTYMON_STRUCT_LENGTH
+	add hl, bc
+	pop bc
+	inc e
+	dec d
+	jr nz, .loop
+
+	ld a, c
+	and a
+	jr nz, .more_than_one
+
+.only_one
+	scf
+	ret
+
+.more_than_one
+	and a
+	ret
 
 INCLUDE "data/types/type_matchups.asm"
 

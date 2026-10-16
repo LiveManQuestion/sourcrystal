@@ -50,6 +50,10 @@ that, move detail into `docs/` and leave a one-line pointer here.
   filled with floating text that can move elsewhere.
 - Free space: `grep -E "^ROMX? bank|TOTAL EMPTY" sourcrystal.map`. To see what
   a change cost per section, run `python3 tools/claude/space.py old.map new.map`.
+- Exp gain and the exp bar are in their own floating section
+  (`engine/battle/exp.asm`), out of Battle Core. `newfarcall` is slow: the
+  overworld step code (`ScrollMap*` in `player_step.asm`) is at the frame
+  budget, and one `newfarcall` there added a lag frame.
 - `rgblink` reports out-of-range `jr` at link time for forward references,
   with `file(line)` locations. Fix by using `jp`.
 
@@ -119,10 +123,12 @@ finish an interrupted save.
   constants (`SMOGON_*`) are in `constants/trainer_data_constants.asm`.
 - `engine/battle/ai/items.asm`: `AI_SwitchOrTryItem`. `SwitchSmogon` is the
   mid-battle switch decision for `SWITCH_SMOGON` trainer classes.
-- Banks: `items.asm`, `scoring.asm`, `smogon.asm`, `smogon_switch.asm` and
-  `smogon_traits.asm` are all in the "Enemy Trainers" section (bank $0e), so
-  they call each other with plain `call`. Battle Core (bank $0f) and Effect
-  Commands (bank $0d) are nearly full and are reached with `farcall`/`callfar`.
+- Banks: `items.asm`, `switch.asm`, `scoring.asm`, `smogon.asm`,
+  `smogon_switch.asm` and `smogon_traits.asm` are all in the "Enemy Trainers"
+  section (bank $0e), so they call each other with plain `call`. Battle Core
+  (bank $0f) and Effect Commands (bank $0d) are reached with `farcall`/`callfar`
+  or `newfarcall` (keeps all registers). `FindAliveEnemyMons` stays in Effect
+  Commands (Roar uses it).
 - Strategy sources: `smogonairesources/` (untracked; Smogon GSC articles, the
   OU threatlist, sample teams, and a usage-stats spreadsheet).
 

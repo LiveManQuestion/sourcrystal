@@ -172,6 +172,7 @@ INCLUDE "engine/battle/effect_commands.asm"
 SECTION "Enemy Trainers", ROMX
 
 INCLUDE "engine/battle/ai/items.asm"
+INCLUDE "engine/battle/ai/switch.asm"
 INCLUDE "engine/battle/ai/scoring.asm"
 INCLUDE "engine/battle/ai/smogon.asm"
 INCLUDE "engine/battle/ai/smogon_switch.asm"
@@ -186,6 +187,11 @@ INCLUDE "data/trainers/parties.asm"
 SECTION "Battle Core", ROMX
 
 INCLUDE "engine/battle/core.asm"
+
+
+SECTION "Battle Exp", ROMX
+
+INCLUDE "engine/battle/exp.asm"
 
 
 SECTION "New Base EXP", ROMX

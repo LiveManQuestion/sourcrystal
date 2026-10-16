@@ -358,3 +358,116 @@ ForceMapMusic:
 	ld [wMusicFade], a
 .notbiking
 	jp TryRestartMapMusic
+
+SaveScreen:
+	ld hl, wOverworldMapAnchor
+	ld a, [hli]
+	ld h, [hl]
+	ld l, a
+	ld de, wScreenSave
+	ld a, [wMapWidth]
+	add 6
+	ldh [hMapObjectIndex], a
+	ld a, [wPlayerStepDirection]
+	and a
+	jr z, .down
+	cp UP
+	jr z, .up
+	cp LEFT
+	jr z, .left
+	cp RIGHT
+	jr z, .right
+	ret
+
+.up
+	ld de, wScreenSave + SCREEN_META_WIDTH
+	ldh a, [hMapObjectIndex]
+	ld c, a
+	ld b, 0
+	add hl, bc
+	jr .vertical
+
+.down
+	ld de, wScreenSave
+.vertical
+	ld b, SCREEN_META_WIDTH
+	ld c, SCREEN_META_HEIGHT - 1
+	jr SaveScreen_LoadConnection
+
+.left
+	ld de, wScreenSave + 1
+	inc hl
+	jr .horizontal
+
+.right
+	ld de, wScreenSave
+.horizontal
+	ld b, SCREEN_META_WIDTH - 1
+	ld c, SCREEN_META_HEIGHT
+	jr SaveScreen_LoadConnection
+
+LoadConnectionBlockData:
+	ld hl, wOverworldMapAnchor
+	ld a, [hli]
+	ld h, [hl]
+	ld l, a
+	ld a, [wMapWidth]
+	add 6
+	ldh [hConnectionStripLength], a
+	ld de, wScreenSave
+	ld b, SCREEN_META_WIDTH
+	ld c, SCREEN_META_HEIGHT
+SaveScreen_LoadConnection:
+.row
+	push bc
+	push hl
+	push de
+.col
+	ld a, [de]
+	inc de
+	ld [hli], a
+	dec b
+	jr nz, .col
+	pop de
+	ld a, e
+	add 6
+	ld e, a
+	jr nc, .okay
+	inc d
+.okay
+	pop hl
+	ldh a, [hConnectionStripLength]
+	ld c, a
+	ld b, 0
+	add hl, bc
+	pop bc
+	dec c
+	jr nz, .row
+	ret
+
+FadeToMapMusic:
+	push hl
+	push de
+	push bc
+	push af
+
+	call GetMapMusic_MaybeSpecial
+	ld a, [wMapMusic]
+	cp e
+	jr z, .done
+
+	ld a, 8
+	ld [wMusicFade], a
+	ld a, e
+	ld [wMusicFadeID], a
+	ld a, d
+	ld [wMusicFadeID + 1], a
+	ld a, e
+	ld [wMapMusic], a
+
+.done
+	pop af
+	pop bc
+	pop de
+	pop hl
+	ret
