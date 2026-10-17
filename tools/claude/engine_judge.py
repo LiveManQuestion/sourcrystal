@@ -38,7 +38,12 @@ sys.path.insert(0, HERE)
 from pokedata import (CONST, ITEM_NAMES, MOVE_NAMES, MOVES, SPECIES_NAMES, TYPES,  # noqa: E402
                       hidden_power, move_name, species_name)
 
-import poke_engine as pe  # noqa: E402
+try:
+    import poke_engine as pe  # noqa: E402
+except ImportError:
+    sys.exit('poke_engine is missing: run this with the poke-engine venv, from the repo root:\n'
+             '  bots/pe-venv/bin/python tools/claude/engine_judge.py TRACE.jsonl...\n'
+             '(setup: docs/claude_tools.md)')
 
 GEN2_TYPES = ['NORMAL', 'FIGHTING', 'FLYING', 'POISON', 'GROUND', 'ROCK', 'BUG', 'GHOST', 'STEEL', 'FIRE',
               'WATER', 'GRASS', 'ELECTRIC', 'PSYCHIC_TYPE', 'ICE', 'DRAGON', 'DARK']
@@ -209,6 +214,8 @@ def check():
 
 
 def main(argv):
+    if not argv:
+        return print(__doc__)
     if '--check' in argv:
         return check()
     opts = {'--ms': 500, '--threads': 4, '--top': 15, '--min-visits': 50, '--json': None, '--report': None}
