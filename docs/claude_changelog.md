@@ -520,3 +520,19 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   mid-battle switches 2.64 -> 2.76 per battle; engine_judge: regret on
   asleep decisions 6.33 -> 2.37, clear should-have-switched 12 -> 3, clear
   disagreements overall 36 -> 25.
+- **2026-10-16**: Setup credit in the KO race (`AISmogon_GetSetupBoost`,
+  `AISmogon_SetupPower`): a Pokemon with Swords Dance (x2), or Curse,
+  Sharpen, Meditate or Growth (x1.5), counts its attacks of that category
+  boosted, a turn later, when the player can't phaze or Haze and
+  `SMOGON_SETUP_SAFE_HITS` (4) of the player's strongest attack don't KO
+  it. The last sleep case from the engine judge (Misty's Vaporeon asleep
+  vs a Surf/Rest Vaporeon) wasn't about sleep: rerunning the engine
+  without Tentacruel's Swords Dance made switching to it worth exactly as
+  much as staying (0.23 each), with it 0.95. `ai_trace.py` logs each
+  candidate's credit (`setup`). Checked: `smogon_calls_test.py` (15 new
+  cases) and `ai_scenarios.py` ALL OK; 4 trainers x 144 seeds: AI wins
+  245 -> 249 of 576 (z +0.2, noise); engine_judge: asleep regret 2.37 ->
+  0.78, clear should-have-switched 3 -> 0, clear disagreements overall
+  25 -> 19 (mean regret 0.011). Credit went mostly to Steelix and
+  Forretress (Curse) vs Exeggutor and Snorlax, Venusaur (Growth) vs
+  Vaporeon and Tentacruel (Swords Dance) vs Vaporeon.

@@ -68,6 +68,117 @@ AISmogon_ScoreActive:
 	pop bc
 	ret
 
+AISmogon_GetSetupBoost:
+; Return in a how wSmogonAIMon's attacks count in the KO race if it can
+; boost before attacking (SMOGON_SETUP_*, see AISmogon_SetupPower): it
+; knows Swords Dance, Growth, Sharpen, Meditate or Curse (not as a Ghost),
+; the player can't phaze or Haze, and SMOGON_SETUP_SAFE_HITS of the
+; player's strongest attack (wSmogonAIThreat) don't KO it. Like Misty's
+; Tentacruel, which can Swords Dance in front of a Surf-only Vaporeon.
+	call AISmogon_PlayerCanPhaze
+	jr c, .none
+
+; de = its HP
+	ld a, [wCurOTMon]
+	ld b, a
+	ld a, [wSmogonAIMon]
+	cp b
+	jr nz, .party_hp
+	ld a, [wEnemyMonHP]
+	ld d, a
+	ld a, [wEnemyMonHP + 1]
+	ld e, a
+	jr .got_hp
+.party_hp
+	ld a, MON_HP
+	call AISmogon_OTPartyAttr
+	ld d, [hl]
+	inc hl
+	ld e, [hl]
+.got_hp
+	push de
+	ld a, [wSmogonAIThreat + ATTACKS_BEST]
+	ld d, a
+	ld a, [wSmogonAIThreat + ATTACKS_BEST + 1]
+	ld e, a
+	ld hl, 0
+	ld b, SMOGON_SETUP_SAFE_HITS
+.add_hit
+	add hl, de
+	dec b
+	jr nz, .add_hit
+	pop de
+	; no carry if the hits KO
+	ld a, l
+	sub e
+	ld a, h
+	sbc d
+	jr nc, .none
+
+	ld a, SWORDS_DANCE
+	call AISmogon_OTMonHasMove
+	ld a, SMOGON_SETUP_DOUBLE
+	ret c
+	ld a, GROWTH
+	call AISmogon_OTMonHasMove
+	ld a, SMOGON_SETUP_SPECIAL
+	ret c
+	ld a, SHARPEN
+	call AISmogon_OTMonHasMove
+	jr c, .physical
+	ld a, MEDITATE
+	call AISmogon_OTMonHasMove
+	jr c, .physical
+	ld a, CURSE
+	call AISmogon_OTMonHasMove
+	jr nc, .none
+	ld a, [wSmogonAITypes]
+	cp GHOST
+	jr z, .none
+	ld a, [wSmogonAITypes + 1]
+	cp GHOST
+	jr z, .none
+.physical
+	ld a, SMOGON_SETUP_PHYSICAL
+	ret
+
+.none
+	xor a ; SMOGON_SETUP_NONE
+	ret
+
+AISmogon_SetupPower:
+; Raise power d of an attack of type e as wSmogonAISetupBoost says: x2 or
+; x1.5, if the boost is for its category, at most 255. Keeps everything
+; but a and d.
+	ld a, [wSmogonAISetupBoost]
+	and a ; SMOGON_SETUP_NONE
+	ret z
+	cp SMOGON_SETUP_SPECIAL
+	ld a, e
+	jr z, .special
+	cp SPECIAL
+	ret nc
+	jr .boost
+.special
+	cp SPECIAL
+	ret c
+.boost
+	ld a, [wSmogonAISetupBoost]
+	cp SMOGON_SETUP_DOUBLE
+	ld a, d
+	jr z, .double
+	srl a
+	add d
+	jr .got_power
+.double
+	add a
+.got_power
+	jr nc, .no_cap
+	ld a, $ff
+.no_cap
+	ld d, a
+	ret
+
 AISmogon_PenalizeAsleepActive:
 ; Take the switch-in penalty for sleep or freeze (AISmogon_SwitchInPenalty)
 ; off the active Pokemon's score too, so a Rest user asleep without Sleep
@@ -562,6 +673,11 @@ AISmogon_ScoreMatchup:
 	call AISmogon_ScaleAttacks
 .player_can_attack
 
+; A Pokemon that can boost while the player barely scratches it will
+; (AI_Smogon_Setup): count its attacks boosted, a turn later.
+	call AISmogon_GetSetupBoost
+	ld [wSmogonAISetupBoost], a
+
 ; How hard can this Pokemon hit the player?
 	ld a, MON_ATK
 	call AISmogon_OTPartyAttr
@@ -601,6 +717,7 @@ AISmogon_ScoreMatchup:
 	ld a, d
 	and a
 	jr z, .next_our_move
+	call AISmogon_SetupPower
 	ld c, FALSE
 	ld a, [wSmogonAITypes]
 	cp e
@@ -635,6 +752,14 @@ AISmogon_ScoreMatchup:
 	ld de, wSmogonAIThreat
 	call AISmogon_HealDelay
 	add a
+; ...plus the turn it spends boosting.
+	ld c, a
+	ld a, [wSmogonAISetupBoost]
+	and a
+	ld a, c
+	jr z, .no_setup_turn
+	add 2
+.no_setup_turn
 	push af
 
 ; ...and the same for the player's to KO it, counted in half turns.

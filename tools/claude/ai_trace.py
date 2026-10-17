@@ -16,8 +16,8 @@ the random Typhlosion with --random) and prints one JSON line:
   party, stats before stat changes, substatuses, screens, weather),
 - candidates: every switch-in the AI scored (AISmogon_FindBestSwitchIn), with
   its raw matchup score and penalty, the attack lists (ATTACKS_*: best damage
-  and each attack's damage and PP) and healing blocks (HEAL_*) the score came
-  from,
+  and each attack's damage and PP), healing blocks (HEAL_*) and setup credit
+  (SMOGON_SETUP_*) the score came from,
 - switch_ins: every enemy switch-in (mid-battle or forced),
 - the battle result (see battle_harness.py).
 
@@ -133,6 +133,8 @@ def run(argv):
              'species': mem[W('wOTPartyMon1Species') + mem[W('wSmogonAIMon')] * length],
              'player': mem[W('wBattleMonSpecies')], 'raw': rf.C, 'penalty': rf.D, 'final': rf.A,
              'after_faint': word(W('wEnemyMonHP')) == 0}
+        if 'wSmogonAISetupBoost' in battle.sym:
+            c['setup'] = mem[W('wSmogonAISetupBoost')]
         for label in ('wSmogonAIThreat', 'wSmogonAIPower'):
             if label in battle.sym:
                 raw = block(label, 3 + 3 * CONST.get('SMOGON_MAX_ATTACKS', 0))

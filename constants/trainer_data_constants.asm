@@ -59,6 +59,14 @@ DEF HEAL_HP           rw
 DEF HEAL_BLOCK_LENGTH EQU _RS
 DEF SMOGON_SETUP_GOAL        EQU BASE_STAT_LEVEL + 2 ; boost this far, then attack
 DEF SMOGON_HEAL_SAFE_HITS    EQU 3 ; below half HP, heal unless this many hits can't KO
+DEF SMOGON_SETUP_SAFE_HITS   EQU 4 ; a switch-in boosts first if this many hits can't KO it
+
+; wSmogonAISetupBoost: how a Pokemon that can boost safely counts its attacks
+	const_def
+	const SMOGON_SETUP_NONE
+	const SMOGON_SETUP_DOUBLE   ; Swords Dance: physical attacks x2
+	const SMOGON_SETUP_PHYSICAL ; Curse, Sharpen, Meditate: physical attacks x1.5
+	const SMOGON_SETUP_SPECIAL  ; Growth: special attacks x1.5
 
 ; Smogon AI switch-in penalties (see AISmogon_SwitchInPenalty)
 DEF SMOGON_PENALTY_ASLEEP     EQU 20

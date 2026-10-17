@@ -41,7 +41,12 @@ How the trainer AI is organized (see also `CLAUDE.md`).
   `SMOGON_MATCHUP_EVEN` + 16 × log2(the player's half turns / ours): the
   faster side gets half a turn, and a switch-in takes a hit on the way in
   (not when replacing a fainted Pokemon) and, with Spikes on the AI's side,
-  loses 1/8 of its max HP unless it's a Flying type (also after a faint). `AISmogon_ApplyHealing` adds
+  loses 1/8 of its max HP unless it's a Flying type (also after a faint).
+  A Pokemon that can boost safely (`AISmogon_GetSetupBoost`: Swords Dance,
+  or Curse, Sharpen, Meditate or Growth; the player can't phaze or Haze;
+  `SMOGON_SETUP_SAFE_HITS` of the player's strongest attack don't KO it)
+  counts its attacks of the boosted category at x2 (Swords Dance) or x1.5
+  power, a turn later. `AISmogon_ApplyHealing` adds
   healing: Leftovers comes off the damage taken (the player's Pokemon is
   assumed to hold it), and a recovery move (half max HP per turn, Rest a
   quarter) that outheals the damage taken lasts until its recovery PP runs

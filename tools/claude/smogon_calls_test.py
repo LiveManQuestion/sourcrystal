@@ -7,6 +7,8 @@ game_call.py on hand-made battle states:
   penalty taken off the active Pokemon's score.
 - AISmogon_EnemyHasUsefulBoosts (smogon.asm): which boosts keep the active
   Pokemon in.
+- AISmogon_GetSetupBoost and AISmogon_SetupPower (smogon_switch.asm): the
+  credit a Pokemon that can boost safely gets in the KO race.
 
 usage: smogon_calls_test.py ROM SYM SAVE.ram    (last line RESULT: ALL OK)"""
 import os
@@ -112,4 +114,58 @@ for name, levels, used, atk, spa, exp in boost_cases:
     good = carry == exp
     ok &= good
     print('PASS' if good else 'FAIL', name, 'carry', carry, 'expected', exp)
+
+setup_cases = [
+    # (name, candidate moves, its types, threat, player's revealed moves, expected SMOGON_SETUP_*)
+    ('swords dance, surf-only player', ['SLUDGE_BOMB', 'SWORDS_DANCE', 'HYDRO_PUMP', 'SUBSTITUTE'],
+     ('WATER', 'POISON'), 43, ['SURF', 'GROWTH', 'SLEEP_TALK', 'REST'], 'SMOGON_SETUP_DOUBLE'),
+    ('swords dance, player hits hard', ['SLUDGE_BOMB', 'SWORDS_DANCE', 'HYDRO_PUMP', 'SUBSTITUTE'],
+     ('WATER', 'POISON'), 70, ['SURF', 'GROWTH', 'SLEEP_TALK', 'REST'], 'SMOGON_SETUP_NONE'),
+    ('swords dance, player roars', ['SLUDGE_BOMB', 'SWORDS_DANCE', 'HYDRO_PUMP', 'SUBSTITUTE'],
+     ('WATER', 'POISON'), 43, ['SURF', 'ROAR', 'SLEEP_TALK', 'REST'], 'SMOGON_SETUP_NONE'),
+    ('swords dance, player hazes', ['SLUDGE_BOMB', 'SWORDS_DANCE', 'HYDRO_PUMP', 'SUBSTITUTE'],
+     ('WATER', 'POISON'), 43, ['SURF', 'HAZE', 'SLEEP_TALK', 'REST'], 'SMOGON_SETUP_NONE'),
+    ('growth', ['SURF', 'GROWTH', 'REST', 'SLEEP_TALK'], ('WATER', 'WATER'), 43,
+     ['SURF', 'GROWTH', 'SLEEP_TALK', 'REST'], 'SMOGON_SETUP_SPECIAL'),
+    ('curse', ['CURSE', 'EARTHQUAKE', 'REST', 'HIDDEN_POWER'], ('WATER', 'GROUND'), 43,
+     ['SURF', 'GROWTH', 'SLEEP_TALK', 'REST'], 'SMOGON_SETUP_PHYSICAL'),
+    ('curse as a ghost', ['CURSE', 'SHADOW_BALL', 'REST', 'HIDDEN_POWER'], ('GHOST', 'POISON'), 43,
+     ['SURF', 'GROWTH', 'SLEEP_TALK', 'REST'], 'SMOGON_SETUP_NONE'),
+    ('no boosting move', ['SURF', 'ICE_BEAM', 'REST', 'ACID_ARMOR'], ('WATER', 'WATER'), 43,
+     ['SURF', 'GROWTH', 'SLEEP_TALK', 'REST'], 'SMOGON_SETUP_NONE'),
+]
+length = A('wOTPartyMon2') - A('wOTPartyMon1')
+for name, moves, types, threat, used, exp in setup_cases:
+    w('wCurOTMon', 0); w('wSmogonAIMon', 1)
+    for i, mv in enumerate(moves):
+        w('wOTPartyMon1Moves', MOVE_IDS[mv], length + i)
+    word('wOTPartyMon1HP', 0); m[A('wOTPartyMon1HP') + length] = 253 >> 8; m[A('wOTPartyMon1HP') + length + 1] = 253 & 0xff
+    w('wSmogonAITypes', TYPES[types[0]]); w('wSmogonAITypes', TYPES[types[1]], 1)
+    w('wSmogonAIThreat', threat >> 8); w('wSmogonAIThreat', threat & 0xff, 1)
+    w('wBattleMonSpecies', SPECIES['VAPOREON'])
+    for i in range(4):
+        w('wPlayerUsedMoves', MOVE_IDS[used[i]], i)
+    g.call('AISmogon_GetSetupBoost')
+    got = g.result['A']
+    good = got == CONST[exp]
+    ok &= good
+    print('PASS' if good else 'FAIL', 'setup:', name, 'got', got, 'expected', exp)
+
+power_cases = [
+    # (name, boost, power, type, expected power)
+    ('double physical', 'SMOGON_SETUP_DOUBLE', 90, 'POISON', 180),
+    ('double skips special', 'SMOGON_SETUP_DOUBLE', 120, 'WATER', 120),
+    ('special x1.5', 'SMOGON_SETUP_SPECIAL', 120, 'WATER', 180),
+    ('special skips physical', 'SMOGON_SETUP_SPECIAL', 100, 'GROUND', 100),
+    ('physical x1.5', 'SMOGON_SETUP_PHYSICAL', 100, 'GROUND', 150),
+    ('double caps at 255', 'SMOGON_SETUP_DOUBLE', 150, 'NORMAL', 255),
+    ('none', 'SMOGON_SETUP_NONE', 100, 'GROUND', 100),
+]
+for name, boost, power, typ, exp in power_cases:
+    w('wSmogonAISetupBoost', CONST[boost])
+    g.call('AISmogon_SetupPower', D=power, E=TYPES[typ])
+    got = g.result['D']
+    good = got == exp
+    ok &= good
+    print('PASS' if good else 'FAIL', 'setup power:', name, 'got', got, 'expected', exp)
 print('RESULT:', 'ALL OK' if ok else 'NOT OK')
