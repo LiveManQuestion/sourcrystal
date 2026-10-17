@@ -114,6 +114,11 @@ user's save files.
     power and sleep turns start from 0. Items it doesn't know, like the
     Sitrus Berry, do nothing (`--check` lists the ones it knows; Sour
     Crystal's renamed items, like the Lum Berry, are mapped back to Gen 2's).
+  - Comparing two ROMs: compare the pattern a change targets (the
+    decisions of one matchup or move), not the overall totals. Any code
+    change reshuffles the battles' RNG, so different positions come up:
+    a weather fix that never touched Koga 2's team moved his clear
+    disagreements from 9 to 34, half of them from one battle.
   - Oak and Safari (also in `bots/`) only simulate Gen 1.
 - `ai_profile.py ROM SYM RAM TRAINER SEED [SPAN...]`: time AI code in
   scanlines (154 per frame): by default the switch decision, the switch-in
