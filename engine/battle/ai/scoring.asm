@@ -2406,6 +2406,20 @@ AI_Smart_HiddenPower:
 	ret c
 
 .good
+; In Challenge Mode, only if it's also the strongest attack: else the bonus
+; cancels AI_Aggressive's discouragement, and Koga's Venusaur used a
+; neutral Hidden Power Fire on Snorlax as often as the stronger Razor Leaf.
+	ld a, [wChallengeMode]
+	bit GAME_CHALLENGE_MODE_F, a
+	jr z, .encourage
+	push hl
+	call AIStrongestMove
+	pop hl
+	ld a, l
+	sub LOW(wEnemyAIMoveScores - 1)
+	cp c
+	ret nz
+.encourage
 	dec [hl]
 	ret
 
@@ -3005,54 +3019,7 @@ AI_Aggressive:
 ; If no damaging move deals damage to the player (immune),
 ; no move will be discouraged
 
-; Figure out which attack does the most damage and put it in c.
-	ld hl, wEnemyMonMoves
-	ld bc, 0
-	ld de, 0
-.checkmove
-	inc b
-	ld a, b
-	cp NUM_MOVES + 1
-	jr z, .gotstrongestmove
-
-	ld a, [hli]
-	and a
-	jr z, .gotstrongestmove
-
-	push hl
-	push de
-	push bc
-	call AIGetEnemyMove
-	ld a, [wEnemyMoveStruct + MOVE_POWER]
-	and a
-	jr z, .nodamage
-	call AIDamageCalc
-	call AISmogon_ExpectedDamage
-	pop bc
-	pop de
-	pop hl
-
-; Update current move if damage is highest so far
-	ld a, [wCurDamage + 1]
-	cp e
-	ld a, [wCurDamage]
-	sbc d
-	jr c, .checkmove
-
-	ld a, [wCurDamage + 1]
-	ld e, a
-	ld a, [wCurDamage]
-	ld d, a
-	ld c, b
-	jr .checkmove
-
-.nodamage
-	pop bc
-	pop de
-	pop hl
-	jr .checkmove
-
-.gotstrongestmove
+	call AIStrongestMove
 ; Nothing we can do if no attacks did damage.
 	ld a, c
 	and a
@@ -3108,6 +3075,55 @@ AI_Aggressive:
 	jr .checkmove2
 
 INCLUDE "data/battle/ai/reckless_moves.asm"
+
+AIStrongestMove:
+; Return in c the number (1-4) of the enemy's attack that does the most
+; damage (on average in Challenge Mode), or 0 if none does any.
+	ld hl, wEnemyMonMoves
+	ld bc, 0
+	ld de, 0
+.checkmove
+	inc b
+	ld a, b
+	cp NUM_MOVES + 1
+	ret z
+
+	ld a, [hli]
+	and a
+	ret z
+
+	push hl
+	push de
+	push bc
+	call AIGetEnemyMove
+	ld a, [wEnemyMoveStruct + MOVE_POWER]
+	and a
+	jr z, .nodamage
+	call AIDamageCalc
+	call AISmogon_ExpectedDamage
+	pop bc
+	pop de
+	pop hl
+
+; Update current move if damage is highest so far
+	ld a, [wCurDamage + 1]
+	cp e
+	ld a, [wCurDamage]
+	sbc d
+	jr c, .checkmove
+
+	ld a, [wCurDamage + 1]
+	ld e, a
+	ld a, [wCurDamage]
+	ld d, a
+	ld c, b
+	jr .checkmove
+
+.nodamage
+	pop bc
+	pop de
+	pop hl
+	jr .checkmove
 
 AIDamageCalc:
 	ld a, 1

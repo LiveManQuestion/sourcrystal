@@ -18,7 +18,8 @@ in Challenge Mode (Qwilfish's Hydro Pump vs Cloyster, `91187591c`), and
 Acid Armor only against physical attackers, with unrevealed attackers
 judged by their expected attacks (Vaporeon vs Cloyster, `d9162c4d0`), and
 no Explosion into raised Defense without a sure KO (Forretress vs Curse
-Snorlax, 2026-10-17).
+Snorlax, `9362c639c`), and Hidden Power's AI_Smart bonus only when it's the
+strongest attack (Venusaur vs Snorlax, 2026-10-17).
 
 The headless smart player now uses its status moves (Curse, Rest, Sleep
 Talk, Sleep Powder, Roar, Toxic, Explosion); `SMART_PLAYER=basic` is the old
@@ -26,9 +27,11 @@ attack-only player. It beats the AI far more often, so win rates from
 before it aren't comparable.
 
 Last measured (4 trainers x 144 seeds, the user's party, new player), after
-the Explosion fix: AI wins 229 of 576. Koga 2 111/144, Whitney 2 65, Misty
-2 33, Jasmine 2 20. Engine judge over 144 traced battles: 4560 decisions,
-total regret 49.45. The cache for this ROM is `.aicheck/a5d583a574897d25`.
+the Hidden Power fix: AI wins 206 of 576. Koga 2 117/144, Whitney 2 56,
+Misty 2 20, Jasmine 2 13 (with 288 more seeds, Misty 74/432 and Jasmine
+60/432: the 144-seed numbers swing by ~10 from RNG timing alone). Engine
+judge over 144 traced battles: 4428 decisions, total regret 54.85. The cache
+for this ROM is `.aicheck/96103689543cd45f`.
 
 ## The loop
 
@@ -60,26 +63,25 @@ total regret 49.45. The cache for this ROM is `.aicheck/a5d583a574897d25`.
 6. Changelog entry, then commit when the user says so (they review each fix
    and say "commit").
 
-## Candidate patterns (latest judge, new player, after the Explosion fix)
+## Candidate patterns (latest judge, new player, after the Hidden Power fix)
 
 Clear disagreements (regret > 0.1) by matchup, AI action and engine action:
 
 ```
-clear decisions regret
-   3   43  1.34  VENUSAUR vs SNORLAX   hiddenpowerfire -> razorleaf
-   3   23  0.98  PORYGON2 vs STEELIX   recover -> icebeam
-   3    3  0.85  QUAGSIRE vs VAPOREON  earthquake -> switch
-   2    2  0.91  GENGAR   vs ZAPDOS    dynamicpunch -> explosion
-   2   10  0.67  KINGDRA  vs VAPOREON  sleeptalk -> switch
+clear battles regret
+   5    3   1.05  BLISSEY    vs CLOYSTER  healbell -> flamethrower
+   4    3   1.19  TENTACRUEL vs ZAPDOS    surf -> switch
+   3    3   0.74  TENTACRUEL vs VAPOREON  sludgebomb -> swordsdance
+   2    2   0.46  TENTACRUEL vs VAPOREON  sludgebomb -> gigadrain
+   2    2   0.43  TENTACRUEL vs STEELIX   surf -> gigadrain
 ```
 
-Venusaur vs Snorlax is the top matchup (98 decisions, 2.89 regret; also
-Razor Leaf -> Synthesis, 20 decisions); check first whether the engine is
-using the player's whole party, which the AI can't know. The Tentacruel
-patterns from the new player's first run (Sludge Bomb where the engine uses
-Swords Dance vs Vaporeon or Substitute vs Cloyster, 3 and 4 clear) vanished
-after the Explosion fix's RNG reshuffle: see whether they come back with
-more seeds before fixing them.
+Misty's Tentacruel keeps coming up (Swords Dance vs Vaporeon also showed up
+in the first new-player run): worth a look, after checking what the engine
+knows that the AI can't. Venusaur vs Snorlax with Snorlax in KO range
+(both attacks KO, the AI picks the sure-hit Hidden Power, the engine Razor
+Leaf for a Vaporeon switch-in) is left: the gap disappears with the
+player's bench removed.
 
 ## Pitfalls already hit
 
@@ -94,6 +96,9 @@ more seeds before fixing them.
   healing). Changes to the matchup score ripple everywhere; prefer local
   fixes.
 - Requiring a sure KO for every Explosion trade cost Misty 20 of 144.
+- Removing a score bonus can also remove what put a move ahead of the
+  status moves at 20 (Hidden Power on Zapdos tied with Growth): make it
+  conditional instead.
 - `ai_scenarios.py`'s test battle varies between runs: put matchup-dependent
   tests in `smogon_calls_test.py`. `ai_scenarios.py -k TEXT` runs one case.
 - Make the test RAM with `tools/claude/save_ram.py`, never by writing to the

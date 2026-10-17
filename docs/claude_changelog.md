@@ -742,3 +742,25 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
     wins 221 -> 229 of 576 (Jasmine 9 -> 20 z +2.2, Koga 113 -> 111, Misty
     34 -> 33, Whitney 65 -> 65); Explosion -> Curse clear 3 -> 0, Forretress
     vs Snorlax regret 1.21 -> 0.77; total regret 51.9 -> 49.5.
+- **2026-10-17**: Smogon AI: Hidden Power's bonus only for the strongest
+  attack. Engine judge's top matchup: Koga's +1/+2 Venusaur vs the save's
+  Snorlax, Hidden Power Fire where the engine uses Razor Leaf (43
+  decisions, 1.34 regret). Vanilla `AI_Smart_HiddenPower` encourages any
+  neutral Hidden Power of base power 70, which cancelled `AI_Aggressive`'s
+  discouragement of the weaker attack: a coin flip against the STAB Razor
+  Leaf. In Challenge Mode the bonus now needs Hidden Power to be the
+  strongest attack (`AIStrongestMove`, AI_Aggressive's search as a
+  routine); just dropping it made Venusaur tie Hidden Power with Growth and
+  Synthesis on Zapdos (regret 0.25 -> 5.35). Normal Mode is unchanged. The
+  Snorlax-in-KO-range cases (both KO; the engine prefers Razor Leaf for a
+  Vaporeon switch-in it can see) stay.
+  - Checked: both suites ALL OK (new `smogon_calls_test.py` "hidden power"
+    cases: Snorlax fails on the old build, Zapdos keeps the bonus); 4
+    trainers x 144 seeds: AI wins 229 -> 206 of 576 (Misty 33 -> 20 z -2.0,
+    Jasmine 20 -> 13, Whitney 65 -> 56, which has no Hidden Power user,
+    Koga 111 -> 117); 288 more seeds on Misty and Jasmine: Misty 58 -> 54
+    (z -0.4), Jasmine 34 -> 47 (z +1.6), so over 432: Misty z -1.5, Jasmine
+    +0.6. Hidden Power -> Razor Leaf on Snorlax clear 3 -> 0, Venusaur vs
+    Snorlax regret 2.89 -> 1.08; Quagsire 2.35 -> 1.59, Magneton 2.09 ->
+    1.65; total regret 49.5 -> 54.9 (spread over unrelated matchups). Move
+    layers at most 14.0 frames (was 12.4) for Hidden Power users.

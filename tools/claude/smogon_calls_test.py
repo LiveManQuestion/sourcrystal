@@ -460,6 +460,38 @@ for name, mon, stage, cm, exp in aggressive_cases:
     print('PASS' if good else 'FAIL', 'aggressive:', name, 'scores', got, 'expected', exp)
 w('wChallengeMode', challenge); w('wEnemyAtkLevel', 7)
 
+# AI_Smart_HiddenPower, then AI_Aggressive: Koga's +1 Venusaur's neutral
+# Hidden Power Fire. Vanilla's bonus for base power 70 tied it with the
+# stronger Razor Leaf on Snorlax; in Challenge Mode it only goes to the
+# strongest attack (on Zapdos, which resists Razor Leaf).
+VENUSAUR_KOGA = dict(species=SPECIES['VENUSAUR'], level=88, hp=244, max_hp=244, stats=[173, 172, 172, 207, 207],
+                     moves=[MOVE_IDS[x] for x in ('GROWTH', 'RAZOR_LEAF', 'SYNTHESIS', 'HIDDEN_POWER')],
+                     pp=[38, 25, 5, 14], dvs=(236, 255), item=0)
+hidden_power_cases = [
+    # (name, the player's Pokemon, its types, Challenge Mode, expected scores)
+    ('venusaur vs snorlax', 'SNORLAX', ('NORMAL', 'NORMAL'), True, [20, 20, 21, 21]),
+    ('venusaur vs snorlax, normal mode', 'SNORLAX', ('NORMAL', 'NORMAL'), False, [20, 20, 21, 20]),
+    ('venusaur vs zapdos', 'ZAPDOS', ('ELECTRIC', 'FLYING'), True, [20, 21, 21, 19]),
+]
+for name, player, ptypes, cm, exp in hidden_power_cases:
+    if SPECIES[player] not in party:
+        print('SKIP', name); continue
+    set_ot(VENUSAUR_KOGA)
+    w('wEnemyMonDVs', VENUSAUR_KOGA['dvs'][0]); w('wEnemyMonDVs', VENUSAUR_KOGA['dvs'][1], 1)
+    w('wEnemySAtkLevel', 8); word('wEnemyMonSpclAtk', 207 * 3 // 2)
+    set_player(party.index(SPECIES[player]) + 1, ptypes, [])
+    w('wBattleWeather', 0); w('wCriticalHit', 0)
+    w('wChallengeMode', challenge | 1 if cm else challenge & ~1)
+    for i in range(4):
+        w('wEnemyAIMoveScores', 20, i)
+    g.call('AI_Smart', frames=1200)
+    g.call('AI_Aggressive', frames=600)
+    got = [m[A('wEnemyAIMoveScores') + i] for i in range(4)]
+    good = got == exp
+    ok &= good
+    print('PASS' if good else 'FAIL', 'hidden power:', name, 'scores', got, 'expected', exp)
+w('wChallengeMode', challenge); w('wEnemySAtkLevel', 7)
+
 # AISmogon_PlayerIsPhysical on the save's party: by the revealed attacks,
 # else the expected ones (SmogonExpectedAttacks), else the stats.
 physical_cases = [
