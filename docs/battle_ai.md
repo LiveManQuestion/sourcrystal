@@ -80,7 +80,12 @@ How the trainer AI is organized (see also `CLAUDE.md`).
   the same sleep or freeze penalty as a switch-in
   (`AISmogon_PenalizeAsleepActive`), unless it wakes up this turn: waking
   up costs the turn (`CantMove` in `CheckEnemyTurn`), so a sleep counter of
-  N loses N turns, and Rest sets 3. It also
+  N loses N turns, and Rest sets 3. When neither side can KO the other
+  (`wSmogonAIActiveStalled`, set by `AISmogon_ScoreActive` when both
+  `AISmogon_SideTurns` reach `SMOGON_MAX_TURNS`), any better matchup is
+  reason to switch (like `wEnemyAIMovesSpent`), and being able to Haze or
+  phaze a boosted player is no reason to stay: Crobat used to Haze a Curse
+  Steelix forever. It also
   switches out a Pokemon with no useful move left: `AIChooseMove` (which runs
   first each turn) sets `wEnemyAIMovesSpent` when every move scores above 20.
 - Banks: `items.asm`, `switch.asm`, `scoring.asm`, `smogon.asm`,

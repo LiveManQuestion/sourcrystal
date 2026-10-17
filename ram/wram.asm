@@ -628,6 +628,8 @@ wSmogonAITurns::      db
 wSmogonAIPlayerPPUps:: db ; PP Ups per move across the player's party
 wSmogonAIUnknownPP::   db ; PP of the player's unrevealed attacks
 wSmogonAISetupBoost::  db ; SMOGON_SETUP_* (AISmogon_GetSetupBoost)
+wSmogonAIStalled::     db ; TRUE if neither side can KO the other (AISmogon_ScoreMatchup)
+wSmogonAIActiveStalled:: db ; the same for the active Pokemon (AISmogon_ScoreActive)
 ; each side's healing block (AISmogon_ApplyHealing): HP a recovery move
 ; heals per use (big-endian), its PP left, and the current HP
 wSmogonAIOurHeal::     ds HEAL_BLOCK_LENGTH

@@ -59,12 +59,15 @@ AISmogon_ChooseReplacement:
 	ret
 
 AISmogon_ScoreActive:
-; Score the active Pokemon's matchup in wEnemyAISwitchScore.
+; Score the active Pokemon's matchup in wEnemyAISwitchScore, and set
+; wSmogonAIActiveStalled if neither side can KO the other.
 	push bc
 	ld a, [wCurOTMon]
 	ld b, a
 	call AISmogon_ScoreMatchup
 	ld [wEnemyAISwitchScore], a
+	ld a, [wSmogonAIStalled]
+	ld [wSmogonAIActiveStalled], a
 	pop bc
 	ret
 
@@ -748,6 +751,7 @@ AISmogon_ScoreMatchup:
 	ld hl, wSmogonAIPlayerHeal
 	ld de, wSmogonAIPower
 	call AISmogon_SideTurns
+	ld [wSmogonAIStalled], a
 	ld hl, wSmogonAIOurHeal
 	ld de, wSmogonAIThreat
 	call AISmogon_HealDelay
@@ -766,6 +770,20 @@ AISmogon_ScoreMatchup:
 	ld hl, wSmogonAIOurHeal
 	ld de, wSmogonAIThreat
 	call AISmogon_SideTurns
+; Neither side can KO the other if both take SMOGON_MAX_TURNS.
+	push af
+	cp SMOGON_MAX_TURNS
+	jr nz, .not_stalled
+	ld a, [wSmogonAIStalled]
+	cp SMOGON_MAX_TURNS
+	jr nz, .not_stalled
+	ld a, TRUE
+	jr .got_stalled
+.not_stalled
+	xor a ; FALSE
+.got_stalled
+	ld [wSmogonAIStalled], a
+	pop af
 	ld hl, wSmogonAIPlayerHeal
 	ld de, wSmogonAIPower
 	call AISmogon_HealDelay

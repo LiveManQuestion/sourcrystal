@@ -123,6 +123,8 @@ def run(argv):
             if label in ('DontSwitch', 'SwitchSmogon.switch'):
                 d['scores'] = {'active': mem[W('wEnemyAISwitchScore')], 'best': mem[W('wSmogonAIBestScore')],
                                'best_mon': mem[W('wSmogonAIBestMon')]}
+                if 'wSmogonAIActiveStalled' in battle.sym:
+                    d['scores']['stalled'] = mem[W('wSmogonAIActiveStalled')]
                 d['switched'] = label == 'SwitchSmogon.switch'
                 current['d'] = None
         return cb

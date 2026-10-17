@@ -552,3 +552,21 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   the RNG reshuffle changes which positions come up (17 of Koga's 34 from
   one battle, Crobat using Wing Attack into a Steelix). Compare per
   pattern, not overall totals.
+- **2026-10-17**: Stalemates. `AISmogon_ScoreMatchup` sets `wSmogonAIStalled`
+  when neither side can KO the other (both `AISmogon_SideTurns` reach
+  `SMOGON_MAX_TURNS`), and `AISmogon_ScoreActive` keeps it for the active
+  Pokemon (`wSmogonAIActiveStalled`). In a stalemate, `SwitchSmogon` takes
+  any better matchup (like `wEnemyAIMovesSpent`), and Haze or phazing is no
+  longer a reason to stay against a boosted player. From the engine
+  judge's Koga 2 battle where Crobat (Wing Attack) and the user's Steelix
+  (Earthquake, Curse; the AI assumes Leftovers) couldn't hurt each other:
+  Crobat stayed at an even 128 against Qwilfish's 136, then Hazed every
+  Curse. `ai_trace.py` logs the flag in each decision's scores. Checked:
+  `smogon_calls_test.py` builds that position from the trace (and two
+  controls) and gets the flag right, ALL OK; `ai_scenarios.py` ALL OK; 4
+  trainers x 144 seeds: AI wins 265 -> 271 of 576 (z +0.4); Koga 2, Crobat's
+  trainer, went 103 -> 93 (z -1.3) there, but over 432 seeds 301 -> 302
+  (z +0.1; seeds 145-432 alone +1.0), with Crobat switching out 206 -> 226
+  times. `battle_matrix.sh` got `FIRST_SEED` to add seeds to a run. The Crobat battle didn't come up again in 48 traced battles;
+  the flag fired in 41 decisions there (mostly Blissey vs the user's
+  Vaporeon), regret 0.98 in all.

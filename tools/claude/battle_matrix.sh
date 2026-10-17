@@ -3,7 +3,8 @@
 # usage: tools/claude/battle_matrix.sh OUTDIR SAVE.ram ROM1.gbc [ROM2.gbc]
 #   (each ROM needs its .sym next to it; results go to OUTDIR/<rom name>.jsonl,
 #   so give the two ROMs different file names)
-# Options (environment): SEEDS=6 (seeds 1..N), TRAINERS="KOGA 1|KOGA 2",
+# Options (environment): SEEDS=6 (seeds 1..N), FIRST_SEED=1 (seeds FIRST_SEED..N,
+# to add seeds to an earlier run), TRAINERS="KOGA 1|KOGA 2",
 # PLAYER=smart (battle.py --smart: the save's party played by a strong greedy
 # policy, so win rates mean something; without it, an unkillable Typhlosion).
 # ~15 min per ROM with the defaults. Summarize with battle_summary.py,
@@ -14,6 +15,7 @@ here=$(dirname "$(readlink -f "$0")")
 P=${PYBOY_PYTHON:-$HOME/.local/share/uv/tools/pyboy/bin/python}
 out=$1; save=$2; shift 2
 seeds=${SEEDS:-6}
+first=${FIRST_SEED:-1}
 smart=""
 [ "${PLAYER:-}" = smart ] && smart="--smart"
 trainers=${TRAINERS:-"BUGSY 2|JASMINE 2|KOGA 1|KOGA 2|BROCK 2|MISTY 2|SABRINA 1|FALKNER 2|RIVAL2 1"}
@@ -26,7 +28,7 @@ rm -f "$out"/runs/*.json
 IFS='|' read -ra tlist <<< "$trainers"
 for rom in "$@"; do
 	for t in "${tlist[@]}"; do
-		for s in $(seq 1 "$seeds"); do echo "$rom|$t|$s"; done
+		for s in $(seq "$first" "$seeds"); do echo "$rom|$t|$s"; done
 	done
 done | xargs -P 16 -I{} bash -c '
 	IFS="|" read rom t s <<< "{}"

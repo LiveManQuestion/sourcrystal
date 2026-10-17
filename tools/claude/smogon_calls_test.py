@@ -9,6 +9,8 @@ game_call.py on hand-made battle states:
   Pokemon in.
 - AISmogon_GetSetupBoost and AISmogon_SetupPower (smogon_switch.asm): the
   credit a Pokemon that can boost safely gets in the KO race.
+- AISmogon_ScoreActive's stalemate flag (wSmogonAIActiveStalled), on
+  positions from Koga 2 against the save's party.
 
 usage: smogon_calls_test.py ROM SYM SAVE.ram    (last line RESULT: ALL OK)"""
 import os
@@ -168,4 +170,64 @@ for name, boost, power, typ, exp in power_cases:
     good = got == exp
     ok &= good
     print('PASS' if good else 'FAIL', 'setup power:', name, 'got', got, 'expected', exp)
+
+# AISmogon_ScoreActive's stalemate flag, on positions from Koga 2 vs the
+# save's party: the enemy's active Pokemon is OT party slot 0, and the
+# player's is a copy of a save party member.
+OT_FIELDS = ('Species', 'Item', 'Moves', 'DVs', 'PP', 'Level', 'Status', 'HP', 'MaxHP', 'Attack')
+def set_ot(mon):
+    base = A('wOTPartyMon1Species')
+    off = {f: A('wOTPartyMon1' + f) - base for f in OT_FIELDS}
+    m[base] = mon['species']; m[base + off['Item']] = mon['item']; m[base + off['Level']] = mon['level']
+    m[base + off['Status']] = 0
+    for i in range(4):
+        m[base + off['Moves'] + i] = mon['moves'][i]; m[base + off['PP'] + i] = mon['pp'][i]
+    m[base + off['DVs']], m[base + off['DVs'] + 1] = mon['dvs']
+    for f, v in (('HP', mon['hp']), ('MaxHP', mon['max_hp'])):
+        m[base + off[f]] = v >> 8; m[base + off[f] + 1] = v & 0xff
+    for k, v in enumerate(mon['stats']):
+        m[base + off['Attack'] + 2 * k] = v >> 8; m[base + off['Attack'] + 2 * k + 1] = v & 0xff
+    w('wOTPartyCount', 1); w('wOTPartySpecies', mon['species']); w('wOTPartySpecies', 0xff, 1)
+    w('wCurOTMon', 0); w('wEnemyMonSpecies', mon['species']); w('wEnemyMonStatus', 0)
+    word('wEnemyMonHP', mon['hp']); word('wEnemyMonMaxHP', mon['max_hp']); word('wEnemyMonSpeed', mon['stats'][2])
+def set_player(slot, types, used):
+    src = A('wPartyMon%dSpecies' % slot)
+    for f in ('Species', 'Item', 'Level', 'Status'):
+        m[A('wBattleMon' + f)] = m[A('wPartyMon%d%s' % (slot, f))]
+    for f, n in (('Moves', 4), ('DVs', 2), ('PP', 4), ('HP', 2), ('MaxHP', 2), ('Attack', 10)):
+        for i in range(n):
+            m[A('wBattleMon' + f) + i] = m[A('wPartyMon%d%s' % (slot, f)) + i]
+    w('wBattleMonType1', TYPES[types[0]]); w('wBattleMonType2', TYPES[types[1]])
+    for i in range(4):
+        w('wPlayerUsedMoves', MOVE_IDS[used[i]] if i < len(used) else 0, i)
+CROBAT = dict(species=SPECIES['CROBAT'], level=86, hp=161, max_hp=268, stats=[185, 168, 254, 151, 168],
+              moves=[MOVE_IDS[x] for x in ('HAZE', 'TOXIC', 'WING_ATTACK', 'REST')], pp=[30, 10, 29, 10],
+              dvs=(255, 255), item=0)
+QWILFISH = dict(species=SPECIES['QWILFISH'], level=85, hp=231, max_hp=231, stats=[192, 158, 175, 124, 124],
+                moves=[MOVE_IDS[x] for x in ('CURSE', 'SLUDGE_BOMB', 'HYDRO_PUMP', 'SPIKES')], pp=[10, 10, 5, 20],
+                dvs=(255, 255), item=0)
+for n in ('wPlayerScreens', 'wEnemyScreens', 'wBattleWeather', 'wPlayerSubStatus1', 'wPlayerSubStatus3',
+          'wPlayerSubStatus4', 'wPlayerSubStatus5', 'wEnemySubStatus1', 'wEnemySubStatus4', 'wEnemySubStatus5'):
+    w(n, 0)
+for k in range(7):
+    w('wPlayerStatLevels', 7, k); w('wEnemyStatLevels', 7, k)
+party = [m[A('wPartyMon%dSpecies' % k)] for k in range(1, 7)]
+stall_cases = [
+    # (name, enemy, player's party slot, its types, revealed moves, expected stalled)
+    ('crobat vs earthquake steelix', CROBAT, 'STEELIX', ('STEEL', 'GROUND'), ['EARTHQUAKE'], True),
+    ('qwilfish vs earthquake steelix', QWILFISH, 'STEELIX', ('STEEL', 'GROUND'), ['EARTHQUAKE'], False),
+    ('crobat vs zapdos', CROBAT, 'ZAPDOS', ('ELECTRIC', 'FLYING'), ['THUNDER'], False),
+]
+for name, mon, player, types, used, exp in stall_cases:
+    if SPECIES[player] not in party:
+        print('SKIP', name, '(no', player, 'in the save party)')
+        continue
+    set_ot(mon)
+    set_player(party.index(SPECIES[player]) + 1, types, used)
+    g.call('AISmogon_ScoreActive', frames=600)
+    got = bool(m[A('wSmogonAIActiveStalled')])
+    good = got == exp
+    ok &= good
+    print('PASS' if good else 'FAIL', 'stalemate:', name, 'stalled', got, 'expected', exp,
+          'score', m[A('wEnemyAISwitchScore')])
 print('RESULT:', 'ALL OK' if ok else 'NOT OK')

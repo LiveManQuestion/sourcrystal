@@ -65,7 +65,8 @@ user's save files.
     JSON counts its attacks, switches, replacements, watchdog triggers and
     hook errors (should be 0; PyBoy swallows exceptions in hooks).
 - `battle_matrix.sh OUTDIR RAM ROM1 [ROM2]` (`SEEDS=6`, `TRAINERS=...`,
-  `PLAYER=smart` for `--smart`): 9 trainers × 6 seeds, ~15 min per ROM; give
+  `PLAYER=smart` for `--smart`, `FIRST_SEED=145 SEEDS=432` to add seeds
+  145-432 to an earlier run; combine the `.jsonl` files): 9 trainers × 6 seeds, ~15 min per ROM; give
   the two ROMs different file names. Summaries: `battle_summary.py`,
   `battle_compare.py OLD NEW` (per trainer, with z: the change in standard
   deviations; below 2 is noise), `switch_report.py` (switch quality vs. Fire,
@@ -131,8 +132,9 @@ user's save files.
   battle states: `AISmogon_PickedMoveKOsFirst` (its answer, and that it
   keeps `wEnemyMoveStruct`, `wCurDamage` and `wCriticalHit`),
   `AISmogon_PenalizeAsleepActive`, `AISmogon_EnemyHasUsefulBoosts`,
-  `AISmogon_GetSetupBoost` and `AISmogon_SetupPower`. Last line
-  `RESULT: ALL OK`. Add cases
+  `AISmogon_GetSetupBoost`, `AISmogon_SetupPower` and the stalemate flag
+  of `AISmogon_ScoreActive` (on positions built from a trace, against the
+  save's party). Last line `RESULT: ALL OK`. Add cases
   there for helpers `ai_scenarios.py` can't reach (it only reads move
   scores).
 

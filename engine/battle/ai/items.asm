@@ -215,14 +215,20 @@ SwitchSmogon:
 	jp c, DontSwitch
 .no_rest
 
-; A Pokemon that can phaze, Haze or Explode deals with a boosted player itself.
+	call AISmogon_ScoreActive
+	call AISmogon_PenalizeAsleepActive
+
+; A Pokemon that can phaze, Haze or Explode deals with a boosted player
+; itself, unless neither side can KO the other: then it would just Haze
+; forever (Crobat against a Curse Steelix).
 	ld a, [wCurOTMon]
 	ld [wSmogonAIMon], a
 	call AISmogon_CanStopSetup
-	jp c, DontSwitch
-
-	call AISmogon_ScoreActive
-	call AISmogon_PenalizeAsleepActive
+	jr nc, .find_switch_in
+	ld a, [wSmogonAIActiveStalled]
+	and a
+	jp z, DontSwitch
+.find_switch_in
 	call AISmogon_FindBestSwitchIn
 	jp c, DontSwitch
 
@@ -249,6 +255,12 @@ SwitchSmogon:
 ; A Pokemon with no useful move left (every move scored worse than neutral),
 ; like a Smeargle that has used Spore and Spikes, makes room for a teammate.
 	ld a, [wEnemyAIMovesSpent]
+	and a
+	jr nz, .spent
+
+; Neither side can KO the other (Crobat against a Steelix it can't wear
+; down through Leftovers): any better matchup is progress.
+	ld a, [wSmogonAIActiveStalled]
 	and a
 	jr nz, .spent
 
