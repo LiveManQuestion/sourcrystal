@@ -536,3 +536,19 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   25 -> 19 (mean regret 0.011). Credit went mostly to Steelix and
   Forretress (Curse) vs Exeggutor and Snorlax, Venusaur (Growth) vs
   Vaporeon and Tentacruel (Swords Dance) vs Vaporeon.
+- **2026-10-16**: `AI_Smogon_Weather`: Rain Dance and Sunny Day get +3
+  when the weather powers up the player's attacks too: its revealed
+  `RainDanceMoves` / `SunnyDayMoves`, or (until four moves are revealed)
+  its `SmogonExpectedAttacks`: Water or 120-power Electric (Thunder) for
+  rain, Fire or 120-power Grass (SolarBeam) for sun; a species without a
+  list counts its types. The vanilla layer only checked the player's types,
+  so Jasmine's Magneton kept giving the user's Zapdos a sure Thunder. 8 new
+  `ai_scenarios.py` cases, ALL OK. 4 trainers x 144 seeds: Jasmine 2 AI
+  wins 15 -> 31 of 144 (z +2.6, the first significant change in this
+  series), total 249 -> 265 of 576 (z +0.9); Rain Dance used 1011 -> 221;
+  engine_judge: Magneton vs Zapdos regret 0.97 -> 0.35. The judge's overall
+  totals over 48 battles moved the other way (19 -> 49 clear
+  disagreements), almost all in Koga 2, whose team has no weather move:
+  the RNG reshuffle changes which positions come up (17 of Koga's 34 from
+  one battle, Crobat using Wing Attack into a Steelix). Compare per
+  pattern, not overall totals.

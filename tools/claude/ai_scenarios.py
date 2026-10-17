@@ -150,6 +150,17 @@ scen = [
     ('t-wave for slow teammate', M('THUNDER_WAVE'), dict(espd=999, pspd=lambda: min(ot_speeds()) + 1), [19]),
     ('t-wave, teammates faster', M('THUNDER_WAVE'), dict(espd=999, pspd=lambda: min(ot_speeds()) - 1), [20]),
     ('t-wave, teammates too slow', M('THUNDER_WAVE'), dict(espd=999, pspd=lambda: max(ot_speeds()) * 4 + 4), [20]),
+    # AI_Smogon_Weather: +3 when the weather helps the player's attacks too.
+    ('rain vs zapdos', M('RAIN_DANCE'), dict(pspecies=C['ZAPDOS'], ptypes=(C['ELECTRIC'], C['FLYING'])), [23]),
+    ('rain vs zapdos that used thunder', M('RAIN_DANCE'),
+     dict(pspecies=C['ZAPDOS'], ptypes=(C['ELECTRIC'], C['FLYING']), pused=M('THUNDER')), [23]),
+    ('rain vs zapdos, four other moves', M('RAIN_DANCE'),
+     dict(pspecies=C['ZAPDOS'], ptypes=(C['ELECTRIC'], C['FLYING']), pused=M('SPLASH', 'SPLASH', 'SPLASH', 'SPLASH')), [20]),
+    ('rain vs exeggutor', M('RAIN_DANCE'), dict(pspecies=C['EXEGGUTOR'], ptypes=(C['GRASS'], C['PSYCHIC_TYPE'])), [20]),
+    ('sun vs charizard', M('SUNNY_DAY'), dict(pspecies=C['CHARIZARD'], ptypes=(C['FIRE'], C['FLYING'])), [23]),
+    ('sun vs exeggutor', M('SUNNY_DAY'), dict(pspecies=C['EXEGGUTOR'], ptypes=(C['GRASS'], C['PSYCHIC_TYPE'])), [20]),
+    ('rain vs unlisted electric type', M('RAIN_DANCE'), dict(ptypes=(C['ELECTRIC'], C['ELECTRIC'])), [23]),
+    ('rain vs unlisted normal type', M('RAIN_DANCE'), dict(ptypes=(C['NORMAL'], C['NORMAL'])), [20]),
     # AI_Smogon_SureKO: the player has 1 HP, so any hit KOs.
     ('sure KO: most accurate', M('FIRE_BLAST', 'ICE_BEAM', 'THUNDER', 'HARDEN'),
      dict(php=(1, 100), ptypes=(C['NORMAL'], C['NORMAL'])), [22, 17, 22, 20]),

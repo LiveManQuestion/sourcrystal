@@ -12,7 +12,8 @@ AI_Smogon:
 ;   and Psychics, put up the screen that blocks the player's attacks, Baton
 ;   Pass boosts out of trouble, Encore a setup or status move, Heal Bell
 ;   a team weighed down by status, Protect to stall out the player's
-;   residual damage, and take a sure KO with the surest attack.
+;   residual damage, take a sure KO with the surest attack, and don't start
+;   rain or sun that powers up the player's attacks too.
 ; - Know the battle mechanics: Thunder never misses in rain, Defense Curl
 ;   doubles Rollout, attacks miss a Pokemon in the air or underground, Endure
 ;   doesn't stop residual damage, and Morning Sun, Synthesis and Moonlight
@@ -122,6 +123,8 @@ AI_Smogon_EffectHandlers:
 	dbw EFFECT_COUNTER,      AI_Smogon_Counter
 	dbw EFFECT_MIRROR_COAT,  AI_Smogon_Counter
 	dbw EFFECT_THUNDER,      AI_Smogon_Thunder
+	dbw EFFECT_RAIN_DANCE,   AI_Smogon_Weather
+	dbw EFFECT_SUNNY_DAY,    AI_Smogon_Weather
 	dbw EFFECT_ROLLOUT,      AI_Smogon_Rollout
 	dbw EFFECT_ENDURE,       AI_Smogon_Endure
 	dbw EFFECT_DESTINY_BOND, AI_Smogon_DestinyBond
@@ -631,6 +634,76 @@ endr
 	db EFFECT_MIRROR_COAT
 	db EFFECT_SUPER_FANG
 	db -1 ; end
+
+AI_Smogon_Weather:
+; Rain makes Thunder hit and powers up Water attacks; sun powers up Fire
+; attacks and lets SolarBeam fire at once; for both sides. Don't start
+; weather the player's Pokemon would use too (Magneton's Rain Dance gave
+; Zapdos a sure Thunder): by the attacks it has revealed (AI_Smart's
+; RainDanceMoves and SunnyDayMoves), or, until it has revealed four moves,
+; the ones its species usually has (SmogonExpectedAttacks): Water or a
+; 120-power Electric attack (Thunder) for rain, Fire or a 120-power Grass
+; attack (SolarBeam) for sun. A species without that list counts its types.
+	push hl
+	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
+	cp EFFECT_RAIN_DANCE
+	ld hl, RainDanceMoves
+	lb bc, WATER, ELECTRIC
+	jr z, .got_weather
+	ld hl, SunnyDayMoves
+	lb bc, FIRE, GRASS
+.got_weather
+; b = the type it powers up, d = the type whose 120-power attack needs it
+	ld d, c
+.revealed_loop
+	ld a, [hli]
+	cp -1
+	jr z, .expected
+	call AISmogon_PlayerRevealedMove
+	jr nc, .revealed_loop
+	jr .helps_player
+
+.expected
+	ld a, [wPlayerUsedMoves + NUM_MOVES - 1]
+	and a
+	jr nz, .done
+	call AISmogon_FindExpectedAttacks
+	jr nc, .player_types
+.expected_loop
+	ld a, [hli]
+	cp -1
+	jr z, .done
+	ld e, a
+	ld a, [hli]
+	ld c, a
+	ld a, e
+	cp b
+	jr z, .helps_player
+	cp d
+	jr nz, .expected_loop
+	ld a, c
+	cp 120
+	jr z, .helps_player
+	jr .expected_loop
+
+.player_types
+	ld a, [wBattleMonType1]
+	cp b
+	jr z, .helps_player
+	cp d
+	jr z, .helps_player
+	ld a, [wBattleMonType2]
+	cp b
+	jr z, .helps_player
+	cp d
+	jr z, .helps_player
+.done
+	pop hl
+	ret
+
+.helps_player
+	pop hl
+	jp AIBadWeatherType
 
 AI_Smogon_Rollout:
 ; Defense Curl doubles Rollout's power.
