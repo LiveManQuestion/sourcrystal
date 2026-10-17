@@ -558,8 +558,9 @@ AI_Smogon_SureKO:
 ; Take a sure KO with the surest attack: of the attacks whose lowest damage
 ; roll KOs the player, encourage the most accurate one (a priority attack
 ; first when the player is faster) and discourage the rest. The damage
-; layers (AI_Aggressive, AI_Risky) only look at the highest roll and ignore
-; accuracy, so they used Fire Blast over Ice Beam on a Steelix with 2 HP.
+; layers (AI_Aggressive, AI_Risky) only look at the highest roll (times the
+; accuracy, for AI_Aggressive), so they used Fire Blast over Ice Beam on a
+; Steelix with 2 HP.
 	ld c, 0
 .rank_loop
 	push bc
@@ -758,21 +759,7 @@ AISmogon_RankLoadedMove:
 	call AISmogon_LoadedMoveKOs
 	jr nc, .not_ko
 
-; Lock-On makes the next attack hit, and so does Thunder in rain.
-	ld a, [wEnemySubStatus5]
-	bit SUBSTATUS_LOCK_ON, a
-	ld a, 100 percent
-	jr nz, .got_accuracy
-	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
-	cp EFFECT_THUNDER
-	jr nz, .accuracy
-	ld a, [wBattleWeather]
-	cp WEATHER_RAIN
-	ld a, 100 percent
-	jr z, .got_accuracy
-.accuracy
-	ld a, [wEnemyMoveStruct + MOVE_ACC]
-.got_accuracy
+	call AISmogon_LoadedMoveAccuracy
 	srl a
 	srl a
 	inc a
@@ -817,6 +804,50 @@ AISmogon_RankLoadedMove:
 	db EFFECT_MIRROR_COAT
 	db EFFECT_SUPER_FANG
 	db -1 ; end
+
+AISmogon_LoadedMoveAccuracy:
+; Return in a the accuracy of the move in wEnemyMoveStruct: Lock-On makes
+; the next attack hit, and so does Thunder in rain.
+	ld a, [wEnemySubStatus5]
+	bit SUBSTATUS_LOCK_ON, a
+	jr nz, .sure
+	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
+	cp EFFECT_THUNDER
+	jr nz, .accuracy
+	ld a, [wBattleWeather]
+	cp WEATHER_RAIN
+	jr z, .sure
+.accuracy
+	ld a, [wEnemyMoveStruct + MOVE_ACC]
+	ret
+
+.sure
+	ld a, 100 percent
+	ret
+
+AISmogon_ExpectedDamage:
+; In Challenge Mode, scale wCurDamage (AIDamageCalc's highest roll for the
+; move in wEnemyMoveStruct) by the move's accuracy, for AI_Aggressive to
+; pick the attack that does the most damage on average: Qwilfish used
+; Hydro Pump (80%) on Cloyster over Sludge Bomb, which hits every time for
+; more on average.
+	ld a, [wChallengeMode]
+	bit GAME_CHALLENGE_MODE_F, a
+	ret z
+	call AISmogon_LoadedMoveAccuracy
+	ldh [hMultiplier], a
+	xor a
+	ldh [hMultiplicand], a
+	ld a, [wCurDamage]
+	ldh [hMultiplicand + 1], a
+	ld a, [wCurDamage + 1]
+	ldh [hMultiplicand + 2], a
+	call Multiply
+	ldh a, [hProduct + 1]
+	ld [wCurDamage], a
+	ldh a, [hProduct + 2]
+	ld [wCurDamage + 1], a
+	ret
 
 AI_Smogon_Weather:
 ; Rain makes Thunder hit and powers up Water attacks; sun powers up Fire

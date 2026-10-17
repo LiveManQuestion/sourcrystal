@@ -13,12 +13,13 @@ threatened, sleeping Pokemon switching out, setup credit, Rain Dance
 (Magneton vs Zapdos), stalemates (Crobat vs Steelix), Sleep Talk, Explosion
 only when not winning, sure-KO Explosion trades, Toxic only for walls,
 Spikes before setup, and not healing when a two-hit KO comes first (Venusaur
-vs Vaporeon, `a65dbedd0`). The commits after it are tools only.
+vs Vaporeon, `a65dbedd0`), and comparing attacks by damage times accuracy
+in Challenge Mode (Qwilfish's Hydro Pump vs Cloyster, 2026-10-17).
 
-Last measured (4 trainers x 144 seeds, the user's party): AI wins 293 of 576.
-Koga 2 ~120/144, Whitney 2 ~95, Misty 2 ~55, Jasmine 2 ~22. Engine judge over
-144 traced battles: 3811 decisions, total regret 40.7, 61 clear
-disagreements (regret > 0.1).
+Last measured (4 trainers x 144 seeds, the user's party), after the
+accuracy fix: AI wins 290 of 576. Koga 2 129/144, Whitney 2 87, Misty 2 52,
+Jasmine 2 22. Engine judge over 144 traced battles: 3770 decisions, total
+regret 50.5 (one Crobat vs Steelix battle gives 18 clear disagreements).
 
 ## The loop
 
@@ -50,31 +51,27 @@ disagreements (regret > 0.1).
 6. Changelog entry, then commit when the user says so (they review each fix
    and say "commit").
 
-## Candidate patterns (latest judge, `a65dbedd0`)
+## Candidate patterns (latest judge, after the accuracy fix)
 
-From `engine_judge.py --patterns`, "matchup and AI action -> engine action"
-(total regret, decisions, clear, battles):
+Clear disagreements (regret > 0.1) by matchup, AI action and engine
+action, with the number of battles they come from:
 
 ```
-1.12   6  4  4  QWILFISH   vs CLOYSTER  hydropump -> sludgebomb
-0.90   3  2  3  QWILFISH   vs CLOYSTER  sludgebomb -> switch
-0.83   7  3  3  BLISSEY    vs CLOYSTER  flamethrower -> switch
-0.81  19  0 19  BLISSEY    vs SNORLAX   switch -> switch (other switch-in)
-0.78   5  2  5  QWILFISH   vs CLOYSTER  spikes -> sludgebomb
-0.68  36  0 19  MILTANK    vs CLOYSTER  bodyslam -> milkdrink
-0.68   4  4  2  TENTACRUEL vs CLOYSTER  hydropump -> sludgebomb
-0.67  36  0 36  CLOYSTER   vs ZAPDOS    spikes -> switch
-0.63   6  3  2  SNORLAX    vs ZAPDOS    curse -> switch
-0.62   5  4  2  SNORLAX    vs ZAPDOS    bodyslam -> switch
+clear battles
+  15    1  CROBAT   vs STEELIX   wingattack/haze -> switch (KOGA_2_13 only)
+   4    3  QWILFISH vs CLOYSTER  curse -> sludgebomb
+   4    4  VAPOREON vs CLOYSTER  acidarmor -> surf
+   4    2  SNORLAX  vs ZAPDOS    rest -> switch blissey
+   3    3  QWILFISH vs CLOYSTER  sludgebomb -> switch crobat
+   2    2  QWILFISH vs CLOYSTER  spikes -> sludgebomb
 ```
 
-The most promising next lead: Water/Poison attackers (Koga's Qwilfish, Misty's
-Tentacruel) using Hydro Pump on the user's Cloyster, where the engine prefers
-Sludge Bomb: 10 decisions, 8 clear across both. Hydro Pump is resisted by
-Cloyster (Water/Ice) but special against its low Sp.Def; Sludge Bomb is
-physical in Gen 2 into its huge Defense, so check the damage, Hydro Pump's 80%
-accuracy and Sludge Bomb's poison chance before deciding. Rerun the judge
-first: these numbers are from one run and may not hold.
+The most promising next leads are spread over several battles: Misty's
+Vaporeon using Acid Armor on the user's Cloyster where the engine attacks
+(4 battles), and Qwilfish setting up with Curse on Cloyster instead of
+attacking (3). Crobat vs Steelix is all one battle (Crobat at 90/268
+chipping with Wing Attack, then Haze), so treat it as a single position
+unless it recurs. The cache for this ROM is `.aicheck/fdadafc64610be3e`.
 
 ## Pitfalls already hit
 

@@ -383,4 +383,39 @@ for name, mon, hp, stage, move, player, ptypes, pused, exp, *time in heal_cases:
     ok &= good
     print('PASS' if good else 'FAIL', 'heal:', name, 'score', got, 'expected', exp, 'move being scored kept', kept)
 w('wEnemySAtkLevel', 7)
+
+# AI_Aggressive (scoring.asm) in Challenge Mode: the attack that does the
+# most damage on average (AISmogon_ExpectedDamage), on positions from Koga 2
+# and Misty 2 vs the save's Cloyster. Hydro Pump's highest roll is the
+# biggest, but at 80% accuracy Sludge Bomb does more. Normal Mode still
+# takes the highest roll.
+QWILFISH_KOGA = dict(species=SPECIES['QWILFISH'], level=85, hp=231, max_hp=231, stats=[192, 158, 175, 124, 124],
+                     moves=[MOVE_IDS[x] for x in ('CURSE', 'SLUDGE_BOMB', 'HYDRO_PUMP', 'SPIKES')],
+                     pp=[10, 10, 5, 20], dvs=(255, 255), item=0)
+TENTACRUEL_MISTY = dict(species=SPECIES['TENTACRUEL'], level=84, hp=118, max_hp=253, stats=[134, 139, 198, 164, 231],
+                        moves=[MOVE_IDS[x] for x in ('SLUDGE_BOMB', 'SWORDS_DANCE', 'HYDRO_PUMP', 'SUBSTITUTE')],
+                        pp=[8, 30, 3, 10], dvs=(127, 255), item=0)
+aggressive_cases = [
+    # (name, enemy, Attack stage, Challenge Mode, expected scores)
+    ('qwilfish vs cloyster', QWILFISH_KOGA, 7, True, [20, 20, 21, 20]),
+    ('qwilfish vs cloyster, normal mode', QWILFISH_KOGA, 7, False, [20, 21, 20, 20]),
+    ('+2 tentacruel vs cloyster', TENTACRUEL_MISTY, 9, True, [20, 20, 21, 20]),
+]
+challenge = m[A('wChallengeMode')]
+for name, mon, stage, cm, exp in aggressive_cases:
+    if SPECIES['CLOYSTER'] not in party:
+        print('SKIP', name); continue
+    set_ot(mon)
+    w('wEnemyAtkLevel', stage); word('wEnemyMonAttack', mon['stats'][0] * (stage - 5) // 2)
+    set_player(party.index(SPECIES['CLOYSTER']) + 1, ('WATER', 'ICE'), ['SURF'])
+    w('wBattleWeather', 0); w('wCriticalHit', 0)
+    w('wChallengeMode', challenge | 1 if cm else challenge & ~1)
+    for i in range(4):
+        w('wEnemyAIMoveScores', 20, i)
+    g.call('AI_Aggressive', frames=600)
+    got = [m[A('wEnemyAIMoveScores') + i] for i in range(4)]
+    good = got == exp
+    ok &= good
+    print('PASS' if good else 'FAIL', 'aggressive:', name, 'scores', got, 'expected', exp)
+w('wChallengeMode', challenge); w('wEnemyAtkLevel', 7)
 print('RESULT:', 'ALL OK' if ok else 'NOT OK')

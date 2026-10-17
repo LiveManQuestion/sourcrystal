@@ -2998,7 +2998,8 @@ INCLUDE "data/battle/ai/stall_moves.asm"
 
 
 AI_Aggressive:
-; Use whatever does the most damage.
+; Use whatever does the most damage (on average, counting accuracy, in
+; Challenge Mode: AISmogon_ExpectedDamage).
 
 ; Discourage all damaging moves but the one that does the most damage.
 ; If no damaging move deals damage to the player (immune),
@@ -3026,6 +3027,7 @@ AI_Aggressive:
 	and a
 	jr z, .nodamage
 	call AIDamageCalc
+	call AISmogon_ExpectedDamage
 	pop bc
 	pop de
 	pop hl

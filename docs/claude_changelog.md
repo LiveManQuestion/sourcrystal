@@ -677,3 +677,22 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   the switch-in and move power phases instead of rerunning them, and "heal
   above half" gives the player only Splash so it no longer depends on the
   test battle's Pokemon (the committed version failed it in one run).
+- **2026-10-17**: Smogon AI: attacks compared by average damage. The
+  engine judge's top matchup was Koga's Qwilfish vs the save's Cloyster, and
+  its most concentrated pattern Hydro Pump where the engine used Sludge Bomb
+  (8 clear in 14 decisions, Koga's Qwilfish and Misty's Tentacruel). The
+  pick came from `AI_Aggressive`, which keeps the attack with the highest
+  damage roll: Hydro Pump's 70 beat Sludge Bomb's 60 on Cloyster by one
+  score point, but at 80% accuracy it averages 56 (Misty's +2 Tentacruel:
+  Sludge Bomb ~84 vs 72). In Challenge Mode `AI_Aggressive` now scales the
+  damage by the accuracy (`AISmogon_ExpectedDamage`), with Lock-On and
+  Thunder in rain counting as sure hits (`AISmogon_LoadedMoveAccuracy`,
+  shared with `AISmogon_RankLoadedMove`); Normal Mode is unchanged.
+  - Checked: both suites ALL OK (new `smogon_calls_test.py` "aggressive"
+    cases fail on the old build); 4 trainers x 144 seeds: AI wins 293 ->
+    290 of 576 (Koga 119 -> 129 z +1.7, Misty 57 -> 52 z -0.6, Whitney 95 ->
+    87 z -1.0, Jasmine 22 -> 22); Hydro Pump -> Sludge Bomb 1.79 -> 0.22
+    regret (clear 8 -> 1), Hydro Pump overall clear 9 -> 2. Total regret
+    went 40.95 -> 50.47, mostly a new Crobat vs Steelix position (18 clear,
+    all in one battle, KOGA_2_13: reshuffled RNG, as Crobat's only attack
+    is the 100%-accurate Wing Attack).
