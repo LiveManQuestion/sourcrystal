@@ -68,6 +68,38 @@ AISmogon_ScoreActive:
 	pop bc
 	ret
 
+AISmogon_PenalizeAsleepActive:
+; Take the switch-in penalty for sleep or freeze (AISmogon_SwitchInPenalty)
+; off the active Pokemon's score too, so a Rest user asleep without Sleep
+; Talk makes room for a better matchup. Not when it wakes up this turn: it
+; can't move then, but neither can a switch-in. Call after
+; AISmogon_ScoreActive.
+	ld a, [wEnemyMonStatus]
+	ld b, a
+	and SLP_MASK
+	jr z, .not_asleep
+	cp 2
+	ret c
+	ld a, SLEEP_TALK
+	call AISmogon_OTMonHasMove
+	ld c, SMOGON_PENALTY_SLEEP_TALK
+	jr c, .penalize
+	ld c, SMOGON_PENALTY_ASLEEP
+	jr .penalize
+
+.not_asleep
+	bit FRZ, b
+	ret z
+	ld c, SMOGON_PENALTY_FROZEN
+.penalize
+	ld a, [wEnemyAISwitchScore]
+	sub c
+	jr nc, .got_score
+	xor a
+.got_score
+	ld [wEnemyAISwitchScore], a
+	ret
+
 AISmogon_FindBestSwitchIn:
 ; Find the healthy, non-active Pokemon with the best matchup, discounting
 ; low HP and status, and favoring answers to a boosted player, Sleep Talk

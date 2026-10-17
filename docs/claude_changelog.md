@@ -503,3 +503,20 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   255 -> 251 of 576 (z -0.2, noise; rarely fires against the user's team);
   engine_judge: Blissey-heals-vs-Cloyster disagreements 3 -> 0, AI heals
   148 -> 134. 1-3 frames on turns it runs.
+- **2026-10-16**: Sleeping Pokemon switch out more readily. In
+  `SwitchSmogon`, the active Pokemon's matchup score takes the same sleep
+  or freeze penalty as a switch-in (`AISmogon_PenalizeAsleepActive`), unless
+  it wakes up this turn (waking up costs the turn, so a sleep counter of N
+  loses N turns). And only boosts that help keep it in
+  (`AISmogon_EnemyHasUsefulBoosts`): offensive ones, accuracy, evasion, and
+  the defense the player's attacks hit, so Misty's Vaporeon asleep after
+  Acid Armor no longer stays in against a Surf user. From the engine
+  judge's sleeping Rest users that it would switch out. Also fixed
+  `ai_scenarios.py` (sure-KO cases failed at random: the main loop's
+  `wBattleMonHP = 999` landed mid-AI now that move choice takes several
+  frames) and renamed `sure_ko_test.py` to `smogon_calls_test.py` (18 new
+  cases). Checked: both suites ALL OK (scenarios 3 runs in a row), 4
+  trainers x 144 seeds: AI wins 251 -> 245 of 576 (z -0.4, noise),
+  mid-battle switches 2.64 -> 2.76 per battle; engine_judge: regret on
+  asleep decisions 6.33 -> 2.37, clear should-have-switched 12 -> 3, clear
+  disagreements overall 36 -> 25.

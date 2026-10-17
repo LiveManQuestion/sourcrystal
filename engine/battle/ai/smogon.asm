@@ -1660,6 +1660,36 @@ AISmogon_PlayerBoosted:
 	ld hl, wPlayerStatLevels
 	jr AISmogon_StatLevelsRaised
 
+AISmogon_EnemyHasUsefulBoosts:
+; Return carry if the enemy has raised a stat level that helps against the
+; player's Pokemon: Attack, Speed, Sp.Atk, accuracy or evasion, or the
+; defense its attacks hit (AISmogon_PlayerIsPhysical). Acid Armor doesn't
+; stop Surf.
+	ld hl, wEnemyAtkLevel
+	call .Raised
+	ret c
+	ld hl, wEnemySpdLevel
+	call .Raised
+	ret c
+	ld hl, wEnemySAtkLevel
+	call .Raised
+	ret c
+	ld hl, wEnemyAccLevel
+	call .Raised
+	ret c
+	ld hl, wEnemyEvaLevel
+	call .Raised
+	ret c
+	call AISmogon_PlayerIsPhysical
+	ld hl, wEnemyDefLevel
+	jr c, .Raised
+	ld hl, wEnemySDefLevel
+.Raised:
+; carry if [hl] > BASE_STAT_LEVEL
+	ld a, BASE_STAT_LEVEL
+	cp [hl]
+	ret
+
 AISmogon_EnemyBoosted:
 ; Return carry if any of the enemy's stat levels are raised.
 	push hl

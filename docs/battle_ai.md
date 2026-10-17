@@ -71,7 +71,11 @@ How the trainer AI is organized (see also `CLAUDE.md`).
   after the player's switch, with the move already picked (`wCurEnemyMove`,
   loaded in `wEnemyMoveStruct`), and stays in when that move KOs the player
   first (`AISmogon_PickedMoveKOsFirst`: a sure KO while faster, or with
-  priority), unless Perish Song is at 1. It also
+  priority), unless Perish Song is at 1. The active Pokemon's score takes
+  the same sleep or freeze penalty as a switch-in
+  (`AISmogon_PenalizeAsleepActive`), unless it wakes up this turn: waking
+  up costs the turn (`CantMove` in `CheckEnemyTurn`), so a sleep counter of
+  N loses N turns, and Rest sets 3. It also
   switches out a Pokemon with no useful move left: `AIChooseMove` (which runs
   first each turn) sets `wEnemyAIMovesSpent` when every move scores above 20.
 - Banks: `items.asm`, `switch.asm`, `scoring.asm`, `smogon.asm`,

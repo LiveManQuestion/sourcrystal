@@ -181,8 +181,8 @@ SwitchSmogon:
 ; Knocking the player out first beats any switch.
 	call AISmogon_PickedMoveKOsFirst
 	jp c, DontSwitch
-; Switching out throws away stat boosts and a Substitute.
-	call AISmogon_EnemyBoosted
+; Switching out throws away stat boosts that help and a Substitute.
+	call AISmogon_EnemyHasUsefulBoosts
 	jp c, DontSwitch
 	ld a, [wEnemySubStatus4]
 	bit SUBSTATUS_SUBSTITUTE, a
@@ -222,6 +222,7 @@ SwitchSmogon:
 	jp c, DontSwitch
 
 	call AISmogon_ScoreActive
+	call AISmogon_PenalizeAsleepActive
 	call AISmogon_FindBestSwitchIn
 	jp c, DontSwitch
 

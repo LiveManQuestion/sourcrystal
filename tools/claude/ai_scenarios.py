@@ -506,7 +506,10 @@ mem[W('wMapReentryScriptAddress')] = 0xe2; mem[W('wMapReentryScriptAddress') + 1
 rng = random.Random(1)
 while frame < 60 * 60 * 120 and not crashed and (state['heal_i'] < len(heal_cases) or sw['i'] < len(switch_cases)):
     if mem[W('wBattleMode')] == 2:
-        word(W('wBattleMonHP'), 999)
+        # Keep the player alive, but not while a case is running: the AI
+        # can take several frames, and this would overwrite the case's HP.
+        if state['cur'] is None and hp['cur'] is None and sw['saved'] is None:
+            word(W('wBattleMonHP'), 999)
         press('a' if rng.random() < 0.8 else 'b', after=rng.randint(8, 30))
     else:
         run(30)
