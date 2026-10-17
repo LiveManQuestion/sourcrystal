@@ -23,7 +23,12 @@
       "Bash(~/.local/share/uv/tools/pyboy/bin/python tools/claude/battle.py *)",
       "Bash(~/.local/share/uv/tools/pyboy/bin/python tools/claude/ai_profile.py *)",
       "Bash(~/.local/share/uv/tools/pyboy/bin/python tools/claude/ai_trace.py *)",
-      "Bash(python3 tools/claude/ai_trace.py report *)"
+      "Bash(python3 tools/claude/ai_trace.py report *)",
+      "Bash(~/.local/share/uv/tools/pyboy/bin/python tools/claude/smogon_calls_test.py *)",
+      "Bash(~/.local/share/uv/tools/pyboy/bin/python tools/claude/battle_compare.py *)",
+      "Bash(python3 tools/claude/engine_judge.py --patterns *)",
+      "Bash(python3 tools/claude/engine_judge.py --report *)",
+      "Bash(bots/pe-venv/bin/python tools/claude/engine_judge.py --check)"
     ]
   }
 }
