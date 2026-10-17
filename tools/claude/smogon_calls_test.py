@@ -101,6 +101,7 @@ boost_cases = [
     ('acid armor vs body slam', {'wEnemyDefLevel': 9}, ['BODY_SLAM'], 100, 100, True),
     ('amnesia vs surf', {'wEnemySDefLevel': 9}, ['SURF'], 100, 100, True),
     ('amnesia vs body slam', {'wEnemySDefLevel': 9}, ['BODY_SLAM'], 100, 100, False),
+    # (Ditto has no SmogonExpectedAttacks entry, so its stats decide)
     ('acid armor, nothing revealed, physical stats', {'wEnemyDefLevel': 9}, [], 200, 100, True),
     ('acid armor, nothing revealed, special stats', {'wEnemyDefLevel': 9}, [], 100, 200, False),
     ('curse attack', {'wEnemyAtkLevel': 8, 'wEnemySpdLevel': 6}, ['SURF'], 100, 100, True),
@@ -114,6 +115,7 @@ for name, levels, used, atk, spa, exp in boost_cases:
     for i in range(4):
         w('wPlayerUsedMoves', MOVE_IDS[used[i]] if i < len(used) else 0, i)
     word('wBattleMonAttack', atk); word('wBattleMonSpclAtk', spa)
+    w('wBattleMonSpecies', SPECIES['DITTO'])
     g.call('AISmogon_EnemyHasUsefulBoosts')
     carry = bool(g.result['F'] & 0x10)
     good = carry == exp
@@ -418,4 +420,56 @@ for name, mon, stage, cm, exp in aggressive_cases:
     ok &= good
     print('PASS' if good else 'FAIL', 'aggressive:', name, 'scores', got, 'expected', exp)
 w('wChallengeMode', challenge); w('wEnemyAtkLevel', 7)
+
+# AISmogon_PlayerIsPhysical on the save's party: by the revealed attacks,
+# else the expected ones (SmogonExpectedAttacks), else the stats.
+physical_cases = [
+    # (the player's Pokemon, its types, its revealed moves, expected carry)
+    ('CLOYSTER', ('WATER', 'ICE'), [], False),  # Attack > Sp.Atk, but Surf
+    ('CLOYSTER', ('WATER', 'ICE'), ['SPIKES'], False),
+    ('CLOYSTER', ('WATER', 'ICE'), ['EXPLOSION'], True),
+    ('SNORLAX', ('NORMAL', 'NORMAL'), [], True),
+    ('STEELIX', ('STEEL', 'GROUND'), [], True),
+    ('ZAPDOS', ('ELECTRIC', 'FLYING'), [], False),
+    ('VAPOREON', ('WATER', 'WATER'), [], False),
+]
+for player, ptypes, pused, exp in physical_cases:
+    if SPECIES[player] not in party:
+        print('SKIP', player); continue
+    set_player(party.index(SPECIES[player]) + 1, ptypes, pused)
+    g.call('AISmogon_PlayerIsPhysical')
+    got = bool(g.result['F'] & 0x10)
+    good = got == exp
+    ok &= good
+    print('PASS' if good else 'FAIL', 'physical:', player, pused, 'carry', got, 'expected', exp)
+
+# AI_Smogon_Setup: Acid Armor only against a physical attacker (Misty 2's
+# Vaporeon vs the save's Cloyster, which attacks with Surf unless it has
+# shown Explosion).
+VAPOREON_MISTY = dict(species=SPECIES['VAPOREON'], level=78, hp=314, max_hp=314, stats=[117, 122, 129, 200, 176],
+                      moves=[MOVE_IDS[x] for x in ('SURF', 'ICE_BEAM', 'REST', 'ACID_ARMOR')],
+                      pp=[15, 10, 10, 40], dvs=(127, 255), item=0)
+setup_cases = [
+    # (name, the player's Pokemon, its types, its revealed moves, its Attack (None: its own), expected score)
+    ('acid armor vs cloyster', 'CLOYSTER', ('WATER', 'ICE'), [], None, 22),
+    ('acid armor vs surf cloyster', 'CLOYSTER', ('WATER', 'ICE'), ['SURF'], None, 22),
+    # (a Snorlax too weak to threaten Vaporeon: it's physical, so boost)
+    ('acid armor vs weak snorlax', 'SNORLAX', ('NORMAL', 'NORMAL'), ['DOUBLE_EDGE'], 40, 18),
+]
+for name, player, ptypes, pused, atk, exp in setup_cases:
+    if SPECIES[player] not in party:
+        print('SKIP', name); continue
+    set_ot(VAPOREON_MISTY)
+    set_player(party.index(SPECIES[player]) + 1, ptypes, pused)
+    if atk:
+        word('wBattleMonAttack', atk)
+    w('wPlayerScreens', 1 << CONST['SCREENS_SPIKES']); w('wEnemySubStatus5', 0)
+    g.call('AIGetEnemyMove', A=MOVE_IDS['ACID_ARMOR'])
+    w('wEnemyAIMoveScores', 20)
+    g.call('AI_Smogon_Setup', HL=A('wEnemyAIMoveScores'), frames=600)
+    got = m[A('wEnemyAIMoveScores')]
+    good = got == exp
+    ok &= good
+    print('PASS' if good else 'FAIL', 'setup:', name, 'score', got, 'expected', exp)
+w('wPlayerScreens', 0)
 print('RESULT:', 'ALL OK' if ok else 'NOT OK')

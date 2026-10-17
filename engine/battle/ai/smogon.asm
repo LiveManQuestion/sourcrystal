@@ -1544,6 +1544,22 @@ AI_Smogon_Setup:
 	cp MAX_STAT_LEVEL
 	jp nc, AIDiscourageMove
 
+; Acid Armor and Barrier only stop physical attacks, Amnesia only special
+; ones (Vaporeon used Acid Armor on a Cloyster attacking with Surf).
+	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
+	cp EFFECT_DEFENSE_UP_2
+	jr z, .defense
+	cp EFFECT_SP_DEF_UP_2
+	jr nz, .not_defense
+	call AISmogon_PlayerIsPhysical
+	jr c, .discourage
+	jr .not_defense
+
+.defense
+	call AISmogon_PlayerIsPhysical
+	jr nc, .discourage
+.not_defense
+
 ; Lay Spikes first (Forretress used Curse in front of Snorlax instead).
 	call AISmogon_SpikesFirst
 	jr c, .discourage
@@ -1914,7 +1930,9 @@ AISmogon_PlayerIsCounterable:
 
 AISmogon_PlayerIsPhysical:
 ; Return carry if the player's Pokemon attacks mainly physically, going by
-; the attacks it has revealed, or else by its Attack and Sp.Atk stats.
+; the attacks it has revealed, or else the ones its species usually has
+; (SmogonExpectedAttacks: Cloyster's Attack is above its Sp.Atk, but it
+; attacks with Surf), or else by its Attack and Sp.Atk stats.
 	push bc
 	push de
 	push hl
@@ -1971,6 +1989,28 @@ AISmogon_PlayerIsPhysical:
 
 .counted
 	pop de
+	ld a, b
+	or c
+	jr nz, .compare
+; Nothing revealed: count the expected attacks.
+	call AISmogon_FindExpectedAttacks
+	ld c, 0
+	jr nc, .compare
+.expected_loop
+	ld a, [hli]
+	cp -1
+	jr z, .compare
+	inc hl
+	cp SPECIAL
+	jr nc, .expected_special
+	inc b
+	jr .expected_loop
+
+.expected_special
+	inc c
+	jr .expected_loop
+
+.compare
 	; carry if more physical attacks than special ones
 	ld a, c
 	cp b

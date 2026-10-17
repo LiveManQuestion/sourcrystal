@@ -14,12 +14,14 @@ threatened, sleeping Pokemon switching out, setup credit, Rain Dance
 only when not winning, sure-KO Explosion trades, Toxic only for walls,
 Spikes before setup, and not healing when a two-hit KO comes first (Venusaur
 vs Vaporeon, `a65dbedd0`), and comparing attacks by damage times accuracy
-in Challenge Mode (Qwilfish's Hydro Pump vs Cloyster, 2026-10-17).
+in Challenge Mode (Qwilfish's Hydro Pump vs Cloyster, `91187591c`), and
+Acid Armor only against physical attackers, with unrevealed attackers
+judged by their expected attacks (Vaporeon vs Cloyster, 2026-10-17).
 
-Last measured (4 trainers x 144 seeds, the user's party), after the
-accuracy fix: AI wins 290 of 576. Koga 2 129/144, Whitney 2 87, Misty 2 52,
-Jasmine 2 22. Engine judge over 144 traced battles: 3770 decisions, total
-regret 50.5 (one Crobat vs Steelix battle gives 18 clear disagreements).
+Last measured (4 trainers x 144 seeds, the user's party), after the Acid
+Armor fix: AI wins 283 of 576. Koga 2 120/144, Whitney 2 81, Misty 2 54,
+Jasmine 2 28. Engine judge over 144 traced battles: 3819 decisions, total
+regret 47.5. The cache for this ROM is `.aicheck/f8f75a9764817efb`.
 
 ## The loop
 
@@ -51,27 +53,26 @@ regret 50.5 (one Crobat vs Steelix battle gives 18 clear disagreements).
 6. Changelog entry, then commit when the user says so (they review each fix
    and say "commit").
 
-## Candidate patterns (latest judge, after the accuracy fix)
+## Candidate patterns (latest judge, after the Acid Armor fix)
 
-Clear disagreements (regret > 0.1) by matchup, AI action and engine
-action, with the number of battles they come from:
+No concentrated pattern is left: the biggest clear groups come from one
+battle each. Clear disagreements (regret > 0.1) by matchup, AI action and
+engine action, with the number of battles:
 
 ```
 clear battles
-  15    1  CROBAT   vs STEELIX   wingattack/haze -> switch (KOGA_2_13 only)
-   4    3  QWILFISH vs CLOYSTER  curse -> sludgebomb
-   4    4  VAPOREON vs CLOYSTER  acidarmor -> surf
-   4    2  SNORLAX  vs ZAPDOS    rest -> switch blissey
-   3    3  QWILFISH vs CLOYSTER  sludgebomb -> switch crobat
-   2    2  QWILFISH vs CLOYSTER  spikes -> sludgebomb
+   5    1  KINGDRA  vs CLOYSTER  sleeptalk -> switch lanturn
+   4    1  QWILFISH vs CLOYSTER  sludgebomb -> switch gengar
+   2    2  MAGNETON vs STEELIX   reflect -> hiddenpowerwater70
+   2    2  AMPHAROS vs EXEGGUTOR switch skarmory -> lightscreen
+   2    2  QWILFISH vs EXEGGUTOR hydropump -> switch tentacruel
+   2    2  TENTACRUEL vs STEELIX sludgebomb -> switch crobat
 ```
 
-The most promising next leads are spread over several battles: Misty's
-Vaporeon using Acid Armor on the user's Cloyster where the engine attacks
-(4 battles), and Qwilfish setting up with Curse on Cloyster instead of
-attacking (3). Crobat vs Steelix is all one battle (Crobat at 90/268
-chipping with Wing Attack, then Haze), so treat it as a single position
-unless it recurs. The cache for this ROM is `.aicheck/fdadafc64610be3e`.
+Next steps worth trying: more seeds (`TRACE_SEEDS=72`) to see whether
+any of these recur, or look at the zero-clear but high-total patterns
+(Curse -> Body Slam for Miltank vs Snorlax, 53 decisions; Milk Drink vs
+Cloyster), which are many small regrets in one matchup.
 
 ## Pitfalls already hit
 

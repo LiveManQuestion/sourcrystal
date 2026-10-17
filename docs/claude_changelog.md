@@ -696,3 +696,20 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
     went 40.95 -> 50.47, mostly a new Crobat vs Steelix position (18 clear,
     all in one battle, KOGA_2_13: reshuffled RNG, as Crobat's only attack
     is the 100%-accurate Wing Attack).
+- **2026-10-17**: Smogon AI: Acid Armor only against physical attackers.
+  Engine judge pattern: Misty's Vaporeon using Acid Armor on the save's
+  Cloyster where the engine Surfs (4 clear, 4 battles), then Surfing anyway.
+  `AI_Smogon_Setup` treated it like any boost; it now discourages Acid Armor
+  and Barrier against a special attacker and Amnesia against a physical
+  one. `AISmogon_PlayerIsPhysical` (also used by screens, Counter/Mirror
+  Coat, Growl/Charm and staying in on boosts) now counts the species'
+  `SmogonExpectedAttacks` when nothing is revealed, before the stats:
+  Cloyster's Attack is above its Sp.Atk, but it attacks with Surf (3 of
+  the 4 battles had nothing revealed). Of the save's party only Cloyster
+  changes.
+  - Checked: both suites ALL OK (new `smogon_calls_test.py` "physical" and
+    "setup" cases; the old stat-fallback cases now use Ditto, which has no
+    expected attacks); 4 trainers x 144 seeds: AI wins 290 -> 283 of 576
+    (Jasmine 22 -> 28 z +0.9, Koga 129 -> 120 z -1.5, Misty 52 -> 54,
+    Whitney 87 -> 81 z -0.7); Acid Armor -> Surf clear 4 -> 0, Vaporeon vs
+    Cloyster regret 1.49 -> 0.06; total regret 50.5 -> 47.5.
