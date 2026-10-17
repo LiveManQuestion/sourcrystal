@@ -9,8 +9,12 @@ Plays the save's own party, with no healing:
   active Pokemon at least twice as well as the active one, after taking a
   hit on the way in (and not two turns in a row),
 - after a faint, sends in the party member with the best KO race,
-- lays Spikes (its one status move) when the enemy has Pokemon left to
-  switch in and they aren't down yet.
+- plays its status moves the way the save's OU team does (status_move):
+  Sleep Talk while asleep, Rest when low, Explosion when about to faint,
+  Roar on a boosted foe, Sleep Powder (Sleep Clause), Spikes, Curse and
+  Growth when the foe can't punish them, and Toxic on walls.
+SMART_PLAYER=basic (environment) turns the status moves off but Spikes,
+like the player before 2026-10-17, which only attacked.
 It sees the enemy's actual moves, so it's a strong benchmark, stronger than a
 human who only knows the revealed moves.
 
@@ -21,12 +25,19 @@ of the party menu with B when it didn't mean to be there or a switch failed,
 and a watchdog cycles down/A/B/A when no hook has fired for a while, so an
 unexpected menu can't stall a battle (counted in actions['watchdog'])."""
 import math
+import os
 
 from pokedata import BASE_TYPES, CONST, MOVES, SPECIAL, TYPES, effectiveness, hidden_power
 
 SKIP = {'EFFECT_SELFDESTRUCT', 'EFFECT_COUNTER', 'EFFECT_MIRROR_COAT'}
 CANT_RUN = CONST['SUBSTATUS_CANT_RUN']
 SCREENS_SPIKES = CONST['SCREENS_SPIKES']
+SUBSTITUTE = 1 << CONST['SUBSTATUS_SUBSTITUTE']
+TOXIC = 1 << CONST['SUBSTATUS_TOXIC']
+SLP = CONST['SLP_MASK']
+PHAZE_HAZE = {'ROAR', 'WHIRLWIND', 'HAZE'}
+# stat levels (7 = unchanged) the setup moves stop at
+SETUP_CAP = {'CURSE': 10, 'GROWTH': 9}
 TWO_TURN = {'EFFECT_RAZOR_WIND', 'EFFECT_SKY_ATTACK', 'EFFECT_SKULL_BASH', 'EFFECT_SOLARBEAM',
             'EFFECT_HYPER_BEAM'}
 
@@ -35,11 +46,12 @@ def stage(s):
     return (2 + max(0, s - 7)) / (2 + max(0, 7 - s))
 
 
-def damage(att, dfn, move, dvs):
+def damage(att, dfn, move, dvs, boom=False):
     """Expected damage of move (id) from att on dfn: dicts with level, types,
-    stats [atk, def, spd, sat, sdf] (with stat changes applied)."""
+    stats [atk, def, spd, sat, sdf] (with stat changes applied). Explosion
+    counts only with boom (it halves Defense)."""
     mv = MOVES.get(move)
-    if not mv or mv['effect'] in SKIP:
+    if not mv or mv['effect'] in SKIP and not (boom and mv['effect'] == 'EFFECT_SELFDESTRUCT'):
         return 0
     power, typ = mv['power'], mv['type']
     if mv['name'] == 'HIDDEN_POWER':
@@ -56,6 +68,8 @@ def damage(att, dfn, move, dvs):
     if power == 1:
         return att['level'] * mv['acc']
     a, d = (att['stats'][3], dfn['stats'][4]) if typ >= SPECIAL else (att['stats'][0], dfn['stats'][1])
+    if boom:
+        d //= 2
     dmg = ((2 * att['level'] // 5 + 2) * power * a / max(1, d)) / 50 + 2
     if typ in att['types']:
         dmg *= 1.5
@@ -121,6 +135,7 @@ class SmartPlayer:
         self.watchdog = 0
         self.actions = {'attacks': 0, 'switches': 0, 'replacements': 0, 'watchdog': 0,
                         'errors': 0, 'spikes': 0}
+        self.status_moves = os.environ.get('SMART_PLAYER') != 'basic'
         for name, cb in (('BattleMenu', self.on_menu), ('MoveSelectionScreen', self.on_moves),
                          ('BattleMenuPKMN_Loop', self.on_pkmn), ('PickPartyMonInBattle', self.on_pick)):
             hook(name, self.guarded(cb))
@@ -208,11 +223,11 @@ class SmartPlayer:
             disabled = m[W('wDisabledMove')]
             moves = [0 if mv == disabled else mv for mv in us['moves']]
             _, slot = best_move(us, enemy, moves, us['pp'], us['dvs'])
-            spikes = next((i for i, mv in enumerate(moves)
-                           if MOVES.get(mv, {}).get('name') == 'SPIKES' and us['pp'][i] & 0x3f), None)
-            if spikes is not None and not m[W('wEnemyScreens')] & 1 << SCREENS_SPIKES and self.enemy_bench():
-                slot = spikes
-                self.actions['spikes'] += 1
+            status = self.status_move(us, enemy, moves)
+            if status is not None:
+                slot = status
+                name = MOVES[moves[slot]]['name'].lower()
+                self.actions[name] = self.actions.get(name, 0) + 1
             if slot is None:
                 # no damaging move left: any move with PP (with none, it
                 # Struggles)
@@ -221,6 +236,76 @@ class SmartPlayer:
             m[W('wBattleMenuCursorPosition')] = 1
             self.switched_last = False
             self.actions['attacks'] += 1
+
+    def status_move(self, us, enemy, moves):
+        """The slot of the status move (or Explosion) to use this turn, or
+        None to attack."""
+        m, W, w = self.m, self.W, self.word
+        slots = {MOVES[mv]['name']: i for i, mv in enumerate(moves)
+                 if mv in MOVES and us['pp'][i] & 0x3f}
+        bench = self.enemy_bench()
+        spikes_down = m[W('wEnemyScreens')] & 1 << SCREENS_SPIKES
+        if not self.status_moves:
+            if 'SPIKES' in slots and not spikes_down and bench:
+                return slots['SPIKES']
+            return None
+        max_hp = w(W('wBattleMonMaxHP'))
+        sleep = m[W('wBattleMonStatus')] & SLP
+        enemy_status = m[W('wEnemyMonStatus')]
+        enemy_max = w(W('wEnemyMonMaxHP'))
+        enemy_sub = m[W('wEnemySubStatus4')] & SUBSTITUTE
+        enemy_moves = {MOVES[mv]['name'] for mv in enemy['moves'] if mv in MOVES}
+        enemy_asleep = enemy_status & SLP or enemy_status & 1 << CONST['FRZ']
+        ours, _ = best_move(us, enemy, moves, us['pp'], us['dvs'])
+        theirs, _ = best_move(enemy, us, enemy['moves'], enemy['pp'], enemy['dvs'])
+        if enemy_asleep and 'SLEEP_TALK' not in enemy_moves:
+            theirs = 0
+        our_turns = math.ceil(enemy['hp'] / ours) if ours else 63
+        faster = us['stats'][2] > enemy['stats'][2]
+
+        # Asleep: Sleep Talk until the turn it wakes up.
+        if sleep:
+            return slots.get('SLEEP_TALK') if sleep > 1 else None
+        # Low: Rest, if the matchup is good at full HP.
+        if 'REST' in slots and (us['hp'] * 5 < max_hp * 2 or theirs >= us['hp']) and \
+                us['hp'] < max_hp and race(dict(us, hp=max_hp), enemy, False) >= 0:
+            return slots['REST']
+        # About to faint: Explosion, if it takes most of the foe's HP.
+        if 'EXPLOSION' in slots and theirs >= us['hp'] and not (our_turns == 1 and faster):
+            if damage(us, enemy, moves[slots['EXPLOSION']], us['dvs'], boom=True) * 4 >= enemy['hp'] * 3:
+                return slots['EXPLOSION']
+        # Boosted foe: Roar it out.
+        stages = [m[W('wEnemyStatLevels') + k] for k in range(7)]
+        if 'ROAR' in slots and bench and sum(max(0, v - 7) for v in stages) >= 2:
+            return slots['ROAR']
+        # Put a healthy foe to sleep, one at a time (Sleep Clause).
+        if 'SLEEP_POWDER' in slots and not enemy_status and not enemy_sub and \
+                'SLEEP_TALK' not in enemy_moves and enemy['hp'] * 2 >= enemy_max and \
+                not self.enemy_party_asleep():
+            return slots['SLEEP_POWDER']
+        if 'SPIKES' in slots and not spikes_down and bench:
+            return slots['SPIKES']
+        # Set up while the foe needs 4+ hits and can't phaze or Haze, until
+        # one attack would KO.
+        if our_turns > 1 and theirs * 4 < us['hp'] and not enemy_moves & PHAZE_HAZE and \
+                not m[W('wPlayerSubStatus5')] & TOXIC:
+            levels = [m[W('wPlayerStatLevels') + k] for k in range(7)]
+            if 'CURSE' in slots and levels[0] < SETUP_CAP['CURSE'] and TYPES['GHOST'] not in us['types']:
+                return slots['CURSE']
+            if 'GROWTH' in slots and levels[3] < SETUP_CAP['GROWTH']:
+                return slots['GROWTH']
+        # Toxic a wall: a healthy foe our attacks take 3+ hits to KO.
+        if 'TOXIC' in slots and not enemy_status and not enemy_sub and our_turns >= 3 and \
+                not {TYPES['POISON'], TYPES['STEEL']} & set(enemy['types']):
+            return slots['TOXIC']
+        return None
+
+    def enemy_party_asleep(self):
+        m, W = self.m, self.W
+        length = W('wOTPartyMon2') - W('wOTPartyMon1')
+        return any(m[W('wOTPartyMon1Status') + i * length] & SLP and
+                   self.word(W('wOTPartyMon1HP') + i * length)
+                   for i in range(m[W('wOTPartyCount')]))
 
     def on_moves(self, ctx):
         self.idle = 0

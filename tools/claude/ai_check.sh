@@ -9,6 +9,7 @@
 # Options (environment): SEEDS=144 (battles per trainer), TRACE_SEEDS=36
 # (traced battles per trainer, for the judge), MS=400 (judge search time
 # per decision), TRAINERS="KOGA 2|MISTY 2|WHITNEY 2|JASMINE 2",
+# SMART_PLAYER=basic (the player without status moves, see smart_player.py),
 # SAVE=sourcrystal.sav (read through save_ram.py), NO_JUDGE=1 (skip
 # the traces and the judge).
 # Each ROM's results are cached in .aicheck/ (git-ignored) by the ROM's
@@ -45,7 +46,10 @@ python3 "$here/save_ram.py" "$save" "$work/save.ram"
 run_rom() {
 	local r=$1
 	local key
-	key=$( (cat "$r" "$work/save.ram"; echo "$seeds|$trace_seeds|$ms|$trainers") | sha256sum | cut -c1-16)
+	# (the full smart player's rules are part of the key; SMART_PLAYER=basic
+	# plays like the player before them, so it keeps the old keys)
+	key=$( (cat "$r" "$work/save.ram"; echo "$seeds|$trace_seeds|$ms|$trainers"
+		[ "${SMART_PLAYER:-}" = basic ] || cat "$here/smart_player.py") | sha256sum | cut -c1-16)
 	local dir=$root/.aicheck/$key
 	mkdir -p "$dir"
 	cp "$r" "$dir/rom.gbc"; cp "${r%.gbc}.sym" "$dir/rom.sym"; cp "$work/save.ram" "$dir/save.ram"

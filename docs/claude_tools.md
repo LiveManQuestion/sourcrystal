@@ -75,8 +75,14 @@ the user's save files.
   - `--smart` (`smart_player.py`): the save's own party, healed at the start
     and never again, played by a greedy policy: the strongest attack by the
     damage formula, a switch when a teammate wins the KO race clearly better,
-    the best replacement after a faint. It sees the enemy's moves but uses no
-    status moves. It drives the menus by writing their cursor variables from
+    the best replacement after a faint. It sees the enemy's moves. It plays
+    the save team's status moves by simple rules (`status_move`): Sleep Talk
+    while asleep, Rest when low, Explosion when about to faint, Roar on a
+    boosted foe, Sleep Powder (Sleep Clause), Spikes, Curse/Growth while the
+    foe needs 4+ hits and can't phaze or Haze, Toxic on walls; each counted
+    in `player_actions`. `SMART_PLAYER=basic` (environment, also for
+    `battle_matrix.sh` and `ai_check.sh`) plays only attacks and Spikes, like
+    the player before 2026-10-17, and its results keep the old cache keys. It drives the menus by writing their cursor variables from
     hooks; a watchdog gets it out of unexpected menus. `player_actions` in the
     JSON counts its attacks, switches, replacements, watchdog triggers and
     hook errors (should be 0; PyBoy swallows exceptions in hooks).

@@ -713,3 +713,20 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
     (Jasmine 22 -> 28 z +0.9, Koga 129 -> 120 z -1.5, Misty 52 -> 54,
     Whitney 87 -> 81 z -0.7); Acid Armor -> Surf clear 4 -> 0, Vaporeon vs
     Cloyster regret 1.49 -> 0.06; total regret 50.5 -> 47.5.
+- **2026-10-17**: Claude tools: the smart player uses its status moves. The
+  headless `smart_player.py` only attacked, used Spikes and switched, so the
+  AI was judged against a player who never used Curse, Rest, Sleep Talk,
+  Sleep Powder, Roar, Toxic or Explosion (the save's team is built on them).
+  It now picks them by simple rules (Sleep Talk while asleep, Rest when low
+  or about to be KO'd, Explosion when about to be KO'd anyway, Roar on a
+  boosted foe, one sleeper at a time, Curse/Growth when it outlasts the foe
+  and can't be phazed, Toxic on long fights). `SMART_PLAYER=basic` keeps the
+  old player; `ai_check.sh`'s cache key includes `smart_player.py` (except
+  in basic mode), so the old caches stay valid for it.
+  - Same ROM (`d9162c4d0`), old player -> new: AI wins 283 -> 221 of 576
+    (Jasmine 28 -> 9 z -3.3, Misty 54 -> 34 z -2.6, Whitney 81 -> 65 z
+    -1.9, Koga 120 -> 113 z -1.0); watchdog trips 79 -> 82, no hook errors.
+    Judge with the new player: 4496 decisions, total regret 51.91, with new
+    patterns the old player never set up (Forretress exploding into a +2
+    Defense Snorlax, Tentacruel vs Vaporeon/Cloyster). Win rates from before
+    this aren't comparable with later ones.
