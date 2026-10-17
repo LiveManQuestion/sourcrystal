@@ -764,3 +764,25 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
     Snorlax regret 2.89 -> 1.08; Quagsire 2.35 -> 1.59, Magneton 2.09 ->
     1.65; total regret 49.5 -> 54.9 (spread over unrelated matchups). Move
     layers at most 14.0 frames (was 12.4) for Hidden Power users.
+- **2026-10-17**: Smogon AI: keep boosting through a healer. Misty's +2
+  Tentacruel vs the save's Rest/Sleep Talk Vaporeon used Sludge Bomb where
+  the engine Swords Dances again (3 clear, 3 battles; Tentacruel vs Vaporeon
+  10 clear in 24 decisions). +2 Sludge Bomb (153-180) doesn't 2HKO a 327 HP
+  Vaporeon, so Rest outlasts it. The matchup score (which ignores boosts)
+  is below even only because Vaporeon out-heals our unboosted attacks, and
+  `AI_Smogon_Setup` read that as "don't set up". Now Swords Dance and
+  Growth get `AISmogon_GreatlyEncourage` (enough to beat `AI_Setup`'s +2
+  after the first turn), skipping the matchup check and
+  `SMOGON_SETUP_GOAL`, when the player out-heals us
+  (`wSmogonAIOurTurns` = `SMOGON_MAX_TURNS`), three of its best hits don't
+  KO us, and our strongest boosted attack (`AIStrongestMove`) x 7/4 is
+  below its max HP. Curse is left out (Curse changes cost Whitney before).
+  - Checked: both suites ALL OK (new `smogon_calls_test.py` "heal setup"
+    cases at +2 fail on the old build; +4 and below half HP unchanged);
+    4 trainers x 144 seeds: AI wins 206 -> 229 of 576 (Misty 20 -> 36 z
+    +2.4, Koga 117 -> 125, Jasmine 13 -> 16, Whitney 56 -> 52 z -0.5).
+    Sludge Bomb -> Swords Dance on Vaporeon clear 3 -> 1, Tentacruel vs
+    Vaporeon 10 -> 6 clear; total regret 54.9 -> 58.5 over 4530 decisions
+    (more Misty battles reach Tentacruel vs Cloyster: Sludge Bomb ->
+    Substitute 2 -> 6 clear, an older pattern). Move layers at most 8.8
+    frames on Misty seed 35.

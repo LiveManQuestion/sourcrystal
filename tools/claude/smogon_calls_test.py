@@ -543,4 +543,31 @@ for name, player, ptypes, pused, atk, exp in setup_cases:
     ok &= good
     print('PASS' if good else 'FAIL', 'setup:', name, 'score', got, 'expected', exp)
 w('wPlayerScreens', 0)
+
+# AI_Smogon_Setup vs a Pokemon that outheals our attacks (Misty's Tentacruel
+# vs the save's Rest Vaporeon, which +2 Sludge Bomb doesn't 2HKO from full
+# HP): keep boosting while it's safe, until the attack 2HKOs.
+heal_setup_cases = [
+    # (name, Attack stage, Tentacruel's HP, Vaporeon's revealed moves, expected score)
+    ('+2 tentacruel vs vaporeon', 9, 158, [], 17),
+    ('+2 tentacruel vs resttalk vaporeon', 9, 158, ['SURF', 'GROWTH', 'SLEEP_TALK', 'REST'], 17),
+    ('+4 tentacruel vs vaporeon (2HKOs)', 11, 158, [], 22),
+    ('+2 tentacruel below half HP', 9, 100, [], 20),
+]
+for name, stage, hp, pused, exp in heal_setup_cases:
+    if SPECIES['VAPOREON'] not in party:
+        print('SKIP', name); continue
+    set_ot(dict(TENTACRUEL_MISTY, hp=hp))
+    w('wEnemyMonDVs', TENTACRUEL_MISTY['dvs'][0]); w('wEnemyMonDVs', TENTACRUEL_MISTY['dvs'][1], 1)
+    w('wEnemyAtkLevel', stage); word('wEnemyMonAttack', TENTACRUEL_MISTY['stats'][0] * (stage - 5) // 2)
+    set_player(party.index(SPECIES['VAPOREON']) + 1, ('WATER', 'WATER'), pused)
+    w('wBattleWeather', 0); w('wCriticalHit', 0); w('wEnemySubStatus5', 0)
+    g.call('AIGetEnemyMove', A=MOVE_IDS['SWORDS_DANCE'])
+    w('wEnemyAIMoveScores', 20)
+    g.call('AI_Smogon_Setup', HL=A('wEnemyAIMoveScores'), frames=2500)
+    got = m[A('wEnemyAIMoveScores')]
+    good = got == exp
+    ok &= good
+    print('PASS' if good else 'FAIL', 'setup:', name, 'score', got, 'expected', exp)
+w('wEnemyAtkLevel', 7)
 print('RESULT:', 'ALL OK' if ok else 'NOT OK')

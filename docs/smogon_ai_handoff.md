@@ -19,7 +19,9 @@ Acid Armor only against physical attackers, with unrevealed attackers
 judged by their expected attacks (Vaporeon vs Cloyster, `d9162c4d0`), and
 no Explosion into raised Defense without a sure KO (Forretress vs Curse
 Snorlax, `9362c639c`), and Hidden Power's AI_Smart bonus only when it's the
-strongest attack (Venusaur vs Snorlax, 2026-10-17).
+strongest attack (Venusaur vs Snorlax, `e3e9c0641`), and Swords Dance /
+Growth through a player that out-heals our unboosted attacks (Misty's
+Tentacruel vs Rest Vaporeon, 2026-10-17).
 
 The headless smart player now uses its status moves (Curse, Rest, Sleep
 Talk, Sleep Powder, Roar, Toxic, Explosion); `SMART_PLAYER=basic` is the old
@@ -27,11 +29,10 @@ attack-only player. It beats the AI far more often, so win rates from
 before it aren't comparable.
 
 Last measured (4 trainers x 144 seeds, the user's party, new player), after
-the Hidden Power fix: AI wins 206 of 576. Koga 2 117/144, Whitney 2 56,
-Misty 2 20, Jasmine 2 13 (with 288 more seeds, Misty 74/432 and Jasmine
-60/432: the 144-seed numbers swing by ~10 from RNG timing alone). Engine
-judge over 144 traced battles: 4428 decisions, total regret 54.85. The cache
-for this ROM is `.aicheck/96103689543cd45f`.
+the healer setup fix: AI wins 229 of 576. Koga 2 125/144, Whitney 2 52,
+Misty 2 36, Jasmine 2 16 (the 144-seed numbers swing by ~10 from RNG
+timing alone). Engine judge over 144 traced battles: 4530 decisions, total
+regret 58.52. The cache for this ROM is `.aicheck/a30884bdc99f33a1`.
 
 ## The loop
 
@@ -63,24 +64,27 @@ for this ROM is `.aicheck/96103689543cd45f`.
 6. Changelog entry, then commit when the user says so (they review each fix
    and say "commit").
 
-## Candidate patterns (latest judge, new player, after the Hidden Power fix)
+## Candidate patterns (latest judge, new player, after the healer setup fix)
 
 Clear disagreements (regret > 0.1) by matchup, AI action and engine action:
 
 ```
-clear battles regret
-   5    3   1.05  BLISSEY    vs CLOYSTER  healbell -> flamethrower
-   4    3   1.19  TENTACRUEL vs ZAPDOS    surf -> switch
-   3    3   0.74  TENTACRUEL vs VAPOREON  sludgebomb -> swordsdance
-   2    2   0.46  TENTACRUEL vs VAPOREON  sludgebomb -> gigadrain
-   2    2   0.43  TENTACRUEL vs STEELIX   surf -> gigadrain
+clear decisions regret
+   6    6   1.97  TENTACRUEL vs CLOYSTER  sludgebomb -> substitute
+   2   14   1.02  TENTACRUEL vs ZAPDOS    surf -> switch
+   2   14   0.96  KINGDRA    vs VAPOREON  sleeptalk -> switch
+   3   14   0.90  TENTACRUEL vs VAPOREON  sludgebomb -> gigadrain
+   2    2   0.48  QWILFISH   vs CLOYSTER  curse -> sludgebomb
 ```
 
-Misty's Tentacruel keeps coming up (Swords Dance vs Vaporeon also showed up
-in the first new-player run): worth a look, after checking what the engine
-knows that the AI can't. Venusaur vs Snorlax with Snorlax in KO range
-(both attacks KO, the AI picks the sure-hit Hidden Power, the engine Razor
-Leaf for a Vaporeon switch-in) is left: the gap disappears with the
+Misty's Tentacruel vs Cloyster (Substitute where the AI attacks) is the
+most concentrated: check first what the engine knows (Cloyster's moves, an
+Explosion?). Koga's Tentacruel vs Vaporeon at low HP is the KO-range kind
+(every attack KOs, the engine picks Giga Drain or Surf). One Swords Dance
+miss is left (Misty seed 35: +2 Tentacruel vs a 207/327 Vaporeon that just
+switched in, nothing revealed). Venusaur vs Snorlax with Snorlax in KO
+range (both attacks KO, the AI picks the sure-hit Hidden Power, the engine
+Razor Leaf for a Vaporeon switch-in) is left: the gap disappears with the
 player's bench removed.
 
 ## Pitfalls already hit

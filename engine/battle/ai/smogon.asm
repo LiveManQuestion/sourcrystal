@@ -1587,6 +1587,11 @@ AI_Smogon_Setup:
 	push hl
 	call AISmogon_ScoreActive
 	pop hl
+; (Unless it only looks that way because it outheals our attacks: then
+; boosting is the way through, past SMOGON_SETUP_GOAL too, enough to beat
+; AI_Setup's discouragement after the first turn.)
+	call .BreaksHealing
+	jp c, AISmogon_GreatlyEncourage
 	ld a, [wEnemyAISwitchScore]
 	cp SMOGON_MATCHUP_EVEN
 	jr c, .discourage
@@ -1595,6 +1600,7 @@ AI_Smogon_Setup:
 	call .GetBoostLevel
 	cp SMOGON_SETUP_GOAL
 	jr nc, .discourage
+
 
 ; A sleeping or frozen Pokemon can't punish setup, unless it uses Sleep Talk
 ; (Curse + Sleep Talk Snorlax wins Snorlax wars that way).
@@ -1613,6 +1619,100 @@ AI_Smogon_Setup:
 .discourage
 	inc [hl]
 	inc [hl]
+	ret
+
+.BreaksHealing:
+; Return carry if this Swords Dance or Growth is the way through a Pokemon
+; that outheals our attacks (Misty's +2 Tentacruel vs a Rest Vaporeon,
+; which +2 Sludge Bomb doesn't 2HKO from full HP): AISmogon_ScoreActive
+; found our attacks never KO it, three of its strongest hits don't KO us,
+; and our strongest attack, with the boosts we have, doesn't 2HKO it from
+; full HP (7/4 of its highest roll, about two of its lowest). Keeps
+; wEnemyMoveStruct and hl.
+	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
+	cp EFFECT_ATTACK_UP_2
+	jr z, .attack_boost
+	cp EFFECT_SP_ATK_UP
+	jr nz, .no_carry
+.attack_boost
+	ld a, [wSmogonAIOurTurns]
+	cp SMOGON_MAX_TURNS
+	jr c, .no_carry
+
+; three of its hits vs our HP
+	push hl
+	ld a, [wSmogonAIThreat + ATTACKS_BEST]
+	ld h, a
+	ld a, [wSmogonAIThreat + ATTACKS_BEST + 1]
+	ld l, a
+	ld d, h
+	ld e, l
+	add hl, de
+	jr c, .pop_no_carry
+	add hl, de
+	jr c, .pop_no_carry
+	ld a, [wEnemyMonHP]
+	ld b, a
+	ld a, [wEnemyMonHP + 1]
+	ld c, a
+	ld a, l
+	sub c
+	ld a, h
+	sbc b
+	jr nc, .pop_no_carry
+
+; our strongest attack, saving the move being scored
+	ld hl, wEnemyMoveStruct + MOVE_LENGTH - 1
+	ld c, MOVE_LENGTH
+.save
+	ld a, [hld]
+	push af
+	dec c
+	jr nz, .save
+	ld a, [wCriticalHit]
+	push af
+	xor a
+	ld [wCriticalHit], a
+	call AIStrongestMove
+	pop af
+	ld [wCriticalHit], a
+	ld hl, wEnemyMoveStruct
+	ld b, MOVE_LENGTH
+.restore
+	pop af
+	ld [hli], a
+	dec b
+	jr nz, .restore
+	ld a, c
+	and a
+	jr z, .pop_no_carry
+
+; de = its highest roll: carry if de * 7/4 < the player's max HP
+	ld h, d
+	ld l, e
+	srl d
+	rr e
+	add hl, de
+	jr c, .pop_no_carry
+	srl d
+	rr e
+	add hl, de
+	jr c, .pop_no_carry
+	ld a, [wBattleMonMaxHP]
+	ld b, a
+	ld a, [wBattleMonMaxHP + 1]
+	ld c, a
+	ld a, l
+	sub c
+	ld a, h
+	sbc b
+	pop hl
+	ret
+
+.pop_no_carry
+	pop hl
+.no_carry
+	and a
 	ret
 
 .GetBoostLevel:
