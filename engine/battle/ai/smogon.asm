@@ -264,9 +264,17 @@ AI_Smogon_Heal:
 	dec a
 	ret z
 .heal
-; Heal before falling into KO range, at half HP rather than a quarter.
+; Heal before falling into KO range, at half HP rather than a quarter...
 	call AICheckEnemyHalfHP
-	jr nc, AISmogon_Encourage
+	jr c, .above_half
+; ...unless the player's attacks barely scratch us: then attacking is
+; worth more, like Blissey finishing a weakened Cloyster.
+	call AISmogon_HealCanWait
+	jp nc, AISmogon_Encourage
+	inc [hl]
+	ret
+
+.above_half
 ; Rest also cures status, so use it earlier when statused.
 	ld a, [wEnemyMoveStruct + MOVE_ANIM]
 	cp REST
@@ -275,6 +283,44 @@ AI_Smogon_Heal:
 	and a
 	ret z
 	dec [hl]
+	ret
+
+AISmogon_HealCanWait:
+; Return carry if the enemy can put off healing: SMOGON_HEAL_SAFE_HITS of
+; the player's strongest attack (AISmogon_ScoreMatchup's estimate, from
+; what the player could have) don't KO it, and nothing hurts it every turn
+; (status, Leech Seed or Curse, which the estimate leaves out).
+	ld a, [wEnemyMonStatus]
+	and a
+	ret nz
+	ld a, [wEnemySubStatus4]
+	bit SUBSTATUS_LEECH_SEED, a
+	ret nz
+	ld a, [wEnemySubStatus1]
+	bit SUBSTATUS_CURSE, a
+	ret nz
+	push hl
+	call AISmogon_ScoreActive
+	ld a, [wSmogonAIThreat + ATTACKS_BEST]
+	ld d, a
+	ld a, [wSmogonAIThreat + ATTACKS_BEST + 1]
+	ld e, a
+	ld hl, 0
+	ld b, SMOGON_HEAL_SAFE_HITS
+.add_hit
+	add hl, de
+	dec b
+	jr nz, .add_hit
+; carry if hl < HP
+	ld a, [wEnemyMonHP + 1]
+	ld e, a
+	ld a, [wEnemyMonHP]
+	ld d, a
+	ld a, l
+	sub e
+	ld a, h
+	sbc d
+	pop hl
 	ret
 
 AISmogon_TimeBasedHealAmount:

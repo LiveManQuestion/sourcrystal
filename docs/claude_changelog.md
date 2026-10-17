@@ -492,3 +492,14 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   576 (z +0.1), mid-battle switches 2.78 -> 2.74 per battle;
   `engine_judge.py`: switch-outs the engine calls clearly wrong 5 -> 2,
   both against a healthy Vaporeon.
+- **2026-10-16**: Heal moves below half HP wait while the player can barely
+  scratch the AI (`AISmogon_HealCanWait`): with no status, Leech Seed or
+  Curse on it, if `SMOGON_HEAL_SAFE_HITS` (3) of the player's strongest
+  attack (`AISmogon_ScoreMatchup`'s honest estimate) don't KO, the heal gets
+  +1 instead of being encouraged. From the engine judge's Blissey using
+  Softboiled at ~40% instead of finishing a weakened Cloyster (Surf: 41 HP).
+  `ai_scenarios.py` gets `patkstat` (the test battle's player hits for
+  almost nothing) and 4 heal cases, ALL OK. 4 trainers x 144 seeds: AI wins
+  255 -> 251 of 576 (z -0.2, noise; rarely fires against the user's team);
+  engine_judge: Blissey-heals-vs-Cloyster disagreements 3 -> 0, AI heals
+  148 -> 134. 1-3 frames on turns it runs.

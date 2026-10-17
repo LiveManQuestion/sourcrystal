@@ -58,6 +58,7 @@ DEF HEAL_PP           rb
 DEF HEAL_HP           rw
 DEF HEAL_BLOCK_LENGTH EQU _RS
 DEF SMOGON_SETUP_GOAL        EQU BASE_STAT_LEVEL + 2 ; boost this far, then attack
+DEF SMOGON_HEAL_SAFE_HITS    EQU 3 ; below half HP, heal unless this many hits can't KO
 
 ; Smogon AI switch-in penalties (see AISmogon_SwitchInPenalty)
 DEF SMOGON_PENALTY_ASLEEP     EQU 20

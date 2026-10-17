@@ -78,7 +78,8 @@ S = lambda *bits: sum(1 << C[b] for b in bits)
 base = dict(weather=0, ptypes=(C['FIRE'], C['FIRE']), etypes=(C['NORMAL'], C['NORMAL']),
             espd=200, pspd=100, sub1=0, sub2=0, sub4=0, sub5=0, psub3=0, psub5=0,
             estatus=0, toxic=0, wrap=0, perish=0, hp=(40, 100), tod=C['DAY_F'], hours=12,
-            pspecies=C['MAGIKARP'], php=(100, 100), pstatus=0, patk=7, psub4=0, pused=(), plast=0, crit=0)
+            pspecies=C['MAGIKARP'], php=(100, 100), pstatus=0, patk=7, psub4=0, pused=(), plast=0, crit=0,
+            patkstat=None)
 F, D = C['FIRE'], C['GROUND']
 scen = [
     ('thunder rain neutral', M('THUNDER'), dict(weather=C['WEATHER_RAIN']), [18]),
@@ -107,12 +108,19 @@ scen = [
     ('endure wrap sub', M('ENDURE'), dict(wrap=3, sub4=S('SUBSTATUS_SUBSTITUTE')), [20]),
     ('endure perish 1', M('ENDURE'), dict(sub1=S('SUBSTATUS_PERISH'), perish=1), [30]),
     ('endure perish 2', M('ENDURE'), dict(sub1=S('SUBSTATUS_PERISH'), perish=2), [20]),
-    ('heal morn match', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(tod=C['MORN_F'], hours=6), [18, 20, 20, 18]),
-    ('heal nite rain', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(tod=C['NITE_F'], hours=23, weather=C['WEATHER_RAIN']), [30, 30, 20, 18]),
-    ('heal day sun', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(tod=C['DAY_F'], weather=C['WEATHER_SUN']), [18, 18, 18, 18]),
-    ('heal eve 17h', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(tod=C['EVE_F'], hours=17), [20, 18, 20, 18]),
-    ('heal eve 19h', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(tod=C['EVE_F'], hours=19), [20, 20, 18, 18]),
+    ('heal morn match', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(patkstat=400, tod=C['MORN_F'], hours=6), [18, 20, 20, 18]),
+    ('heal nite rain', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(patkstat=400, tod=C['NITE_F'], hours=23, weather=C['WEATHER_RAIN']), [30, 30, 20, 18]),
+    ('heal day sun', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(patkstat=400, tod=C['DAY_F'], weather=C['WEATHER_SUN']), [18, 18, 18, 18]),
+    ('heal eve 17h', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(patkstat=400, tod=C['EVE_F'], hours=17), [20, 18, 20, 18]),
+    ('heal eve 19h', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(patkstat=400, tod=C['EVE_F'], hours=19), [20, 20, 18, 18]),
     ('heal above half', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(tod=C['MORN_F'], hours=6, hp=(60, 100)), [20, 20, 20, 20]),
+    # AISmogon_HealCanWait: the player has revealed four moves, so only those count.
+    ('heal can wait vs splash', M('RECOVER', 'REST'), dict(pused=M('SPLASH', 'SPLASH', 'SPLASH', 'SPLASH')), [21, 21]),
+    ('heal can wait, but poisoned', M('RECOVER', 'REST'),
+     dict(pused=M('SPLASH', 'SPLASH', 'SPLASH', 'SPLASH'), estatus=1 << C['PSN']), [18, 18]),
+    ('heal can wait, but seeded', M('RECOVER'),
+     dict(pused=M('SPLASH', 'SPLASH', 'SPLASH', 'SPLASH'), sub4=S('SUBSTATUS_LEECH_SEED')), [18]),
+    ('heal vs hyper beam', M('RECOVER'), dict(pused=M('HYPER_BEAM', 'SPLASH', 'SPLASH', 'SPLASH'), patkstat=400), [18]),
     ('destiny bond doomed faster', M('DESTINY_BOND'), dict(hp=(20, 100)), [17]),
     ('destiny bond doomed slower', M('DESTINY_BOND'), dict(hp=(20, 100), espd=50), [20]),
     ('destiny bond healthy', M('DESTINY_BOND'), dict(hp=(60, 100)), [20]),
@@ -312,6 +320,10 @@ def apply(setup, moves):
     mem[W('wPlayerSubStatus4')] = st['psub4']
     mem[W('wLastPlayerMove')] = st['plast']
     mem[W('wCriticalHit')] = st['crit']
+    # the test battle's player hits very weakly: give it real attacking stats
+    if st['patkstat'] is not None:
+        state['patk_saved'] = [mem[W('wBattleMonAttack') + k] for k in range(10)]
+        word(W('wBattleMonAttack'), st['patkstat']); word(W('wBattleMonSpclAtk'), st['patkstat'])
 
 def on_ret(ctx):
     # the return address is the shared far call stub: only count our own return
@@ -331,6 +343,9 @@ def on_ret(ctx):
         for k, n in enumerate(('wBattleMonStatus', 'wPlayerAtkLevel', 'wPlayerSubStatus4', 'wLastPlayerMove')):
             mem[W(n)] = p[9 + k]
         state['player'] = None
+    if state.get('patk_saved') is not None:
+        for k, v in enumerate(state.pop('patk_saved')):
+            mem[W('wBattleMonAttack') + k] = v
     word(W('wEnemyMonHP'), 100); word(W('wEnemyMonMaxHP'), 100)
     for n in ('wEnemyMonStatus', 'wEnemyWrapCount', 'wEnemyPerishCount', 'wEnemyToxicCount', 'wEnemySubStatus1',
               'wEnemySubStatus2', 'wEnemySubStatus4', 'wEnemySubStatus5', 'wPlayerSubStatus3', 'wPlayerSubStatus5'):
