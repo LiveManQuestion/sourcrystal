@@ -79,8 +79,10 @@ user's save files.
     the others never win, so they give no signal), with 48+ seeds, compared
     against `build_rev.sh` of the last commit.
 - `ai_trace.py run ROM SYM RAM TRAINER SEED [--random]`: every `SwitchSmogon`
-  decision (its branch labels, scores, the move picked, both sides' state),
-  every switch-in candidate's score with its attack lists and healing blocks,
+  decision (its branch labels, scores, the move picked and every move's score
+  after all AI layers (`move_scores`), both sides' state, the stalemate flag),
+  every switch-in candidate's score with its attack lists, healing blocks and
+  setup credit,
   and every enemy switch-in, as one JSON line. `ai_trace.py report
   TRACES...`: switches, replacements, each candidate's average score against
   each player Pokemon, and stay-ins that an independent damage race
@@ -133,8 +135,11 @@ user's save files.
   keeps `wEnemyMoveStruct`, `wCurDamage` and `wCriticalHit`),
   `AISmogon_PenalizeAsleepActive`, `AISmogon_EnemyHasUsefulBoosts`,
   `AISmogon_GetSetupBoost`, `AISmogon_SetupPower`, the stalemate flag of
-  `AISmogon_ScoreActive` and `AI_Smogon_Explosion` (on positions built
-  from traces, against the save's party). Last line `RESULT: ALL OK`. Add cases
+  `AISmogon_ScoreActive`, `AI_Smogon_Explosion`, `AI_Smogon_Toxic` and
+  `AISmogon_SpikesFirst` (on positions built from traces, against the
+  save's party). Last line `RESULT: ALL OK`. Put tests of logic that
+  depends on the matchup here, not in `ai_scenarios.py`: its test battle's
+  enemy and its 999-Defense player change from run to run. Add cases
   there for helpers `ai_scenarios.py` can't reach (it only reads move
   scores).
 

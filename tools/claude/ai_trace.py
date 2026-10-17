@@ -11,7 +11,8 @@ the random Typhlosion with --random) and prints one JSON line:
   active and best switch-in scores, the move the AI had picked, its spent
   flag, Spikes on each side, both sides' Pokemon (species, level, HP,
   stats, types, moves, PP, DVs, status, item), item_used when the AI used an
-  item instead, player_switched when the player switched this turn (the
+  item instead, move_scores (each move's score after every AI layer, lower
+  is better), player_switched when the player switched this turn (the
   AI's move was picked before, against the previous Pokemon), and in 'state' the rest engine_judge.py needs (the player's
   party, stats before stat changes, substatuses, screens, weather),
 - candidates: every switch-in the AI scored (AISmogon_FindBestSwitchIn), with
@@ -108,11 +109,17 @@ def run(argv):
         # SwitchSmogon runs after the player's switch: then the move is
         # locked in, picked against the previous Pokemon.
         d['player_switched'] = current.get('chose_vs') not in (None, mem[W('wCurBattleMon')])
+        d['move_scores'] = current.get('move_scores')
         decisions.append(d)
         current['d'] = d
 
     def on_choose(ctx):
         current['chose_vs'] = mem[W('wCurBattleMon')]
+        current['move_scores'] = None
+
+    def on_scored(ctx):
+        # every layer has scored the moves (lower is better)
+        current['move_scores'] = block('wEnemyAIMoveScores', 4)
 
     def on_branch(label):
         def cb(ctx):
@@ -164,6 +171,7 @@ def run(argv):
             decisions[-1]['item_used'] = True
 
     battle.on('AIChooseMove', on_choose)
+    battle.on('AIChooseMove.CheckSpent', on_scored)
     battle.on('SwitchSmogon', on_decide)
     battle.on('AIUsedItemSound', on_item)
     for label in BRANCHES:

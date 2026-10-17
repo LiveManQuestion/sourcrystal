@@ -11,8 +11,8 @@ game_call.py on hand-made battle states:
   credit a Pokemon that can boost safely gets in the KO race.
 - AISmogon_ScoreActive's stalemate flag (wSmogonAIActiveStalled), on
   positions from Koga 2 against the save's party.
-- AI_Smogon_Explosion on positions from Koga 2 and Misty 2 against the
-  save's Zapdos.
+- AI_Smogon_Explosion, AI_Smogon_Toxic and AISmogon_SpikesFirst on
+  positions from Koga 2, Misty 2 and Jasmine 2 against the save's party.
 
 usage: smogon_calls_test.py ROM SYM SAVE.ram    (last line RESULT: ALL OK)"""
 import os
@@ -20,7 +20,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from game_call import Game
-from pokedata import MOVE_IDS, TYPES, SPECIES, CONST
+from pokedata import BASE_TYPES, MOVE_IDS, TYPES, SPECIES, CONST
 rom, sym, ram = sys.argv[1:4]
 g = Game(rom, sym, open(ram, 'rb').read()); g.boot()
 m = g.pb.memory
@@ -194,7 +194,11 @@ def set_ot(mon, slot=0):
         return
     w('wOTPartyCount', 1); w('wOTPartySpecies', mon['species']); w('wOTPartySpecies', 0xff, 1)
     w('wCurOTMon', 0); w('wEnemyMonSpecies', mon['species']); w('wEnemyMonStatus', 0)
-    word('wEnemyMonHP', mon['hp']); word('wEnemyMonMaxHP', mon['max_hp']); word('wEnemyMonSpeed', mon['stats'][2])
+    w('wEnemyMonLevel', mon['level'])
+    w('wEnemyMonType1', BASE_TYPES[mon['species']][0]); w('wEnemyMonType2', BASE_TYPES[mon['species']][1])
+    word('wEnemyMonHP', mon['hp']); word('wEnemyMonMaxHP', mon['max_hp'])
+    for k, v in enumerate(mon['stats']):  # the battle stats AIDamageCalc reads
+        m[A('wEnemyMonAttack') + 2 * k] = v >> 8; m[A('wEnemyMonAttack') + 2 * k + 1] = v & 0xff
     for i in range(4):
         w('wEnemyMonMoves', mon['moves'][i], i); w('wEnemyMonPP', mon['pp'][i], i)
 def set_player(slot, types, used):
@@ -239,7 +243,8 @@ for name, mon, player, types, used, exp in stall_cases:
           'score', m[A('wEnemyAISwitchScore')])
 
 # AI_Smogon_Explosion on positions from Koga 2 and Misty 2 vs the save's
-# Zapdos: the score (20) it leaves for Explosion (16 when it explodes).
+# Zapdos and Vaporeon: the score (20) it leaves for Explosion (16 when it
+# explodes).
 GENGAR = dict(species=SPECIES['GENGAR'], level=84, hp=220, max_hp=220, stats=[139, 131, 215, 248, 156],
               moves=[MOVE_IDS[x] for x in ('EXPLOSION', 'ICE_PUNCH', 'THUNDERBOLT', 'DYNAMICPUNCH')],
               pp=[5, 15, 15, 5], dvs=(255, 255), item=0)
@@ -249,19 +254,31 @@ CLOYSTER = dict(species=SPECIES['CLOYSTER'], level=80, hp=194, max_hp=194, stats
 boom_cases = [
     # (name, enemy, its HP, its Speed, the player's HP, expected score)
     ('gengar outspeeds and wins vs zapdos', GENGAR, 220, 215, 160, 20),
-    ('cloyster loses to zapdos', CLOYSTER, 194, 141, 280, 16),
+    # (Cloyster's lowest Explosion roll on Zapdos is 252: no sure KO at 280
+    # HP, but it's clearly losing, so it trades anyway)
+    ('cloyster loses to zapdos, no sure KO', CLOYSTER, 194, 141, 280, 16),
+    ('cloyster loses to zapdos, sure KO', CLOYSTER, 194, 141, 200, 16),
     ('gengar doomed and outsped', GENGAR, 40, 100, 160, 16),
 ]
-for name, mon, hp, speed, php, exp in boom_cases:
-    if SPECIES['ZAPDOS'] not in party:
+# (Spikes are down only for Cloyster, which would lay them first: with them
+# not down, the handler looks for a Spikes move, which must keep
+# wEnemyMoveStruct, the Explosion it then checks for a KO)
+boom_cases = [c + ('ZAPDOS', ('ELECTRIC', 'FLYING'), ['THUNDER']) for c in boom_cases] + [
+    # Gengar's lowest Explosion roll on a full-HP Vaporeon is 292 of 327
+    ('gengar into a full-hp vaporeon', GENGAR, 220, 215, 327, 20, 'VAPOREON', ('WATER', 'WATER'), ['SURF']),
+    # Explosion KOs, but Gengar's last move (Dynamic Punch) wouldn't
+    ('weakened gengar into a weakened vaporeon', GENGAR, 120, 215, 250, 16, 'VAPOREON', ('WATER', 'WATER'), ['SURF']),
+]
+for name, mon, hp, speed, php, exp, player, ptypes, pused in boom_cases:
+    if SPECIES[player] not in party:
         print('SKIP', name); continue
     set_ot(dict(mon, hp=hp))
     set_ot(QWILFISH, 1)
     w('wOTPartyCount', 2); w('wOTPartySpecies', QWILFISH['species'], 1); w('wOTPartySpecies', 0xff, 2)
     word('wEnemyMonSpeed', speed)
-    set_player(party.index(SPECIES['ZAPDOS']) + 1, ('ELECTRIC', 'FLYING'), ['THUNDER'])
+    set_player(party.index(SPECIES[player]) + 1, ptypes, pused)
     word('wBattleMonHP', php)
-    w('wPlayerScreens', 1 << CONST['SCREENS_SPIKES'])  # Spikes are down, so Cloyster doesn't lay them first
+    w('wPlayerScreens', 1 << CONST['SCREENS_SPIKES'] if mon is CLOYSTER else 0)
     g.call('AIGetEnemyMove', A=MOVE_IDS['EXPLOSION'])
     w('wEnemyAIMoveScores', 20)
     g.call('AI_Smogon_Explosion', HL=A('wEnemyAIMoveScores'), frames=600)
@@ -270,5 +287,52 @@ for name, mon, hp, speed, php, exp in boom_cases:
     ok &= good
     print('PASS' if good else 'FAIL', 'explosion:', name, 'score', got, 'expected', exp,
           'matchup', m[A('wEnemyAISwitchScore')])
+w('wPlayerScreens', 0)
+
+# AI_Smogon_Toxic: Toxic is for walls, not what our attacks KO soon.
+TENTACRUEL = dict(species=SPECIES['TENTACRUEL'], level=85, hp=256, max_hp=256, stats=[149, 141, 200, 166, 234],
+                  moves=[MOVE_IDS[x] for x in ('SURF', 'SLUDGE_BOMB', 'TOXIC', 'GIGA_DRAIN')],
+                  pp=[15, 10, 10, 5], dvs=(255, 255), item=0)
+TOXIC_ONLY = dict(TENTACRUEL, moves=[MOVE_IDS[x] for x in ('TOXIC', 'SUPERSONIC', 'SPIKES', 'HAZE')])
+toxic_cases = [
+    # (name, enemy, the player's Pokemon, its types, its revealed moves, expected score)
+    # (not Snorlax or Zapdos: their usual sets have Rest, which sleeps Toxic off)
+    ('tentacruel vs exeggutor (sludge bomb KOs soon)', TENTACRUEL, 'EXEGGUTOR', ('GRASS', 'PSYCHIC_TYPE'),
+     ['PSYCHIC_M'], 21),
+    ('no attacks vs exeggutor (a wall to it)', TOXIC_ONLY, 'EXEGGUTOR', ('GRASS', 'PSYCHIC_TYPE'),
+     ['PSYCHIC_M'], 19),
+]
+for name, mon, player, ptypes, pused, exp in toxic_cases:
+    if SPECIES[player] not in party:
+        print('SKIP', name); continue
+    set_ot(mon)
+    set_player(party.index(SPECIES[player]) + 1, ptypes, pused)
+    w('wEnemyAIMoveScores', 20)
+    g.call('AI_Smogon_Toxic', HL=A('wEnemyAIMoveScores'), frames=600)
+    got = m[A('wEnemyAIMoveScores')]
+    good = got == exp
+    ok &= good
+    print('PASS' if good else 'FAIL', 'toxic:', name, 'score', got, 'expected', exp,
+          'our turns', m[A('wSmogonAIOurTurns')] if 'wSmogonAIOurTurns' in g.sym else '?')
+
+# AISmogon_SpikesFirst: no setup before Spikes are down, while the player
+# (the save's party) has Pokemon left to switch in.
+spikes_cases = [
+    ('spikes not down yet', ('PIN_MISSILE', 'SPIKES', 'EXPLOSION', 'CURSE'), 0, True),
+    ('spikes down', ('PIN_MISSILE', 'SPIKES', 'EXPLOSION', 'CURSE'), 1 << CONST['SCREENS_SPIKES'], False),
+    ('no spikes move', ('PIN_MISSILE', 'TOXIC', 'EXPLOSION', 'CURSE'), 0, False),
+]
+for name, moves, screens, exp in spikes_cases if 'AISmogon_SpikesFirst' in g.sym else []:
+    for i, mv in enumerate(moves):
+        w('wEnemyMonMoves', MOVE_IDS[mv], i)
+    w('wPlayerScreens', screens)
+    g.call('AIGetEnemyMove', A=MOVE_IDS['CURSE'])  # the move being scored
+    g.call('AISmogon_SpikesFirst')
+    carry = bool(g.result['F'] & 0x10)
+    kept = m[A('wEnemyMoveStruct')] == MOVE_IDS['CURSE']
+    good = carry == exp and kept
+    ok &= good
+    print('PASS' if good else 'FAIL', 'spikes first:', name, 'carry', carry, 'expected', exp,
+          'move being scored kept', kept)
 w('wPlayerScreens', 0)
 print('RESULT:', 'ALL OK' if ok else 'NOT OK')

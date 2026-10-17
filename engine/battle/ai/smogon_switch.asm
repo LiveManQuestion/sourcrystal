@@ -751,7 +751,7 @@ AISmogon_ScoreMatchup:
 	ld hl, wSmogonAIPlayerHeal
 	ld de, wSmogonAIPower
 	call AISmogon_SideTurns
-	ld [wSmogonAIStalled], a
+	ld [wSmogonAIOurTurns], a
 	ld hl, wSmogonAIOurHeal
 	ld de, wSmogonAIThreat
 	call AISmogon_HealDelay
@@ -774,7 +774,7 @@ AISmogon_ScoreMatchup:
 	push af
 	cp SMOGON_MAX_TURNS
 	jr nz, .not_stalled
-	ld a, [wSmogonAIStalled]
+	ld a, [wSmogonAIOurTurns]
 	cp SMOGON_MAX_TURNS
 	jr nz, .not_stalled
 	ld a, TRUE

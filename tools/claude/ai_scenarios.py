@@ -79,7 +79,7 @@ base = dict(weather=0, ptypes=(C['FIRE'], C['FIRE']), etypes=(C['NORMAL'], C['NO
             espd=200, pspd=100, sub1=0, sub2=0, sub4=0, sub5=0, psub3=0, psub5=0,
             estatus=0, toxic=0, wrap=0, perish=0, hp=(40, 100), tod=C['DAY_F'], hours=12,
             pspecies=C['MAGIKARP'], php=(100, 100), pstatus=0, patk=7, psub4=0, pused=(), plast=0, crit=0,
-            patkstat=None)
+            patkstat=None, pscreens=0)
 F, D = C['FIRE'], C['GROUND']
 scen = [
     ('thunder rain neutral', M('THUNDER'), dict(weather=C['WEATHER_RAIN']), [18]),
@@ -164,7 +164,8 @@ scen = [
     # AI_Smogon_Asleep (Rest also goes through AI_Smogon_Heal: 40% HP and a status)
     ('asleep: only sleep talk', M('SLEEP_TALK', 'SURF', 'REST', 'ICE_BEAM'), dict(estatus=3), [20, 30, 28, 30]),
     ('asleep: waking up', M('SLEEP_TALK', 'SURF', 'REST', 'ICE_BEAM'), dict(estatus=1), [20, 20, 18, 20]),
-    ('awake: no sleep talk', M('SLEEP_TALK', 'SURF', 'REST', 'ICE_BEAM'), dict(), [30, 20, 18, 20]),
+    # (no Rest here: its score depends on how hard the test battle's enemy hits)
+    ('awake: no sleep talk', M('SLEEP_TALK', 'SURF', 'ICE_BEAM'), dict(), [30, 20, 20]),
     ('asleep without sleep talk', M('SURF', 'REST'), dict(estatus=3), [20, 18]),
     ('asleep: snore', M('SNORE', 'SURF'), dict(estatus=2), [20, 30]),
     # AI_Smogon_SureKO: the player has 1 HP, so any hit KOs.
@@ -324,7 +325,7 @@ def apply(setup, moves):
     word(W('wEnemyMonHP'), st['hp'][0]); word(W('wEnemyMonMaxHP'), st['hp'][1])
     mem[W('wTimeOfDay')] = st['tod']
     mem[W('hHours')] = st['hours']
-    mem[W('wEnemyScreens')] = 0; mem[W('wPlayerScreens')] = 0
+    mem[W('wEnemyScreens')] = 0; mem[W('wPlayerScreens')] = st['pscreens']
     if state.get('player') is None:
         state['player'] = [mem[W('wBattleMonSpecies')]] + [mem[W('wBattleMonHP') + k] for k in range(4)] + \
                           [mem[W('wPlayerUsedMoves') + k] for k in range(4)] + \

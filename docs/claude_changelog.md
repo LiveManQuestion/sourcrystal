@@ -598,3 +598,34 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   262 -> 279 of 576 (z +1.0), Gengar's Explosions 339 -> 218. The 3 left:
   Gengar (124, slightly losing) into a full-HP Vaporeon, which Explosion
   doesn't surely KO (lowest roll 292 of 327).
+- **2026-10-17**: Three engine-judge patterns at once (they share
+  `smogon.asm`):
+  - A trade Explosion (for a threat, a boosted player, or something no
+    teammate beats) needs a sure KO (`AISmogon_LoadedMoveKOs`, split out of
+    `AISmogon_RankLoadedMove`), unless the exploder is losing by more than
+    `SMOGON_BOOM_KO_MARGIN` (8): Gengar (124) no longer explodes into a
+    full-HP Vaporeon it can't surely KO, Misty's Cloyster (104) still trades
+    with Zapdos. Requiring the KO for Cloyster too cost Misty 2 20 wins of
+    144 (z -2.5).
+  - Toxic is only encouraged against something our attacks need
+    `SMOGON_TOXIC_MIN_TURNS` (4) or more to KO (`wSmogonAIOurTurns`, from
+    `AISmogon_ScoreMatchup`), else +1: Tentacruel used Toxic on Exeggutor
+    instead of Sludge Bomb.
+  - No setup move while our Spikes aren't down and the player has Pokemon
+    left to switch in (`AISmogon_SpikesFirst`): Forretress used Curse in
+    front of Snorlax.
+  - `AIHasMoveEffect` overwrites `wEnemyMoveStruct` (it loads every move),
+    which broke the move being scored: Whitney's Snorlax used Curse 2.5x as
+    often (her AI wins 94 -> 67, z -3.2) and the Explosion KO check measured
+    the last move. `AISmogon_EnemyHasMoveEffect` reads the effects from
+    `Moves` instead; the Spikes checks in `AISmogon_SpikesFirst` and
+    `AI_Smogon_Explosion` use it.
+  - `ai_trace.py` records every move's final score (`move_scores`). Matchup-
+    dependent tests moved from `ai_scenarios.py` (its test battle's enemy
+    changes between runs) to `smogon_calls_test.py`, which builds positions
+    from traces; it now also checks that the move being scored is kept, and
+    fails on the buggy builds.
+  - Checked: both suites ALL OK; 4 trainers x 144 seeds: AI wins 279 -> 293
+    of 576 (z +0.8; Koga 2 107 -> 123, z +2.4; the others within 2 wins);
+    engine regret over the same 144 battle seeds: Explosion 1.46 -> 0.84,
+    Toxic 2.00 -> 0.15, Forretress's Curse 1.74 -> 0.50.

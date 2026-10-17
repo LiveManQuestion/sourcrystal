@@ -534,6 +534,74 @@ AI_Smogon_SureKO:
 	xor a
 	ret
 
+AISmogon_LoadedMoveKOs:
+; Return carry if the lowest damage roll of the move in wEnemyMoveStruct
+; KOs the player: 27/32 of AIDamageCalc's highest (the lowest is 217/255,
+; 85%). wCriticalHit is still set if the last attack was a critical hit,
+; and AIDamageCalc would double the damage: count a regular hit. Keeps
+; wCurDamage (Counter and Mirror Coat read it) and wCriticalHit.
+	ld a, [wCurDamage]
+	ld h, a
+	ld a, [wCurDamage + 1]
+	ld l, a
+	push hl
+	ld a, [wCriticalHit]
+	push af
+	xor a
+	ld [wCriticalHit], a
+	call .KOs
+	sbc a
+	ld b, a
+	pop af
+	ld [wCriticalHit], a
+	pop hl
+	ld a, h
+	ld [wCurDamage], a
+	ld a, l
+	ld [wCurDamage + 1], a
+	ld a, b
+	add a ; carry if b is $ff
+	ret
+
+.KOs:
+	call AIDamageCalc
+	ld a, [wCurDamage]
+	ld h, a
+	ld d, a
+	ld a, [wCurDamage + 1]
+	ld l, a
+	ld e, a
+rept 3
+	srl d
+	rr e
+endr
+	call .Subtract
+rept 2
+	srl d
+	rr e
+endr
+	call .Subtract
+	ld a, [wBattleMonHP + 1]
+	ld e, a
+	ld a, [wBattleMonHP]
+	ld d, a
+	ld a, l
+	sub e
+	ld a, h
+	sbc d
+	ccf
+	ret
+
+.Subtract:
+; hl -= de
+	ld a, l
+	sub e
+	ld l, a
+	ld a, h
+	sbc d
+	ld h, a
+	ret
+
 AISmogon_PickedMoveKOsFirst:
 ; Return carry if the move the enemy is about to use (wCurEnemyMove) is a
 ; sure KO that lands before the player moves: the enemy is faster, or the
@@ -591,31 +659,8 @@ AISmogon_RankLoadedMove:
 	call AISmogon_MissesHiddenPlayer
 	jr c, .not_ko
 
-; wCriticalHit is still set if the last attack was a critical hit, and
-; AIDamageCalc would double the damage: count a regular hit. Counter and
-; Mirror Coat read wCurDamage.
-	ld a, [wCurDamage]
-	ld h, a
-	ld a, [wCurDamage + 1]
-	ld l, a
-	push hl
-	ld a, [wCriticalHit]
-	push af
-	xor a
-	ld [wCriticalHit], a
-	call .KOs
-	sbc a
-	ld b, a
-	pop af
-	ld [wCriticalHit], a
-	pop hl
-	ld a, h
-	ld [wCurDamage], a
-	ld a, l
-	ld [wCurDamage + 1], a
-	ld a, b
-	and a
-	jr z, .not_ko
+	call AISmogon_LoadedMoveKOs
+	jr nc, .not_ko
 
 ; Lock-On makes the next attack hit, and so does Thunder in rain.
 	ld a, [wEnemySubStatus5]
@@ -648,47 +693,6 @@ AISmogon_RankLoadedMove:
 
 .not_ko
 	xor a
-	ret
-
-.KOs:
-; Return carry if the lowest roll KOs the player. The lowest roll is
-; 217/255 (85%) of the highest: count 27/32 of it.
-	call AIDamageCalc
-	ld a, [wCurDamage]
-	ld h, a
-	ld d, a
-	ld a, [wCurDamage + 1]
-	ld l, a
-	ld e, a
-rept 3
-	srl d
-	rr e
-endr
-	call .Subtract
-rept 2
-	srl d
-	rr e
-endr
-	call .Subtract
-	ld a, [wBattleMonHP + 1]
-	ld e, a
-	ld a, [wBattleMonHP]
-	ld d, a
-	ld a, l
-	sub e
-	ld a, h
-	sbc d
-	ccf
-	ret
-
-.Subtract:
-; hl -= de
-	ld a, l
-	sub e
-	ld l, a
-	ld a, h
-	sbc d
-	ld h, a
 	ret
 
 .NotSureKOEffects:
@@ -991,7 +995,7 @@ AI_Smogon_Explosion:
 	bit SCREENS_SPIKES, a
 	jr nz, .spikes_done
 	ld b, EFFECT_SPIKES
-	call AIHasMoveEffect
+	call AISmogon_EnemyHasMoveEffect
 	ret c
 .spikes_done
 
@@ -1026,7 +1030,7 @@ AI_Smogon_Explosion:
 	ld a, [wSmogonAIBestScore]
 	cp SMOGON_MATCHUP_EVEN
 	ret nc
-	jr .threat
+	jr .trade
 
 .threat_unless_winning
 	push hl
@@ -1034,6 +1038,17 @@ AI_Smogon_Explosion:
 	pop hl
 	ld a, [wEnemyAISwitchScore]
 	cp SMOGON_MATCHUP_EVEN + 1
+	ret nc
+.trade
+; A trade has to take the player's Pokemon down with it (Gengar's Explosion
+; doesn't surely KO a healthy Vaporeon), unless this Pokemon is clearly
+; losing anyway: Misty's Cloyster still takes most of Zapdos's HP.
+	ld a, [wEnemyAISwitchScore]
+	cp SMOGON_MATCHUP_EVEN - SMOGON_BOOM_KO_MARGIN
+	jr c, .threat
+	push hl
+	call AISmogon_LoadedMoveKOs
+	pop hl
 	ret nc
 .threat
 	dec [hl]
@@ -1069,13 +1084,21 @@ AI_Smogon_Thief:
 	ret
 
 AI_Smogon_Toxic:
-; Toxic wears down walls, but Rest users just sleep it off.
+; Toxic wears down walls, but Rest users just sleep it off, and attacking
+; is faster against something our attacks KO within SMOGON_TOXIC_MIN_TURNS
+; (Tentacruel's Sludge Bomb on Exeggutor).
 	ld a, REST
 	call AISmogon_PlayerRevealedMove
 	jr c, .rester
 	call AISmogon_GetPlayerTraits
 	bit SMOGON_REST_F, a
 	jr nz, .rester
+	push hl
+	call AISmogon_ScoreActive
+	pop hl
+	ld a, [wSmogonAIOurTurns]
+	cp SMOGON_TOXIC_MIN_TURNS
+	jr c, .rester
 	dec [hl]
 ; Poison and Spikes wear switch-ins down together.
 	ld a, [wPlayerScreens]
@@ -1394,6 +1417,10 @@ AI_Smogon_Setup:
 	cp MAX_STAT_LEVEL
 	jp nc, AIDiscourageMove
 
+; Lay Spikes first (Forretress used Curse in front of Snorlax instead).
+	call AISmogon_SpikesFirst
+	jr c, .discourage
+
 ; Don't set up into phazing or Haze, which would erase the boosts.
 	call AISmogon_PlayerCanPhaze
 	jr c, .discourage
@@ -1481,6 +1508,67 @@ AI_Smogon_Setup:
 	cp b
 	ret c
 	ld a, b
+	ret
+
+AISmogon_EnemyHasMoveEffect:
+; Return carry if the enemy knows a move with effect b. Unlike
+; AIHasMoveEffect, this keeps wEnemyMoveStruct, the move being scored (it
+; reads the effects from Moves), and hl.
+	push hl
+	push de
+	ld hl, wEnemyMonMoves
+	ld c, NUM_MOVES
+.loop
+	ld a, [hli]
+	and a
+	jr z, .no
+	push hl
+	push bc
+	dec a
+	ld hl, Moves + MOVE_EFFECT
+	ld bc, MOVE_LENGTH
+	call AddNTimes
+	ld a, BANK(Moves)
+	call GetFarByte
+	pop bc
+	pop hl
+	cp b
+	jr z, .yes
+	dec c
+	jr nz, .loop
+.no
+	pop de
+	pop hl
+	and a
+	ret
+
+.yes
+	pop de
+	pop hl
+	scf
+	ret
+
+AISmogon_SpikesFirst:
+; Return carry if the enemy has Spikes to lay: it knows them, they aren't
+; down on the player's side yet, and the player has Pokemon left to switch
+; in. Keeps hl.
+	ld a, [wPlayerScreens]
+	bit SCREENS_SPIKES, a
+	jr nz, .no
+	ld b, EFFECT_SPIKES
+	call AISmogon_EnemyHasMoveEffect
+	jr nc, .no
+	push hl
+	call AISmogon_ScanPlayerParty
+	pop hl
+	ld a, c
+	and a
+	jr z, .no
+	scf
+	ret
+
+.no
+	and a
 	ret
 
 AI_Smogon_Screens:

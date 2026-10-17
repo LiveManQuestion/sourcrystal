@@ -60,6 +60,8 @@ DEF HEAL_BLOCK_LENGTH EQU _RS
 DEF SMOGON_SETUP_GOAL        EQU BASE_STAT_LEVEL + 2 ; boost this far, then attack
 DEF SMOGON_HEAL_SAFE_HITS    EQU 3 ; below half HP, heal unless this many hits can't KO
 DEF SMOGON_SETUP_SAFE_HITS   EQU 4 ; a switch-in boosts first if this many hits can't KO it
+DEF SMOGON_TOXIC_MIN_TURNS   EQU 4 ; Toxic only what our attacks need this many turns to KO
+DEF SMOGON_BOOM_KO_MARGIN    EQU 8 ; a trade Explosion needs a sure KO unless losing by more
 
 ; wSmogonAISetupBoost: how a Pokemon that can boost safely counts its attacks
 	const_def
