@@ -29,9 +29,23 @@ Vanilla comparison (no emulator):
 
 Headless tests (PyBoy, installed as a uv tool:
 `~/.local/share/uv/tools/pyboy/bin/python`). The user's real save is
-`sourcrystal.sav`; its first 32 KB is the cartridge RAM
-(`head -c 32768 sourcrystal.sav > SCRATCH/user.ram`). Never write over the
-user's save files.
+`sourcrystal.sav`; its first 32 KB is the cartridge RAM. Make it with
+`save_ram.py [SAVE] OUT` (`python3 tools/claude/save_ram.py SCRATCH/user.ram`),
+not `head -c 32768`: it also clears `sRTCStatusFlags`. A set flag (the
+emulator's clock was reset, as in the user's save of 2026-10-16) makes
+Continue ask to reset the clock, a prompt the harnesses' boot button presses
+don't expect, so battles never start (`"started": false`). Never write over
+the user's save files.
+- `ai_check.sh [ROM] [BASE_REV]` (defaults: `sourcrystal.gbc`, `HEAD`):
+  everything to check a Smogon AI change, in one report: both test suites,
+  `PLAYER=smart` battles on Koga 2, Misty 2, Whitney 2 and Jasmine 2
+  compared with `battle_compare.py`, and `engine_judge.py --patterns` over
+  traced battles, compared with the base. Options (environment): `SEEDS=144`
+  battles and `TRACE_SEEDS=36` traced battles per trainer, `MS=400`,
+  `TRAINERS=...`, `SAVE=...`, `NO_JUDGE=1`. Each ROM's results are cached in
+  `.aicheck/` (git-ignored) by its contents, the save and the options, so
+  the base runs once per commit; about an hour per uncached ROM. Run it in
+  the background and read the report; tee it to a file to keep it.
 - `ai_scenarios.py ROM SYM RAM`: exact-state checks of AI_Smogon's scores, the
   heal-move multiplier the engine picks, the switch-in choice by type
   (`switch_cases`) and the power AIGetEnemyMove loads (`hp_cases`). Restarts
@@ -95,7 +109,11 @@ user's save files.
   side one and prints the agreement rate, regret (the engine's value of its
   own action minus its value of the AI's, as win chances 0 to 1), the biggest
   disagreements and the stay/switch disagreements by matchup. `--report OUT`
-  prints saved results again; `--check` confirms that every move, species and
+  prints saved results again; `--patterns OUT [BASE]` ranks the
+  disagreements of saved results by total regret, grouped by action,
+  matchup and both (a pattern worth fixing has many clear disagreements over
+  several battles), and with BASE prints each top pattern before and after;
+  neither needs poke-engine; `--check` confirms that every move, species and
   item maps to an engine id (unknown ids silently become NONE). Moves are
   all the same "stay" while the AI's Pokemon is asleep or frozen, except
   Sleep Talk and Snore. After the player switches, the AI's move was already

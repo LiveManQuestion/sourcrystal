@@ -4,6 +4,7 @@ search engine behind the Foul Play bot.
 usage (with the poke-engine venv's Python, see docs/claude_tools.md):
   engine_judge.py TRACE.jsonl... [--ms 500] [--threads 4] [--top 15] [--json OUT]
   engine_judge.py --report OUT   # report saved results again, without searching
+  engine_judge.py --patterns OUT [BASE]  # rank patterns; with BASE, compare them
   engine_judge.py --check        # every move, species and item maps to the engine
 
 For each SwitchSmogon decision in ai_trace.py traces (the turns the AI used
@@ -14,6 +15,13 @@ visited most. A decision's regret is the engine's value of its own action
 minus its value of the AI's (values are side one's chances, 0 to 1). It
 prints how often the two agree, the decisions with the biggest regret and
 the regret grouped by kind (stay vs. switch, move vs. move).
+
+--patterns ranks the disagreements of saved results by total regret,
+grouped by action, matchup, and both: a pattern is worth fixing when its
+regret is concentrated (many clear disagreements, over several battles).
+With BASE (the same traces' seeds on an older ROM), it prints each top
+pattern's regret before and after. Compare patterns, not totals: any code
+change reshuffles the battles' RNG, so totals swing by chance.
 
 Read the results with care:
 - The engine knows the player's whole party, moves and items, which the AI
@@ -40,10 +48,8 @@ from pokedata import (CONST, ITEM_NAMES, MOVE_NAMES, MOVES, SPECIES_NAMES, TYPES
 
 try:
     import poke_engine as pe  # noqa: E402
-except ImportError:
-    sys.exit('poke_engine is missing: run this with the poke-engine venv, from the repo root:\n'
-             '  bots/pe-venv/bin/python tools/claude/engine_judge.py TRACE.jsonl...\n'
-             '(setup: docs/claude_tools.md)')
+except ImportError:  # --report and --patterns don't need it
+    pe = None
 
 GEN2_TYPES = ['NORMAL', 'FIGHTING', 'FLYING', 'POISON', 'GROUND', 'ROCK', 'BUG', 'GHOST', 'STEEL', 'FIRE',
               'WATER', 'GRASS', 'ELECTRIC', 'PSYCHIC_TYPE', 'ICE', 'DRAGON', 'DARK']
@@ -216,6 +222,10 @@ def check():
 def main(argv):
     if not argv:
         return print(__doc__)
+    if pe is None and '--report' not in argv and '--patterns' not in argv:
+        sys.exit('poke_engine is missing: run this with the poke-engine venv, from the repo root:\n'
+                 '  bots/pe-venv/bin/python tools/claude/engine_judge.py TRACE.jsonl...\n'
+                 '(setup: docs/claude_tools.md)')
     if '--check' in argv:
         return check()
     opts = {'--ms': 500, '--threads': 4, '--top': 15, '--min-visits': 50, '--json': None, '--report': None}
@@ -226,6 +236,9 @@ def main(argv):
             opts[a] = next(it) if a in ('--json', '--report') else int(next(it))
         else:
             paths.append(a)
+    if '--patterns' in paths:
+        paths.remove('--patterns')
+        return patterns(*paths[:2], top=opts['--top'], min_visits=opts['--min-visits'])
     if opts['--report']:
         rows = [json.loads(line) for line in open(opts['--report'])]
         for j in rows:
@@ -259,6 +272,60 @@ def main(argv):
 
 def kind(action):
     return 'switch' if action.startswith('switch') else 'move'
+
+
+def action(a):
+    return 'switch' if a.startswith('switch') else a
+
+
+PATTERN_KEYS = [
+    ('AI action -> engine action', lambda j: (action(j['ai']), action(j['engine']))),
+    ('AI action (any engine action)', lambda j: action(j['ai'])),
+    ('matchup', lambda j: (j['ai_mon'], j['player_mon'])),
+    ('matchup and AI action -> engine action',
+     lambda j: (j['ai_mon'], j['player_mon'], action(j['ai']), action(j['engine']))),
+]
+
+
+def load_scored(path, min_visits):
+    rows = [json.loads(line) for line in open(path)]
+    for j in rows:
+        score(j, min_visits)
+    return [j for j in rows if j['regret'] is not None]
+
+
+def group(rows, key):
+    """key -> [total regret, decisions, clear (> 0.1), battles] over disagreements."""
+    g = {}
+    for j in rows:
+        if j['ai'] == j['engine']:
+            continue
+        e = g.setdefault(key(j), [0.0, 0, 0, set()])
+        e[0] += j['regret']; e[1] += 1; e[2] += j['regret'] > 0.1; e[3].add(j['trace'])
+    return {k: (r, n, c, len(b)) for k, (r, n, c, b) in g.items()}
+
+
+def patterns(path, base=None, top=15, min_visits=50):
+    new = load_scored(path, min_visits)
+    old = load_scored(base, min_visits) if base else None
+    def total(rows):
+        return f'{len(rows)} decisions, total regret {sum(j["regret"] for j in rows):.2f}'
+    print(total(new) + (f' (base: {total(old)})' if old else ''))
+    for title, key in PATTERN_KEYS:
+        g = group(new, key)
+        if old is None:
+            print(f'\n{title}  (total regret, decisions, clear > 0.1, battles)')
+            for k, (r, n, c, b) in sorted(g.items(), key=lambda kv: -kv[1][0])[:top]:
+                print(f'  {r:6.2f} {n:4} {c:4} {b:3}  {k}')
+            continue
+        # The top patterns of either run, so fixed ones show up too.
+        h = group(old, key)
+        keys = sorted(set(sorted(g, key=lambda k: -g[k][0])[:top]) | set(sorted(h, key=lambda k: -h[k][0])[:top]),
+                      key=lambda k: -max(g.get(k, (0,))[0], h.get(k, (0,))[0]))
+        print(f'\n{title}  (base -> new: total regret, decisions, clear > 0.1)')
+        for k in keys:
+            (r0, n0, c0, _), (r1, n1, c1, _) = h.get(k, (0, 0, 0, 0)), g.get(k, (0, 0, 0, 0))
+            print(f'  {r0:6.2f} {n0:4} {c0:3}  -> {r1:6.2f} {n1:4} {c1:3}  {k}')
 
 
 def report(rows, top):

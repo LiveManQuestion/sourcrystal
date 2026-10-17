@@ -654,3 +654,14 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
     293 -> 293 of 576 (no trainer more than 4 apart); engine regret over the
     same 144 battle seeds: Venusaur vs Vaporeon 1.32 -> 0.31 (clear 7 -> 0),
     all heal moves 5.56 -> 4.53 (clear 13 -> 6), total 44.9 -> 40.7.
+- **2026-10-17**: Tools for AI work. `ai_check.sh [ROM] [BASE_REV]` runs
+  what each Smogon AI fix this session needed by hand (test suites, 576
+  `PLAYER=smart` battles, 144 traced battles and the engine judge, for the
+  new ROM and the base) and prints one report, caching each ROM's results
+  in `.aicheck/`. `engine_judge.py --patterns OUT [BASE]` (the scratch
+  `patterns.py`, plus a before/after view) ranks disagreements by action and
+  matchup, and with `--report` no longer needs poke-engine. `save_ram.py`
+  makes the harnesses' cartridge RAM from the save: the user's latest save
+  had the clock-reset flag set (`sRTCStatusFlags` $80), so Continue asked to
+  reset the clock and no headless battle started. CLAUDE.md points at
+  `pokecrystal_wiki/`.

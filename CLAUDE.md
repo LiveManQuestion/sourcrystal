@@ -4,7 +4,9 @@ A Pokémon Crystal ROM hack built on the pret/pokecrystal disassembly (see
 README.md for features). The Game Boy Z80-like assembly is built with RGBDS.
 STYLE.md is the code style guide: tabs, comments above the code they describe,
 PascalCase ROM labels, `.local` labels. `pokecrystal-master/` (untracked) is a
-copy of vanilla pret/pokecrystal for reference. Session history:
+copy of vanilla pret/pokecrystal for reference, and `pokecrystal_wiki/`
+(untracked) pret's wiki of pokecrystal tutorials (adding moves, items, trainer
+classes, AI layers...). Session history:
 `docs/claude_changelog.md` (add an entry there for notable changes).
 
 ## Keeping this file current
@@ -112,10 +114,13 @@ Effect Commands need `farcall` or `newfarcall`.
 Details and usage: `docs/claude_tools.md`. The usual checks after a battle or
 AI change: `cmp_data.py` (expect `ALL IDENTICAL`), `damage_diff.py` (0
 mismatches), `ai_scenarios.py ROM SYM RAM` (`RESULT: ALL OK`) and
-`battle_matrix.sh` (no crashes; compare with `battle_compare.py`). Headless
-tests use PyBoy (`~/.local/share/uv/tools/pyboy/bin/python`) and the first 32
-KB of the user's `sourcrystal.sav` as cartridge RAM. Never write over the
-user's save files.
+`battle_matrix.sh` (no crashes; compare with `battle_compare.py`). For a
+Smogon AI change, `ai_check.sh` runs the tests, the battles and the engine
+judge against `HEAD` in one report (cached; about an hour per new ROM).
+Headless tests use PyBoy (`~/.local/share/uv/tools/pyboy/bin/python`) and the
+user's `sourcrystal.sav` as cartridge RAM, made with `save_ram.py` (not `head
+-c`: a clock-reset flag in the save stops battles from starting). Never
+write over the user's save files.
 
 - Compare against an older commit with `build_rev.sh REV OUT` (cached).
 - Read game constants and data in Python with `pokedata.py`; ad hoc parsers
@@ -125,7 +130,8 @@ user's save files.
   seeds; `battle_compare.py` prints z, and below 2 is noise. Explain a
   change with `ai_trace.py` and check its cost with `ai_profile.py`.
   `engine_judge.py` (Foul Play's Gen 2 engine, poke-engine, in
-  `bots/pe-venv`) rates each traced decision and lists the worst ones.
+  `bots/pe-venv`) rates each traced decision; `--patterns` finds the
+  mistakes worth fixing.
 - PyBoy: one hook per address (share them with `battle_harness.Battle.on`),
   and exceptions in hooks are swallowed silently, so count or log them. Some
   menus (party, PC) draw as a white screen; check state through RAM.
