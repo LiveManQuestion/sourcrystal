@@ -113,7 +113,8 @@ scen = [
     ('heal day sun', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(patkstat=400, tod=C['DAY_F'], weather=C['WEATHER_SUN']), [18, 18, 18, 18]),
     ('heal eve 17h', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(patkstat=400, tod=C['EVE_F'], hours=17), [20, 18, 20, 18]),
     ('heal eve 19h', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(patkstat=400, tod=C['EVE_F'], hours=19), [20, 20, 18, 18]),
-    ('heal above half', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(tod=C['MORN_F'], hours=6, hp=(60, 100)), [20, 20, 20, 20]),
+    # (Synthesis and Moonlight heal a quarter in the morning: not worth a turn while healing can wait)
+    ('heal above half', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(tod=C['MORN_F'], hours=6, hp=(60, 100)), [20, 21, 21, 20]),
     # AISmogon_HealCanWait: the player has revealed four moves, so only those count.
     ('heal can wait vs splash', M('RECOVER', 'REST'), dict(pused=M('SPLASH', 'SPLASH', 'SPLASH', 'SPLASH')), [21, 21]),
     ('heal can wait, but poisoned', M('RECOVER', 'REST'),

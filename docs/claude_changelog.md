@@ -629,3 +629,28 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
     of 576 (z +0.8; Koga 2 107 -> 123, z +2.4; the others within 2 wins);
     engine regret over the same 144 battle seeds: Explosion 1.46 -> 0.84,
     Toxic 2.00 -> 0.15, Forretress's Curse 1.74 -> 0.50.
+- **2026-10-17**: Healing can also wait when we KO first.
+  `AISmogon_HealCanWait` now also returns carry when one of the enemy's
+  attacks with PP left surely KOs the player in two hits
+  (`AISmogon_KOsInTwoHits`: `AISmogon_RankLoadedMove` against half the
+  player's HP, at current battle stats, keeping `wEnemyMoveStruct`) and the
+  player's strongest attack doesn't KO us first (one hit if we're faster,
+  two if not). Quarter heals (Synthesis at night, etc.), which were left to
+  AI_Smart, also get +1 when healing can wait. The engine judge's most
+  consistent pattern (7 clear in 6 battles): Koga's Venusaur at +2 Sp.Atk
+  and a third of its HP using Synthesis on a full-HP Vaporeon instead of
+  Razor Leaf, which now 2HKOs. Not the Ice Beam fear I first guessed: the
+  AI's estimate of Vaporeon's best hit on it is Surf (48).
+  - Tried first: counting the active Pokemon's battle stats (stat stages,
+    burn, paralysis) in `AISmogon_ScoreMatchup`. It fixed Venusaur but cost
+    Whitney 2 95 -> 69 wins of 144 (z -3.1): boosted Curse Miltank stopped
+    using Milk Drink. Counting only our boosted Attack/Sp.Atk still lost
+    (66, z -3.4), so the matchup scoring stays on party stats.
+  - Also found: the Blissey-switches-out-of-Steelix pattern (4 clear) is
+    the player's Steelix having used all its Earthquake PP, which the
+    engine knows and the AI doesn't.
+  - Checked: both suites ALL OK (`ai_scenarios.py`'s "heal above half" now
+    expects +1 for the two quarter heals); 4 trainers x 144 seeds: AI wins
+    293 -> 293 of 576 (no trainer more than 4 apart); engine regret over the
+    same 144 battle seeds: Venusaur vs Vaporeon 1.32 -> 0.31 (clear 7 -> 0),
+    all heal moves 5.56 -> 4.53 (clear 13 -> 6), total 44.9 -> 40.7.

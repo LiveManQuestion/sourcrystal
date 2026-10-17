@@ -259,7 +259,7 @@ AISmogon_Encourage:
 
 AI_Smogon_Heal:
 ; Morning Sun, Synthesis and Moonlight vary: not worth a turn for 1/8 of max HP,
-; and left to AI_Smart (heal below a quarter) for 1/4.
+; and mostly left to AI_Smart (heal below a quarter) for 1/4.
 	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
 	cp EFFECT_HEAL
 	jr z, .heal
@@ -267,15 +267,23 @@ AI_Smogon_Heal:
 	and a
 	jp z, AIDiscourageMove
 	dec a
-	ret z
+	jr z, .quarter
 .heal
 ; Heal before falling into KO range, at half HP rather than a quarter...
 	call AICheckEnemyHalfHP
 	jr c, .above_half
-; ...unless the player's attacks barely scratch us: then attacking is
-; worth more, like Blissey finishing a weakened Cloyster.
+; ...unless the player's attacks barely scratch us, or we KO it first:
+; then attacking is worth more, like Blissey finishing a weakened Cloyster.
 	call AISmogon_HealCanWait
 	jp nc, AISmogon_Encourage
+	inc [hl]
+	ret
+
+.quarter
+; A quarter of max HP is only worth a turn when the player is about to KO
+; us (AI_Smart encourages it below a quarter).
+	call AISmogon_HealCanWait
+	ret nc
 	inc [hl]
 	ret
 
@@ -293,8 +301,9 @@ AI_Smogon_Heal:
 AISmogon_HealCanWait:
 ; Return carry if the enemy can put off healing: SMOGON_HEAL_SAFE_HITS of
 ; the player's strongest attack (AISmogon_ScoreMatchup's estimate, from
-; what the player could have) don't KO it, and nothing hurts it every turn
-; (status, Leech Seed or Curse, which the estimate leaves out).
+; what the player could have) don't KO it, or it KOs the player first in
+; two hits (Venusaur after Growth against a Vaporeon), and nothing hurts it
+; every turn (status, Leech Seed or Curse, which the estimate leaves out).
 	ld a, [wEnemyMonStatus]
 	and a
 	ret nz
@@ -306,12 +315,29 @@ AISmogon_HealCanWait:
 	ret nz
 	push hl
 	call AISmogon_ScoreActive
+	ld b, SMOGON_HEAL_SAFE_HITS
+	call .HitsLeaveHP
+	jr c, .done
+	call AISmogon_KOsInTwoHits
+	jr nc, .done
+; The player gets one hit in before our second, or two if it's faster.
+	ld b, 1
+	call AICompareSpeed
+	jr c, .got_hits
+	inc b
+.got_hits
+	call .HitsLeaveHP
+.done
+	pop hl
+	ret
+
+.HitsLeaveHP:
+; Return carry if b of the player's strongest attack don't KO the enemy.
 	ld a, [wSmogonAIThreat + ATTACKS_BEST]
 	ld d, a
 	ld a, [wSmogonAIThreat + ATTACKS_BEST + 1]
 	ld e, a
 	ld hl, 0
-	ld b, SMOGON_HEAL_SAFE_HITS
 .add_hit
 	add hl, de
 	dec b
@@ -325,7 +351,77 @@ AISmogon_HealCanWait:
 	sub e
 	ld a, h
 	sbc d
+	ret
+
+AISmogon_KOsInTwoHits:
+; Return carry if one of the enemy's attacks with PP left surely KOs the
+; player in two hits (AISmogon_RankLoadedMove against half its HP). Keeps
+; wEnemyMoveStruct, which holds the move being scored.
+	ld hl, wEnemyMoveStruct + MOVE_LENGTH - 1
+	ld c, MOVE_LENGTH
+.save
+	ld a, [hld]
+	push af
+	dec c
+	jr nz, .save
+; Halve the player's HP, rounding up.
+	ld hl, wBattleMonHP
+	ld a, [hli]
+	ld d, a
+	ld e, [hl]
+	push de
+	srl d
+	rr e
+	jr nc, .halved
+	inc de
+.halved
+	ld a, e
+	ld [hld], a
+	ld [hl], d
+
+	ld b, FALSE
+	ld c, NUM_MOVES
+	ld hl, wEnemyMonMoves
+	ld de, wEnemyMonPP
+.loop
+	ld a, [de]
+	inc de
+	and PP_MASK
+	ld a, [hli]
+	jr z, .next
+	and a
+	jr z, .next
+	push bc
+	push de
+	push hl
+	call AIGetEnemyMove
+	call AISmogon_RankLoadedMove
 	pop hl
+	pop de
+	pop bc
+	and a
+	jr z, .next
+	ld b, TRUE
+.next
+	dec c
+	jr nz, .loop
+
+	pop de
+	ld hl, wBattleMonHP
+	ld a, d
+	ld [hli], a
+	ld [hl], e
+	ld hl, wEnemyMoveStruct
+	ld c, MOVE_LENGTH
+.restore
+	pop af
+	ld [hli], a
+	dec c
+	jr nz, .restore
+	ld a, b
+	and a
+	ret z
+	scf
 	ret
 
 AISmogon_TimeBasedHealAmount:

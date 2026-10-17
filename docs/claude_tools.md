@@ -135,9 +135,9 @@ user's save files.
   keeps `wEnemyMoveStruct`, `wCurDamage` and `wCriticalHit`),
   `AISmogon_PenalizeAsleepActive`, `AISmogon_EnemyHasUsefulBoosts`,
   `AISmogon_GetSetupBoost`, `AISmogon_SetupPower`, the stalemate flag of
-  `AISmogon_ScoreActive`, `AI_Smogon_Explosion`, `AI_Smogon_Toxic` and
-  `AISmogon_SpikesFirst` (on positions built from traces, against the
-  save's party). Last line `RESULT: ALL OK`. Put tests of logic that
+  `AISmogon_ScoreActive`, `AI_Smogon_Explosion`, `AI_Smogon_Toxic`,
+  `AISmogon_SpikesFirst` and `AI_Smogon_Heal` (on positions built from
+  traces, against the save's party). Last line `RESULT: ALL OK`. Put tests of logic that
   depends on the matchup here, not in `ai_scenarios.py`: its test battle's
   enemy and its 999-Defense player change from run to run. Add cases
   there for helpers `ai_scenarios.py` can't reach (it only reads move
