@@ -11,6 +11,8 @@ game_call.py on hand-made battle states:
   credit a Pokemon that can boost safely gets in the KO race.
 - AISmogon_ScoreActive's stalemate flag (wSmogonAIActiveStalled), on
   positions from Koga 2 against the save's party.
+- AI_Smogon_Explosion on positions from Koga 2 and Misty 2 against the
+  save's Zapdos.
 
 usage: smogon_calls_test.py ROM SYM SAVE.ram    (last line RESULT: ALL OK)"""
 import os
@@ -175,9 +177,10 @@ for name, boost, power, typ, exp in power_cases:
 # save's party: the enemy's active Pokemon is OT party slot 0, and the
 # player's is a copy of a save party member.
 OT_FIELDS = ('Species', 'Item', 'Moves', 'DVs', 'PP', 'Level', 'Status', 'HP', 'MaxHP', 'Attack')
-def set_ot(mon):
-    base = A('wOTPartyMon1Species')
-    off = {f: A('wOTPartyMon1' + f) - base for f in OT_FIELDS}
+def set_ot(mon, slot=0):
+    first = A('wOTPartyMon1Species')
+    off = {f: A('wOTPartyMon1' + f) - first for f in OT_FIELDS}
+    base = first + slot * (A('wOTPartyMon2') - A('wOTPartyMon1'))
     m[base] = mon['species']; m[base + off['Item']] = mon['item']; m[base + off['Level']] = mon['level']
     m[base + off['Status']] = 0
     for i in range(4):
@@ -187,9 +190,13 @@ def set_ot(mon):
         m[base + off[f]] = v >> 8; m[base + off[f] + 1] = v & 0xff
     for k, v in enumerate(mon['stats']):
         m[base + off['Attack'] + 2 * k] = v >> 8; m[base + off['Attack'] + 2 * k + 1] = v & 0xff
+    if slot:
+        return
     w('wOTPartyCount', 1); w('wOTPartySpecies', mon['species']); w('wOTPartySpecies', 0xff, 1)
     w('wCurOTMon', 0); w('wEnemyMonSpecies', mon['species']); w('wEnemyMonStatus', 0)
     word('wEnemyMonHP', mon['hp']); word('wEnemyMonMaxHP', mon['max_hp']); word('wEnemyMonSpeed', mon['stats'][2])
+    for i in range(4):
+        w('wEnemyMonMoves', mon['moves'][i], i); w('wEnemyMonPP', mon['pp'][i], i)
 def set_player(slot, types, used):
     src = A('wPartyMon%dSpecies' % slot)
     for f in ('Species', 'Item', 'Level', 'Status'):
@@ -230,4 +237,38 @@ for name, mon, player, types, used, exp in stall_cases:
     ok &= good
     print('PASS' if good else 'FAIL', 'stalemate:', name, 'stalled', got, 'expected', exp,
           'score', m[A('wEnemyAISwitchScore')])
+
+# AI_Smogon_Explosion on positions from Koga 2 and Misty 2 vs the save's
+# Zapdos: the score (20) it leaves for Explosion (16 when it explodes).
+GENGAR = dict(species=SPECIES['GENGAR'], level=84, hp=220, max_hp=220, stats=[139, 131, 215, 248, 156],
+              moves=[MOVE_IDS[x] for x in ('EXPLOSION', 'ICE_PUNCH', 'THUNDERBOLT', 'DYNAMICPUNCH')],
+              pp=[5, 15, 15, 5], dvs=(255, 255), item=0)
+CLOYSTER = dict(species=SPECIES['CLOYSTER'], level=80, hp=194, max_hp=194, stats=[168, 317, 141, 165, 101],
+                moves=[MOVE_IDS[x] for x in ('SURF', 'SPIKES', 'TOXIC', 'EXPLOSION')],
+                pp=[15, 20, 10, 5], dvs=(127, 255), item=0)
+boom_cases = [
+    # (name, enemy, its HP, its Speed, the player's HP, expected score)
+    ('gengar outspeeds and wins vs zapdos', GENGAR, 220, 215, 160, 20),
+    ('cloyster loses to zapdos', CLOYSTER, 194, 141, 280, 16),
+    ('gengar doomed and outsped', GENGAR, 40, 100, 160, 16),
+]
+for name, mon, hp, speed, php, exp in boom_cases:
+    if SPECIES['ZAPDOS'] not in party:
+        print('SKIP', name); continue
+    set_ot(dict(mon, hp=hp))
+    set_ot(QWILFISH, 1)
+    w('wOTPartyCount', 2); w('wOTPartySpecies', QWILFISH['species'], 1); w('wOTPartySpecies', 0xff, 2)
+    word('wEnemyMonSpeed', speed)
+    set_player(party.index(SPECIES['ZAPDOS']) + 1, ('ELECTRIC', 'FLYING'), ['THUNDER'])
+    word('wBattleMonHP', php)
+    w('wPlayerScreens', 1 << CONST['SCREENS_SPIKES'])  # Spikes are down, so Cloyster doesn't lay them first
+    g.call('AIGetEnemyMove', A=MOVE_IDS['EXPLOSION'])
+    w('wEnemyAIMoveScores', 20)
+    g.call('AI_Smogon_Explosion', HL=A('wEnemyAIMoveScores'), frames=600)
+    got = m[A('wEnemyAIMoveScores')]
+    good = got == exp
+    ok &= good
+    print('PASS' if good else 'FAIL', 'explosion:', name, 'score', got, 'expected', exp,
+          'matchup', m[A('wEnemyAISwitchScore')])
+w('wPlayerScreens', 0)
 print('RESULT:', 'ALL OK' if ok else 'NOT OK')

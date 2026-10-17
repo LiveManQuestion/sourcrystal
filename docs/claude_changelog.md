@@ -584,3 +584,17 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   went 33 -> 15 there (z -2.8) although her team has no Sleep Talk or
   Snore (no score changes, only the RNG timing): over 432 seeds 82 -> 69
   (z -1.2; seeds 145-432 alone 49 -> 54, z +0.5).
+- **2026-10-17**: `AI_Smogon_Explosion` no longer trades a Pokemon that wins
+  its matchup by attacking (score above `SMOGON_MATCHUP_EVEN`) for a threat
+  or a boosted player; the doomed-and-outsped trade and the trade for
+  something no teammate beats are unchanged. The engine judge's most
+  consistent disagreement (16 clear in 63 of 144 battles): Koga's Gengar
+  exploding at full HP into Zapdos, which it outspeeds and hits with Ice
+  Punch (Gengar's score 132). Checked: `smogon_calls_test.py` builds
+  Gengar vs Zapdos and Cloyster vs Zapdos from traces (the old code
+  explodes with both, the new one only with Cloyster and a doomed Gengar),
+  both suites ALL OK; over the same 144 battle seeds, Explosions 71 -> 59,
+  their regret 3.42 -> 1.52, clear 16 -> 3; 4 trainers x 144 seeds: AI wins
+  262 -> 279 of 576 (z +1.0), Gengar's Explosions 339 -> 218. The 3 left:
+  Gengar (124, slightly losing) into a full-HP Vaporeon, which Explosion
+  doesn't surely KO (lowest roll 292 of 327).

@@ -1004,15 +1004,17 @@ AI_Smogon_Explosion:
 .not_doomed
 
 ; Trade this Pokemon for a healthy threat like Snorlax, even at full HP,
-; for anything that has started boosting, or for anything that beats this
-; Pokemon and that no teammate matches up well against.
+; or for anything that has started boosting, unless it wins the matchup by
+; attacking (Gengar outspeeds Zapdos and hits it with Ice Punch); or for
+; anything that beats this Pokemon and that no teammate matches up well
+; against.
 	call AICheckPlayerHalfHP
 	ret nc
 	call AISmogon_GetPlayerTraits
 	bit SMOGON_THREAT_F, a
-	jr nz, .threat
+	jr nz, .threat_unless_winning
 	call AISmogon_PlayerBoosted
-	jr c, .threat
+	jr c, .threat_unless_winning
 	push hl
 	call AISmogon_ScoreActive
 	call AISmogon_FindBestSwitchIn
@@ -1023,6 +1025,15 @@ AI_Smogon_Explosion:
 	ret nc
 	ld a, [wSmogonAIBestScore]
 	cp SMOGON_MATCHUP_EVEN
+	ret nc
+	jr .threat
+
+.threat_unless_winning
+	push hl
+	call AISmogon_ScoreActive
+	pop hl
+	ld a, [wEnemyAISwitchScore]
+	cp SMOGON_MATCHUP_EVEN + 1
 	ret nc
 .threat
 	dec [hl]

@@ -132,9 +132,9 @@ user's save files.
   battle states: `AISmogon_PickedMoveKOsFirst` (its answer, and that it
   keeps `wEnemyMoveStruct`, `wCurDamage` and `wCriticalHit`),
   `AISmogon_PenalizeAsleepActive`, `AISmogon_EnemyHasUsefulBoosts`,
-  `AISmogon_GetSetupBoost`, `AISmogon_SetupPower` and the stalemate flag
-  of `AISmogon_ScoreActive` (on positions built from a trace, against the
-  save's party). Last line `RESULT: ALL OK`. Add cases
+  `AISmogon_GetSetupBoost`, `AISmogon_SetupPower`, the stalemate flag of
+  `AISmogon_ScoreActive` and `AI_Smogon_Explosion` (on positions built
+  from traces, against the save's party). Last line `RESULT: ALL OK`. Add cases
   there for helpers `ai_scenarios.py` can't reach (it only reads move
   scores).
 
