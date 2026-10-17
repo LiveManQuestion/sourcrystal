@@ -27,10 +27,13 @@ How the trainer AI is organized (see also `CLAUDE.md`).
     A priority attack ranks first when the player is faster; Lock-On and
     Thunder in rain count as sure hits; charging, recharging, locking and
     random-damage attacks and Explosion are left out (`.NotSureKOEffects`),
-    and nothing counts through a Substitute. It clears `wCriticalHit` while
-    it calculates: the flag stays set after a critical hit, and
-    `AIDamageCalc` (also used by the vanilla AI_Aggressive and AI_Risky)
-    would double the damage. Costs about 2 frames a turn.
+    and nothing counts through a Substitute or while the enemy is asleep
+    or frozen (Sleep Talk keeps its turn). The ranking is
+    `AISmogon_RankLoadedMove`: it clears `wCriticalHit` while it
+    calculates (the flag stays set after a critical hit, and `AIDamageCalc`,
+    also used by the vanilla AI_Aggressive and AI_Risky, would double the
+    damage) and keeps `wCurDamage`, which Counter reads. Costs about 2
+    frames a turn.
 - `engine/battle/ai/smogon_switch.asm`: matchup scoring as a KO race.
   `AISmogon_AttackDamage` estimates each side's best attack with the damage
   formula (no random factor, crits or accuracy), `AISmogon_TurnsToKO` turns
@@ -64,7 +67,11 @@ How the trainer AI is organized (see also `CLAUDE.md`).
   `AISmogon_FindBestSwitchIn` and the post-faint replacement choice. Tuning
   constants (`SMOGON_*`) are in `constants/trainer_data_constants.asm`.
 - `engine/battle/ai/items.asm`: `AI_SwitchOrTryItem`. `SwitchSmogon` is the
-  mid-battle switch decision for `SWITCH_SMOGON` trainer classes. It also
+  mid-battle switch decision for `SWITCH_SMOGON` trainer classes. It runs
+  after the player's switch, with the move already picked (`wCurEnemyMove`,
+  loaded in `wEnemyMoveStruct`), and stays in when that move KOs the player
+  first (`AISmogon_PickedMoveKOsFirst`: a sure KO while faster, or with
+  priority), unless Perish Song is at 1. It also
   switches out a Pokemon with no useful move left: `AIChooseMove` (which runs
   first each turn) sets `wEnemyAIMovesSpent` when every move scores above 20.
 - Banks: `items.asm`, `switch.asm`, `scoring.asm`, `smogon.asm`,

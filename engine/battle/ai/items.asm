@@ -178,6 +178,9 @@ SwitchSmogon:
 .no_perish
 
 ; Reasons to stay in:
+; Knocking the player out first beats any switch.
+	call AISmogon_PickedMoveKOsFirst
+	jp c, DontSwitch
 ; Switching out throws away stat boosts and a Substitute.
 	call AISmogon_EnemyBoosted
 	jp c, DontSwitch

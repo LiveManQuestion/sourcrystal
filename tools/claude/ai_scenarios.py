@@ -162,6 +162,8 @@ scen = [
      dict(php=lambda: (int(ice_beam_damage() * 1.3), 999), ptypes=(C['NORMAL'], C['NORMAL']), crit=1), [20]),
     ('sure KO: just in range', M('ICE_BEAM'),
      dict(php=lambda: (int(ice_beam_damage() * 0.8), 999), ptypes=(C['NORMAL'], C['NORMAL'])), [17]),
+    ('sure KO: asleep', M('SLEEP_TALK', 'ICE_BEAM'),
+     dict(php=(1, 100), ptypes=(C['NORMAL'], C['NORMAL']), estatus=2), [20, 20]),
     ('sure KO: immune', M('BODY_SLAM', 'ICE_BEAM'),
      dict(php=(1, 100), ptypes=(C['GHOST'], C['GHOST'])), [20, 17]),
 ]

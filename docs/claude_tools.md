@@ -122,6 +122,10 @@ user's save files.
 - `storage_test.py ROM SYM RAM [SEED] [STEPS]`: model-based test of the PC
   boxes (moves, saves, resets, interrupted saves). Last line `RESULT: OK`.
   `game_call.py` calls ROM functions from Python.
+- `sure_ko_test.py ROM SYM RAM`: calls `AISmogon_PickedMoveKOsFirst` on
+  hand-made battle states and checks its answer and that it keeps
+  `wEnemyMoveStruct`, `wCurDamage` and `wCriticalHit`. Last line
+  `RESULT: ALL OK`.
 
 `stadium2/` runs Pokémon Stadium 2 in mupen64plus (`docs/stadium2.md`).
 

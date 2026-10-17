@@ -480,3 +480,15 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   the AI's pick in 21 of 48 battles, and over 576 smart-player battles AI
   wins went 258 -> 253 (z -0.3, noise). About 2 frames per turn
   (`ai_profile.py`).
+- **2026-10-16**: `SwitchSmogon` stays in when the move the AI picked KOs the
+  player first (`AISmogon_PickedMoveKOsFirst`: a sure KO while faster, or
+  with priority; only Perish Song at 1 overrides it), from the engine
+  judge's Tauros that switched to Blissey with a KO on a 27 HP Cloyster.
+  The sure-KO ranking moved into `AISmogon_RankLoadedMove`, which now also
+  keeps `wCurDamage` (Counter reads it) and skips an asleep or frozen
+  enemy: `AI_Smogon_SureKO` had been able to push a KO move over Sleep
+  Talk. Checked: `sure_ko_test.py` (7 direct cases), `ai_scenarios.py`
+  ALL OK (new asleep case), 4 trainers x 144 seeds: AI wins 253 -> 255 of
+  576 (z +0.1), mid-battle switches 2.78 -> 2.74 per battle;
+  `engine_judge.py`: switch-outs the engine calls clearly wrong 5 -> 2,
+  both against a healthy Vaporeon.

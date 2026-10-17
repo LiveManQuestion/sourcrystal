@@ -332,17 +332,6 @@ AI_Smogon_SureKO:
 ; first when the player is faster) and discourage the rest. The damage
 ; layers (AI_Aggressive, AI_Risky) only look at the highest roll and ignore
 ; accuracy, so they used Fire Blast over Ice Beam on a Steelix with 2 HP.
-; A Substitute would take the hit instead.
-	ld a, [wPlayerSubStatus4]
-	bit SUBSTATUS_SUBSTITUTE, a
-	ret nz
-
-; wCriticalHit is still set if the last attack was a critical hit, and
-; AIDamageCalc would double the damage: count a regular hit.
-	ld a, [wCriticalHit]
-	push af
-	xor a
-	ld [wCriticalHit], a
 	ld c, 0
 .rank_loop
 	push bc
@@ -356,8 +345,6 @@ AI_Smogon_SureKO:
 	ld a, c
 	cp NUM_MOVES
 	jr c, .rank_loop
-	pop af
-	ld [wCriticalHit], a
 
 ; b = the best rank
 	ld hl, wSmogonAIKORanks
@@ -395,14 +382,8 @@ AI_Smogon_SureKO:
 	jr nz, .score_loop
 	ret
 
-.not_ko
-	xor a
-	ret
-
 .Rank:
-; Return in a the rank of move c as a sure KO: 0 if it isn't one, else
-; its accuracy / 4 + 1 (at most 64), plus $80 for a priority attack when
-; the player is faster.
+; Return in a the rank of move c (AISmogon_RankLoadedMove).
 	ld b, 0
 	ld hl, wEnemyAIMoveScores
 	add hl, bc
@@ -415,6 +396,58 @@ AI_Smogon_SureKO:
 	and a
 	jr z, .not_ko
 	call AIGetEnemyMove
+	jp AISmogon_RankLoadedMove
+
+.not_ko
+	xor a
+	ret
+
+AISmogon_PickedMoveKOsFirst:
+; Return carry if the move the enemy is about to use (wCurEnemyMove) is a
+; sure KO that lands before the player moves: the enemy is faster, or the
+; move has priority. Keeps wEnemyMoveStruct, which the battle has loaded.
+	ld a, [wCurEnemyMove]
+	and a
+	ret z
+	ld hl, wEnemyMoveStruct + MOVE_LENGTH - 1
+	ld c, MOVE_LENGTH
+.save
+	ld a, [hld]
+	push af
+	dec c
+	jr nz, .save
+	ld a, [wCurEnemyMove]
+	call AIGetEnemyMove
+	call AISmogon_RankLoadedMove
+	ld b, a
+	ld hl, wEnemyMoveStruct
+	ld c, MOVE_LENGTH
+.restore
+	pop af
+	ld [hli], a
+	dec c
+	jr nz, .restore
+	ld a, b
+	and a
+	ret z
+	bit 7, a
+	scf
+	ret nz
+	jp AICompareSpeed
+
+AISmogon_RankLoadedMove:
+; Return in a the rank of the move in wEnemyMoveStruct as a sure KO: 0 if
+; its lowest damage roll doesn't KO the player (or a Substitute would take
+; it, or the enemy is asleep or frozen and can't attack, so Sleep Talk
+; keeps its turn), else its accuracy / 4 + 1 (at most 64), plus $80 for a
+; priority attack when the player is faster. Keeps wCurDamage and
+; wCriticalHit.
+	ld a, [wPlayerSubStatus4]
+	bit SUBSTATUS_SUBSTITUTE, a
+	jr nz, .not_ko
+	ld a, [wEnemyMonStatus]
+	and SLP_MASK | 1 << FRZ
+	jr nz, .not_ko
 	ld a, [wEnemyMoveStruct + MOVE_POWER]
 	and a
 	jr z, .not_ko
@@ -426,33 +459,31 @@ AI_Smogon_SureKO:
 	call AISmogon_MissesHiddenPlayer
 	jr c, .not_ko
 
-; The lowest roll is 217/255 (85%) of the highest: count 27/32 of it.
-	call AIDamageCalc
+; wCriticalHit is still set if the last attack was a critical hit, and
+; AIDamageCalc would double the damage: count a regular hit. Counter and
+; Mirror Coat read wCurDamage.
 	ld a, [wCurDamage]
 	ld h, a
-	ld d, a
 	ld a, [wCurDamage + 1]
 	ld l, a
-	ld e, a
-rept 3
-	srl d
-	rr e
-endr
-	call .Subtract
-rept 2
-	srl d
-	rr e
-endr
-	call .Subtract
-	ld a, [wBattleMonHP + 1]
-	ld e, a
-	ld a, [wBattleMonHP]
-	ld d, a
-	ld a, l
-	sub e
+	push hl
+	ld a, [wCriticalHit]
+	push af
+	xor a
+	ld [wCriticalHit], a
+	call .KOs
+	sbc a
+	ld b, a
+	pop af
+	ld [wCriticalHit], a
+	pop hl
 	ld a, h
-	sbc d
-	jr c, .not_ko
+	ld [wCurDamage], a
+	ld a, l
+	ld [wCurDamage + 1], a
+	ld a, b
+	and a
+	jr z, .not_ko
 
 ; Lock-On makes the next attack hit, and so does Thunder in rain.
 	ld a, [wEnemySubStatus5]
@@ -481,6 +512,41 @@ endr
 	set 7, b
 .no_priority
 	ld a, b
+	ret
+
+.not_ko
+	xor a
+	ret
+
+.KOs:
+; Return carry if the lowest roll KOs the player. The lowest roll is
+; 217/255 (85%) of the highest: count 27/32 of it.
+	call AIDamageCalc
+	ld a, [wCurDamage]
+	ld h, a
+	ld d, a
+	ld a, [wCurDamage + 1]
+	ld l, a
+	ld e, a
+rept 3
+	srl d
+	rr e
+endr
+	call .Subtract
+rept 2
+	srl d
+	rr e
+endr
+	call .Subtract
+	ld a, [wBattleMonHP + 1]
+	ld e, a
+	ld a, [wBattleMonHP]
+	ld d, a
+	ld a, l
+	sub e
+	ld a, h
+	sbc d
+	ccf
 	ret
 
 .Subtract:
