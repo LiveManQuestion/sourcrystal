@@ -46,10 +46,12 @@ the user's save files.
   `.aicheck/` (git-ignored) by its contents, the save and the options, so
   the base runs once per commit; about an hour per uncached ROM. Run it in
   the background and read the report; tee it to a file to keep it.
-- `ai_scenarios.py ROM SYM RAM`: exact-state checks of AI_Smogon's scores, the
-  heal-move multiplier the engine picks, the switch-in choice by type
-  (`switch_cases`) and the power AIGetEnemyMove loads (`hp_cases`). Restarts
-  itself if the test battle ends; last line `RESULT: ALL OK`. Add cases there.
+- `ai_scenarios.py ROM SYM RAM [-k TEXT]`: exact-state checks of AI_Smogon's
+  scores, the heal-move multiplier the engine picks, the switch-in choice by
+  type (`switch_cases`) and the power AIGetEnemyMove loads (`hp_cases`).
+  Restarts itself if the test battle ends, resuming each phase where it
+  stopped; last line `RESULT: ALL OK`. About 3.5 minutes; `-k heal` runs only
+  the cases whose name contains "heal" (seconds). Add cases there.
   `AI_Smogon` is far-called: match the stack pointer, not just the address,
   when hooking a return.
 - `damage_diff.py VANILLA.gbc VANILLA.sym ROM.gbc ROM.sym [N]`: runs the damage
@@ -93,7 +95,9 @@ the user's save files.
     the others never win, so they give no signal), with 48+ seeds, compared
     against `build_rev.sh` of the last commit.
 - `ai_trace.py run ROM SYM RAM TRAINER SEED [--random]`: every `SwitchSmogon`
-  decision (its branch labels, scores, the move picked and every move's score
+  decision (its branch labels, scores (None when the decision didn't compute
+  them, like a Pokemon its boosts keep in: the WRAM then holds an older
+  matchup's), the move picked and every move's score
   after all AI layers (`move_scores`), both sides' state, the stalemate flag),
   every switch-in candidate's score with its attack lists, healing blocks and
   setup credit,
@@ -147,7 +151,10 @@ the user's save files.
   A switch decision should stay within about 8 frames.
 - `storage_test.py ROM SYM RAM [SEED] [STEPS]`: model-based test of the PC
   boxes (moves, saves, resets, interrupted saves). Last line `RESULT: OK`.
-  `game_call.py` calls ROM functions from Python.
+  `game_call.py` calls ROM functions from Python: `Game(rom, sym, ram)`,
+  `.boot()`, `.call(name, A=..., HL=..., poke={...})`. The overworld rewrites
+  some WRAM every frame (`wTimeOfDay` and `hHours`, from the clock), so set
+  those with `poke`, written just before the call starts.
 - `smogon_calls_test.py ROM SYM RAM`: calls Smogon AI helpers on hand-made
   battle states: `AISmogon_PickedMoveKOsFirst` (its answer, and that it
   keeps `wEnemyMoveStruct`, `wCurDamage` and `wCriticalHit`),

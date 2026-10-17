@@ -1,8 +1,10 @@
 """PyBoy harness: boot a save to the overworld and call ROM functions.
 Game(rom, sym, ram).boot() continues the save; call(name, B=..., HL=...) runs
 a function at the next DelayFrame (switching the ROM bank directly, so a and
-the flags come back) and restores every register afterwards. Used by
-storage_test.py."""
+the flags come back) and restores every register afterwards. Memory the
+overworld keeps rewriting (wTimeOfDay and hHours, from the clock, every
+frame) is set with poke={'wTimeOfDay': 2}: written just before the call
+starts. Used by storage_test.py and smogon_calls_test.py."""
 import io, re
 from pyboy import PyBoy
 
@@ -45,7 +47,7 @@ class Game:
             self.saved = None
             return
         if self.pending and self.saved is None:
-            name, args = self.pending
+            name, args, poke = self.pending
             self.pending = None
             self.saved = dict(A=r.A, F=r.F, B=r.B, C=r.C, D=r.D, E=r.E, HL=r.HL, SP=r.SP)
             self.saved['bank'] = self.pb.memory[self.addr('hROMBank')]
@@ -61,11 +63,13 @@ class Game:
             for k in 'ABCDE':
                 if k in args: setattr(r, k, args[k])
             if 'HL' in args: r.HL = args['HL']
+            for n, v in poke.items():
+                self.pb.memory[self.addr(n)] = v
             r.PC = target
 
-    def call(self, name, frames=120, **args):
+    def call(self, name, frames=120, poke=None, **args):
         self.result = None
-        self.pending = (name, args)
+        self.pending = (name, args, poke or {})
         for _ in range(frames):
             self.pb.tick(1, False)
             if self.result is not None: break

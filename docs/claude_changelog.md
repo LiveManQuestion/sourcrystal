@@ -665,3 +665,15 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   had the clock-reset flag set (`sRTCStatusFlags` $80), so Continue asked to
   reset the clock and no headless battle started. CLAUDE.md points at
   `pokecrystal_wiki/`.
+- **2026-10-17**: Three test tool fixes. `ai_trace.py` records the
+  active and best switch-in scores as None when a decision didn't compute
+  them (hooks on `AISmogon_ScoreActive` and `AISmogon_FindBestSwitchIn`):
+  a Pokemon its boosts kept in used to show the previous matchup's score,
+  which misled the Venusaur investigation. `game_call.py`'s `call` takes
+  `poke={...}`, memory written just before the call, for what the overworld
+  rewrites every frame (the time of day): `smogon_calls_test.py` now tests
+  Synthesis at night and by day. `ai_scenarios.py -k TEXT` runs only the
+  matching cases (seconds instead of 3.5 minutes); its restarts now resume
+  the switch-in and move power phases instead of rerunning them, and "heal
+  above half" gives the player only Splash so it no longer depends on the
+  test battle's Pokemon (the committed version failed it in one run).

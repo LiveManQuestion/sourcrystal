@@ -1,5 +1,6 @@
 """Scenario tests for the new AI_Smogon handlers and the reverted heal engine.
-usage: ai_scenarios.py ROM SYM SAVE.ram [FIRST_CASE]   (prints PASS/FAIL per case)
+usage: ai_scenarios.py ROM SYM SAVE.ram [FIRST_CASE] [-k TEXT]   (prints PASS/FAIL per case)
+-k runs only the cases whose name contains TEXT (any phase), like -k heal.
 The last line is "RESULT: ALL OK" or "RESULT: NOT OK". When the test battle
 ends before every case has run, the script restarts itself from the next case
 (skipping phases that already finished) until everything has run.
@@ -17,13 +18,21 @@ import io, json, os, re, sys, random
 from pyboy import PyBoy
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
-rom, symf, save = sys.argv[1:4]
-first = int(sys.argv[4]) if len(sys.argv) > 4 else 0
+args = sys.argv[1:]
+if '-k' in args:
+    # (kept in the environment for the restarts below)
+    os.environ['AI_SCENARIOS_K'] = args.pop(args.index('-k') + 1)
+    args.remove('-k')
+ONLY = os.environ.get('AI_SCENARIOS_K')
+rom, symf, save = args[:3]
+first = int(args[3]) if len(args) > 3 else 0
 # set when the script restarts itself (see the end)
 FAILED_BEFORE = int(os.environ.get('AI_SCENARIOS_FAILED', '0'))
 SKIP_SWITCH = os.environ.get('AI_SCENARIOS_SKIP_SWITCH') == '1'
 SKIP_POWER = os.environ.get('AI_SCENARIOS_SKIP_POWER') == '1'
 HEAL_FIRST = int(os.environ.get('AI_SCENARIOS_HEAL_FIRST', '0'))
+SWITCH_FIRST = int(os.environ.get('AI_SCENARIOS_SWITCH_FIRST', '0'))
+POWER_FIRST = int(os.environ.get('AI_SCENARIOS_POWER_FIRST', '0'))
 
 # --- constants -------------------------------------------------------------
 C = {}
@@ -114,7 +123,8 @@ scen = [
     ('heal eve 17h', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(patkstat=400, tod=C['EVE_F'], hours=17), [20, 18, 20, 18]),
     ('heal eve 19h', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(patkstat=400, tod=C['EVE_F'], hours=19), [20, 20, 18, 18]),
     # (Synthesis and Moonlight heal a quarter in the morning: not worth a turn while healing can wait)
-    ('heal above half', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'), dict(tod=C['MORN_F'], hours=6, hp=(60, 100)), [20, 21, 21, 20]),
+    ('heal above half', M('MORNING_SUN', 'SYNTHESIS', 'MOONLIGHT', 'RECOVER'),
+     dict(tod=C['MORN_F'], hours=6, hp=(60, 100), pused=M('SPLASH', 'SPLASH', 'SPLASH', 'SPLASH')), [20, 21, 21, 20]),
     # AISmogon_HealCanWait: the player has revealed four moves, so only those count.
     ('heal can wait vs splash', M('RECOVER', 'REST'), dict(pused=M('SPLASH', 'SPLASH', 'SPLASH', 'SPLASH')), [21, 21]),
     ('heal can wait, but poisoned', M('RECOVER', 'REST'),
@@ -207,6 +217,8 @@ def ot_speeds():
         if mem[hp_] | mem[hp_ + 1]:
             out.append(mem[spd] << 8 | mem[spd + 1])
     return out
+if ONLY:
+    scen = [c for c in scen if ONLY in c[0]]
 scen = scen[first:]
 # Engine phase: (name, move, tod, hours, weather, expected .Multipliers index)
 heal_cases = [
@@ -288,11 +300,19 @@ hp_cases += [
     ('magnitude average', 'MAGNITUDE', (0, 0), 70, (71, C['GROUND'])),
 ]
 
+if ONLY:
+    heal_cases = [c for c in heal_cases if ONLY in c[0]]
+    switch_cases = [c for c in switch_cases if ONLY in c[0]]
+    hp_cases = [c for c in hp_cases if ONLY in c[0]]
+    if not (scen or heal_cases or switch_cases or hp_cases or first):
+        sys.exit(f'no case name contains {ONLY!r}')
 if SKIP_SWITCH:
     switch_cases = []
 if SKIP_POWER:
     hp_cases = []
 heal_cases = heal_cases[HEAL_FIRST:]
+switch_cases = switch_cases[SWITCH_FIRST:]
+hp_cases = hp_cases[POWER_FIRST:]
 
 results, state = [], {'i': 0, 'cur': None, 'ret': None, 'heal_i': 0, 'heal_cur': None}
 
@@ -524,7 +544,10 @@ mem[W('wMapReentryScriptBank')] = 1
 mem[W('wMapReentryScriptAddress')] = 0xe2; mem[W('wMapReentryScriptAddress') + 1] = 0xcf
 
 rng = random.Random(1)
-while frame < 60 * 60 * 120 and not crashed and (state['heal_i'] < len(heal_cases) or sw['i'] < len(switch_cases)):
+# (and until the last case started has been read)
+while frame < 60 * 60 * 120 and not crashed and (state['i'] < len(scen) or state['heal_i'] < len(heal_cases)
+                                                 or sw['i'] < len(switch_cases) or hp['i'] < len(hp_cases)
+                                                 or state['cur'] or state['heal_cur'] or hp['cur']):
     if mem[W('wBattleMode')] == 2:
         # Keep the player alive, but not while a case is running: the AI
         # can take several frames, and this would overwrite the case's HP.
@@ -548,7 +571,9 @@ if not complete and progress and not crashed:
     env = dict(os.environ, AI_SCENARIOS_FAILED=str(failed),
                AI_SCENARIOS_SKIP_SWITCH='1' if SKIP_SWITCH or sw['i'] == len(switch_cases) else '0',
                AI_SCENARIOS_SKIP_POWER='1' if SKIP_POWER or hp['i'] == len(hp_cases) else '0',
-               AI_SCENARIOS_HEAL_FIRST=str(HEAL_FIRST + state['heal_i']))
+               AI_SCENARIOS_HEAL_FIRST=str(HEAL_FIRST + state['heal_i']),
+               AI_SCENARIOS_SWITCH_FIRST=str(SWITCH_FIRST + sw['i']),
+               AI_SCENARIOS_POWER_FIRST=str(POWER_FIRST + hp['i']))
     script = os.path.abspath(__file__)
     os.execve(sys.executable, [sys.executable, script, rom, symf, save, str(first + state['i'])], env)
 print('RESULT:', 'ALL OK' if complete and not failed else f'NOT OK ({failed} failed{", incomplete" if not complete else ""})')

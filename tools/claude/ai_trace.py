@@ -8,7 +8,9 @@ run plays one battle with battle_harness.py (the smart player by default, or
 the random Typhlosion with --random) and prints one JSON line:
 - decisions: every SwitchSmogon call, with the branch labels it went
   through (SwitchSmogon.escape, .matchup, .switch, DontSwitch...), the
-  active and best switch-in scores, the move the AI had picked, its spent
+  active and best switch-in scores (None when this decision didn't compute
+  them, like a Pokemon kept in by its boosts: the WRAM still holds an older
+  matchup's), the move the AI had picked, its spent
   flag, Spikes on each side, both sides' Pokemon (species, level, HP,
   stats, types, moves, PP, DVs, status, item), item_used when the AI used an
   item instead, move_scores (each move's score after every AI layer, lower
@@ -112,6 +114,14 @@ def run(argv):
         d['move_scores'] = current.get('move_scores')
         decisions.append(d)
         current['d'] = d
+        current['fresh'] = set()
+
+    def on_scoring(what):
+        # which scores this decision computes (between SwitchSmogon and its end)
+        def cb(ctx):
+            if current.get('d') is not None:
+                current['fresh'].add(what)
+        return cb
 
     def on_choose(ctx):
         current['chose_vs'] = mem[W('wCurBattleMon')]
@@ -128,10 +138,13 @@ def run(argv):
                 return
             d['path'].append(label.split('.')[-1])
             if label in ('DontSwitch', 'SwitchSmogon.switch'):
-                d['scores'] = {'active': mem[W('wEnemyAISwitchScore')], 'best': mem[W('wSmogonAIBestScore')],
-                               'best_mon': mem[W('wSmogonAIBestMon')]}
+                fresh = current['fresh']
+                active, best = 'active' in fresh, 'best' in fresh
+                d['scores'] = {'active': mem[W('wEnemyAISwitchScore')] if active else None,
+                               'best': mem[W('wSmogonAIBestScore')] if best else None,
+                               'best_mon': mem[W('wSmogonAIBestMon')] if best else None}
                 if 'wSmogonAIActiveStalled' in battle.sym:
-                    d['scores']['stalled'] = mem[W('wSmogonAIActiveStalled')]
+                    d['scores']['stalled'] = mem[W('wSmogonAIActiveStalled')] if active else None
                 d['switched'] = label == 'SwitchSmogon.switch'
                 current['d'] = None
         return cb
@@ -178,6 +191,8 @@ def run(argv):
         if label in battle.sym:
             battle.on(label, on_branch(label))
     battle.on('AISmogon_FindBestSwitchIn.compare', on_candidate)
+    battle.on('AISmogon_ScoreActive', on_scoring('active'))
+    battle.on('AISmogon_FindBestSwitchIn', on_scoring('best'))
     battle.on('LoadEnemyMonToSwitchTo', on_switch_in)
     battle.start()
     result = battle.run(frames)

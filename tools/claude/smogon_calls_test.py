@@ -345,24 +345,28 @@ VENUSAUR = dict(species=SPECIES['VENUSAUR'], level=88, hp=244, max_hp=244, stats
 BLISSEY = dict(species=SPECIES['BLISSEY'], level=76, hp=496, max_hp=496, stats=[30, 43, 111, 141, 233],
                moves=[MOVE_IDS[x] for x in ('SOFTBOILED', 'HEAL_BELL', 'ICE_BEAM', 'FLAMETHROWER')],
                pp=[10, 5, 10, 15], dvs=(255, 255), item=0)
-# The overworld sets wTimeOfDay from the clock, so a quarter heal is Morning
-# Sun, or Moonlight in the morning (constants/ram_constants.asm: MORN_F is 0).
-QUARTER_HEAL = 'MOONLIGHT' if m[A('wTimeOfDay')] == 0 else 'MORNING_SUN'
+# Synthesis heals a quarter at night (poked when the call starts: the
+# overworld rewrites the time from the clock every frame).
+NIGHT = {'wTimeOfDay': 2, 'hHours': 23}  # NITE_F, constants/ram_constants.asm
+DAY = {'wTimeOfDay': 1, 'hHours': 12}  # DAY_F
 heal_cases = [
-    # (name, enemy, its HP, Sp.Atk stage, move, the player's Pokemon, its types, revealed moves, expected score)
+    # (name, enemy, its HP, Sp.Atk stage, move, the player's Pokemon, its types, revealed moves, expected score,
+    # time of day: night if left out)
     # (Surf takes 48 of Venusaur's 84 HP; Razor Leaf needs 3 hits on Vaporeon, 2 after Growth)
     ('venusaur recover vs vaporeon', VENUSAUR, 84, 7, 'RECOVER', 'VAPOREON', ('WATER', 'WATER'),
      ['SURF'], 18),
     ('+2 venusaur recover vs vaporeon (KOs first)', VENUSAUR, 84, 9, 'RECOVER', 'VAPOREON',
      ('WATER', 'WATER'), ['SURF'], 21),
-    ('venusaur quarter heal vs vaporeon', VENUSAUR, 84, 7, QUARTER_HEAL, 'VAPOREON', ('WATER', 'WATER'),
+    ('venusaur synthesis at night (1/4) vs vaporeon', VENUSAUR, 84, 7, 'SYNTHESIS', 'VAPOREON', ('WATER', 'WATER'),
      ['SURF'], 20),
-    ('+2 venusaur quarter heal vs vaporeon (KOs first)', VENUSAUR, 84, 9, QUARTER_HEAL, 'VAPOREON',
+    ('+2 venusaur synthesis at night (1/4) vs vaporeon (KOs first)', VENUSAUR, 84, 9, 'SYNTHESIS', 'VAPOREON',
      ('WATER', 'WATER'), ['SURF'], 21),
     ('blissey softboiled vs vaporeon', BLISSEY, 200, 7, 'SOFTBOILED', 'VAPOREON', ('WATER', 'WATER'),
      ['SURF'], 18),
+    ('venusaur synthesis by day (1/2) vs vaporeon', VENUSAUR, 84, 7, 'SYNTHESIS', 'VAPOREON', ('WATER', 'WATER'),
+     ['SURF'], 18, DAY),
 ]
-for name, mon, hp, stage, move, player, ptypes, pused, exp in heal_cases:
+for name, mon, hp, stage, move, player, ptypes, pused, exp, *time in heal_cases:
     if SPECIES[player] not in party:
         print('SKIP', name); continue
     set_ot(dict(mon, hp=hp))
@@ -372,7 +376,7 @@ for name, mon, hp, stage, move, player, ptypes, pused, exp in heal_cases:
     w('wBattleWeather', 0)
     g.call('AIGetEnemyMove', A=MOVE_IDS[move])
     w('wEnemyAIMoveScores', 20)
-    g.call('AI_Smogon_Heal', HL=A('wEnemyAIMoveScores'), frames=600)
+    g.call('AI_Smogon_Heal', HL=A('wEnemyAIMoveScores'), frames=600, poke=time[0] if time else NIGHT)
     got = m[A('wEnemyAIMoveScores')]
     kept = m[A('wEnemyMoveStruct')] == MOVE_IDS[move]
     good = got == exp and kept
