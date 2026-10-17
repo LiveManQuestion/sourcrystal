@@ -16,12 +16,19 @@ Spikes before setup, and not healing when a two-hit KO comes first (Venusaur
 vs Vaporeon, `a65dbedd0`), and comparing attacks by damage times accuracy
 in Challenge Mode (Qwilfish's Hydro Pump vs Cloyster, `91187591c`), and
 Acid Armor only against physical attackers, with unrevealed attackers
-judged by their expected attacks (Vaporeon vs Cloyster, 2026-10-17).
+judged by their expected attacks (Vaporeon vs Cloyster, `d9162c4d0`), and
+no Explosion into raised Defense without a sure KO (Forretress vs Curse
+Snorlax, 2026-10-17).
 
-Last measured (4 trainers x 144 seeds, the user's party), after the Acid
-Armor fix: AI wins 283 of 576. Koga 2 120/144, Whitney 2 81, Misty 2 54,
-Jasmine 2 28. Engine judge over 144 traced battles: 3819 decisions, total
-regret 47.5. The cache for this ROM is `.aicheck/f8f75a9764817efb`.
+The headless smart player now uses its status moves (Curse, Rest, Sleep
+Talk, Sleep Powder, Roar, Toxic, Explosion); `SMART_PLAYER=basic` is the old
+attack-only player. It beats the AI far more often, so win rates from
+before it aren't comparable.
+
+Last measured (4 trainers x 144 seeds, the user's party, new player), after
+the Explosion fix: AI wins 229 of 576. Koga 2 111/144, Whitney 2 65, Misty
+2 33, Jasmine 2 20. Engine judge over 144 traced battles: 4560 decisions,
+total regret 49.45. The cache for this ROM is `.aicheck/a5d583a574897d25`.
 
 ## The loop
 
@@ -53,26 +60,26 @@ regret 47.5. The cache for this ROM is `.aicheck/f8f75a9764817efb`.
 6. Changelog entry, then commit when the user says so (they review each fix
    and say "commit").
 
-## Candidate patterns (latest judge, after the Acid Armor fix)
+## Candidate patterns (latest judge, new player, after the Explosion fix)
 
-No concentrated pattern is left: the biggest clear groups come from one
-battle each. Clear disagreements (regret > 0.1) by matchup, AI action and
-engine action, with the number of battles:
+Clear disagreements (regret > 0.1) by matchup, AI action and engine action:
 
 ```
-clear battles
-   5    1  KINGDRA  vs CLOYSTER  sleeptalk -> switch lanturn
-   4    1  QWILFISH vs CLOYSTER  sludgebomb -> switch gengar
-   2    2  MAGNETON vs STEELIX   reflect -> hiddenpowerwater70
-   2    2  AMPHAROS vs EXEGGUTOR switch skarmory -> lightscreen
-   2    2  QWILFISH vs EXEGGUTOR hydropump -> switch tentacruel
-   2    2  TENTACRUEL vs STEELIX sludgebomb -> switch crobat
+clear decisions regret
+   3   43  1.34  VENUSAUR vs SNORLAX   hiddenpowerfire -> razorleaf
+   3   23  0.98  PORYGON2 vs STEELIX   recover -> icebeam
+   3    3  0.85  QUAGSIRE vs VAPOREON  earthquake -> switch
+   2    2  0.91  GENGAR   vs ZAPDOS    dynamicpunch -> explosion
+   2   10  0.67  KINGDRA  vs VAPOREON  sleeptalk -> switch
 ```
 
-Next steps worth trying: more seeds (`TRACE_SEEDS=72`) to see whether
-any of these recur, or look at the zero-clear but high-total patterns
-(Curse -> Body Slam for Miltank vs Snorlax, 53 decisions; Milk Drink vs
-Cloyster), which are many small regrets in one matchup.
+Venusaur vs Snorlax is the top matchup (98 decisions, 2.89 regret; also
+Razor Leaf -> Synthesis, 20 decisions); check first whether the engine is
+using the player's whole party, which the AI can't know. The Tentacruel
+patterns from the new player's first run (Sludge Bomb where the engine uses
+Swords Dance vs Vaporeon or Substitute vs Cloyster, 3 and 4 clear) vanished
+after the Explosion fix's RNG reshuffle: see whether they come back with
+more seeds before fixing them.
 
 ## Pitfalls already hit
 

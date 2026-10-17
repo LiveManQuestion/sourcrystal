@@ -292,6 +292,45 @@ for name, mon, hp, speed, php, exp, player, ptypes, pused in boom_cases:
           'matchup', m[A('wEnemyAISwitchScore')])
 w('wPlayerScreens', 0)
 
+# AI_Smogon_Explosion vs raised Defense (Jasmine 2's Forretress vs the
+# save's Snorlax after two Curses): no trade without a sure KO.
+FORRETRESS = dict(species=SPECIES['FORRETRESS'], level=76, hp=222, max_hp=222, stats=[164, 240, 88, 119, 119],
+                  moves=[MOVE_IDS[x] for x in ('PIN_MISSILE', 'SPIKES', 'EXPLOSION', 'CURSE')],
+                  pp=[19, 19, 5, 10], dvs=(255, 255), item=0)
+curse_boom_cases = [
+    # (name, the player's HP, expected score)
+    ('forretress vs +2 snorlax', 352, 20),
+    # (Explosion's lowest roll is below half its HP, where trades stop, so
+    # it never explodes on it; the Cloyster cases above keep the losing
+    # trade against unboosted Defense)
+    ('forretress vs +2 snorlax, half HP', 177, 20),
+]
+for name, php, exp in curse_boom_cases:
+    if SPECIES['SNORLAX'] not in party:
+        print('SKIP', name); continue
+    set_ot(FORRETRESS)
+    set_ot(QWILFISH, 1)
+    w('wOTPartyCount', 2); w('wOTPartySpecies', QWILFISH['species'], 1); w('wOTPartySpecies', 0xff, 2)
+    set_player(party.index(SPECIES['SNORLAX']) + 1, ('NORMAL', 'NORMAL'), ['CURSE'])
+    word('wBattleMonHP', php)
+    # +2 Attack and Defense, -2 Speed: the battle stats hold the stages
+    for k, (lvl, n) in enumerate(((9, 'Attack'), (9, 'Defense'), (5, 'Speed'))):
+        w('wPlayerStatLevels', lvl, k)
+        word('wBattleMon' + n, (m[A('wBattleMon' + n)] << 8 | m[A('wBattleMon' + n) + 1]) * (lvl - 5) // 2
+             if lvl > 7 else (m[A('wBattleMon' + n)] << 8 | m[A('wBattleMon' + n) + 1]) // 2)
+    w('wPlayerScreens', 1 << CONST['SCREENS_SPIKES'])
+    g.call('AIGetEnemyMove', A=MOVE_IDS['EXPLOSION'])
+    w('wEnemyAIMoveScores', 20)
+    g.call('AI_Smogon_Explosion', HL=A('wEnemyAIMoveScores'), frames=600)
+    got = m[A('wEnemyAIMoveScores')]
+    good = got == exp
+    ok &= good
+    print('PASS' if good else 'FAIL', 'explosion:', name, 'score', got, 'expected', exp,
+          'matchup', m[A('wEnemyAISwitchScore')])
+for k in range(7):
+    w('wPlayerStatLevels', 7, k)
+w('wPlayerScreens', 0)
+
 # AI_Smogon_Toxic: Toxic is for walls, not what our attacks KO soon.
 TENTACRUEL = dict(species=SPECIES['TENTACRUEL'], level=85, hp=256, max_hp=256, stats=[149, 141, 200, 166, 234],
                   moves=[MOVE_IDS[x] for x in ('SURF', 'SLUDGE_BOMB', 'TOXIC', 'GIGA_DRAIN')],

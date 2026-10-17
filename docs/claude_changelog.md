@@ -730,3 +730,15 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
     patterns the old player never set up (Forretress exploding into a +2
     Defense Snorlax, Tentacruel vs Vaporeon/Cloyster). Win rates from before
     this aren't comparable with later ones.
+- **2026-10-17**: Smogon AI: no Explosion into raised Defense unless it
+  KOs. First pattern with the new smart player: Jasmine's Forretress
+  exploding on the save's Snorlax after two Curses, where the engine Curses
+  back (3 clear, 3 battles). +2 Defense cancels Explosion's Defense halving,
+  but `AI_Smogon_Explosion`'s "clearly losing" exception (made for Misty's
+  Cloyster vs Zapdos) skipped the sure-KO requirement. With the player's
+  Defense raised the trade now needs a sure KO.
+  - Checked: both suites ALL OK (new `smogon_calls_test.py` Forretress vs
+    +2 Snorlax cases fail on the old build); 4 trainers x 144 seeds: AI
+    wins 221 -> 229 of 576 (Jasmine 9 -> 20 z +2.2, Koga 113 -> 111, Misty
+    34 -> 33, Whitney 65 -> 65); Explosion -> Curse clear 3 -> 0, Forretress
+    vs Snorlax regret 1.21 -> 0.77; total regret 51.9 -> 49.5.

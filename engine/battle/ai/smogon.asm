@@ -1169,10 +1169,16 @@ AI_Smogon_Explosion:
 .trade
 ; A trade has to take the player's Pokemon down with it (Gengar's Explosion
 ; doesn't surely KO a healthy Vaporeon), unless this Pokemon is clearly
-; losing anyway: Misty's Cloyster still takes most of Zapdos's HP.
+; losing anyway: Misty's Cloyster still takes most of Zapdos's HP. Not
+; against raised Defense, which takes the bite out of Explosion (Forretress
+; exploded on a Snorlax at +2 after Curse).
+	ld a, [wPlayerDefLevel]
+	cp BASE_STAT_LEVEL + 1
+	jr nc, .must_ko
 	ld a, [wEnemyAISwitchScore]
 	cp SMOGON_MATCHUP_EVEN - SMOGON_BOOM_KO_MARGIN
 	jr c, .threat
+.must_ko
 	push hl
 	call AISmogon_LoadedMoveKOs
 	pop hl
