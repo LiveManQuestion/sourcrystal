@@ -12,8 +12,9 @@ AI_Smogon:
 ;   and Psychics, put up the screen that blocks the player's attacks, Baton
 ;   Pass boosts out of trouble, Encore a setup or status move, Heal Bell
 ;   a team weighed down by status, Protect to stall out the player's
-;   residual damage, take a sure KO with the surest attack, and don't start
-;   rain or sun that powers up the player's attacks too.
+;   residual damage, take a sure KO with the surest attack, don't start
+;   rain or sun that powers up the player's attacks too, and use Sleep Talk
+;   while asleep.
 ; - Know the battle mechanics: Thunder never misses in rain, Defense Curl
 ;   doubles Rollout, attacks miss a Pokemon in the air or underground, Endure
 ;   doesn't stop residual damage, and Morning Sun, Synthesis and Moonlight
@@ -84,6 +85,7 @@ AI_Smogon:
 	jr .checkmove
 
 .done
+	call AI_Smogon_Asleep
 	jp AI_Smogon_SureKO
 
 AI_Smogon_EffectHandlers:
@@ -374,6 +376,87 @@ AI_Smogon_Thunder:
 	call AISmogon_IsResisted
 	ret c
 	jp AISmogon_Encourage
+
+AI_Smogon_Asleep:
+; Fast asleep (it won't wake up this turn), only Sleep Talk and Snore do
+; anything: with one of them, discourage every other move (Kingdra kept
+; picking Rest or Surf). Awake, they fail: discourage them (AI_Smart
+; encourages Sleep Talk unless the Pokemon wakes up this turn). On the turn
+; it wakes up, nothing works.
+	ld a, [wEnemyMonStatus]
+	and SLP_MASK
+	jr z, .awake
+	cp 2
+	ret c
+
+	ld c, 0
+.find_loop
+	call .SleepMove
+	jr c, .found
+	inc c
+	ld a, c
+	cp NUM_MOVES
+	jr c, .find_loop
+	ret
+
+.found
+	ld c, 0
+.asleep_loop
+	call .SleepMove
+	call nc, .Discourage
+	inc c
+	ld a, c
+	cp NUM_MOVES
+	jr c, .asleep_loop
+	ret
+
+.awake
+	ld c, 0
+.awake_loop
+	call .SleepMove
+	call c, .Discourage
+	inc c
+	ld a, c
+	cp NUM_MOVES
+	jr c, .awake_loop
+	ret
+
+.Discourage:
+; Discourage move c. Keeps bc.
+	ld hl, wEnemyAIMoveScores
+	ld b, 0
+	add hl, bc
+	jp AIDiscourageMove
+
+.SleepMove:
+; Return carry if move c is a usable Sleep Talk or Snore. Keeps bc.
+	push bc
+	ld b, 0
+	ld hl, wEnemyAIMoveScores
+	add hl, bc
+	ld a, [hl]
+	cp 80 ; disabled or out of PP
+	jr nc, .no
+	ld hl, wEnemyMonMoves
+	add hl, bc
+	ld a, [hl]
+	and a
+	jr z, .no
+	call AIGetEnemyMove
+	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
+	cp EFFECT_SLEEP_TALK
+	jr z, .yes
+	cp EFFECT_SNORE
+	jr z, .yes
+.no
+	pop bc
+	and a
+	ret
+
+.yes
+	pop bc
+	scf
+	ret
 
 AI_Smogon_SureKO:
 ; Take a sure KO with the surest attack: of the attacks whose lowest damage

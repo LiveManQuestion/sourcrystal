@@ -161,6 +161,12 @@ scen = [
     ('sun vs exeggutor', M('SUNNY_DAY'), dict(pspecies=C['EXEGGUTOR'], ptypes=(C['GRASS'], C['PSYCHIC_TYPE'])), [20]),
     ('rain vs unlisted electric type', M('RAIN_DANCE'), dict(ptypes=(C['ELECTRIC'], C['ELECTRIC'])), [23]),
     ('rain vs unlisted normal type', M('RAIN_DANCE'), dict(ptypes=(C['NORMAL'], C['NORMAL'])), [20]),
+    # AI_Smogon_Asleep (Rest also goes through AI_Smogon_Heal: 40% HP and a status)
+    ('asleep: only sleep talk', M('SLEEP_TALK', 'SURF', 'REST', 'ICE_BEAM'), dict(estatus=3), [20, 30, 28, 30]),
+    ('asleep: waking up', M('SLEEP_TALK', 'SURF', 'REST', 'ICE_BEAM'), dict(estatus=1), [20, 20, 18, 20]),
+    ('awake: no sleep talk', M('SLEEP_TALK', 'SURF', 'REST', 'ICE_BEAM'), dict(), [30, 20, 18, 20]),
+    ('asleep without sleep talk', M('SURF', 'REST'), dict(estatus=3), [20, 18]),
+    ('asleep: snore', M('SNORE', 'SURF'), dict(estatus=2), [20, 30]),
     # AI_Smogon_SureKO: the player has 1 HP, so any hit KOs.
     ('sure KO: most accurate', M('FIRE_BLAST', 'ICE_BEAM', 'THUNDER', 'HARDEN'),
      dict(php=(1, 100), ptypes=(C['NORMAL'], C['NORMAL'])), [22, 17, 22, 20]),
@@ -181,8 +187,9 @@ scen = [
      dict(php=lambda: (int(ice_beam_damage() * 1.3), 999), ptypes=(C['NORMAL'], C['NORMAL']), crit=1), [20]),
     ('sure KO: just in range', M('ICE_BEAM'),
      dict(php=lambda: (int(ice_beam_damage() * 0.8), 999), ptypes=(C['NORMAL'], C['NORMAL'])), [17]),
+    # (no KO bonus while asleep; AI_Smogon_Asleep discourages Ice Beam)
     ('sure KO: asleep', M('SLEEP_TALK', 'ICE_BEAM'),
-     dict(php=(1, 100), ptypes=(C['NORMAL'], C['NORMAL']), estatus=2), [20, 20]),
+     dict(php=(1, 100), ptypes=(C['NORMAL'], C['NORMAL']), estatus=2), [20, 30]),
     ('sure KO: immune', M('BODY_SLAM', 'ICE_BEAM'),
      dict(php=(1, 100), ptypes=(C['GHOST'], C['GHOST'])), [20, 17]),
 ]

@@ -570,3 +570,17 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   times. `battle_matrix.sh` got `FIRST_SEED` to add seeds to a run. The Crobat battle didn't come up again in 48 traced battles;
   the flag fired in 41 decisions there (mostly Blissey vs the user's
   Vaporeon), regret 0.98 in all.
+- **2026-10-17**: `AI_Smogon_Asleep`: fast asleep (sleep counter 2+, so it
+  won't wake up this turn) with a usable Sleep Talk or Snore, every other
+  move gets `AIDiscourageMove`; awake, Sleep Talk and Snore do (they fail,
+  and AI_Smart encourages Sleep Talk unless the counter is 1). Found by
+  ranking engine_judge disagreements over 144 battles: Misty's Kingdra and
+  Lanturn picked Rest, Surf, Ice Beam or Thunder while asleep. Checked:
+  over the same 144 battle seeds, asleep-with-Sleep-Talk decisions that
+  picked another move 25 -> 0 (2 left had Sleep Talk at 0 PP); 5 new
+  `ai_scenarios.py` cases (one older sure-KO case now expects Ice Beam
+  discouraged while asleep), both suites ALL OK; 4 trainers x 144 seeds: AI
+  wins 271 -> 262 of 576 (z -0.5), Sleep Talk used 595 -> 1155. Jasmine 2
+  went 33 -> 15 there (z -2.8) although her team has no Sleep Talk or
+  Snore (no score changes, only the RNG timing): over 432 seeds 82 -> 69
+  (z -1.2; seeds 145-432 alone 49 -> 54, z +0.5).
