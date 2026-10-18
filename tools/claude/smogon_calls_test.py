@@ -126,14 +126,20 @@ setup_cases = [
     # (name, candidate moves, its types, threat, player's revealed moves, expected SMOGON_SETUP_*)
     ('swords dance, surf-only player', ['SLUDGE_BOMB', 'SWORDS_DANCE', 'HYDRO_PUMP', 'SUBSTITUTE'],
      ('WATER', 'POISON'), 43, ['SURF', 'GROWTH', 'SLEEP_TALK', 'REST'], 'SMOGON_SETUP_DOUBLE'),
+    # (Swords Dance only needs two hits not to KO: in front of a Vaporeon at
+    # +2, three hits KO Tentacruel)
+    ('swords dance, +2 growth player', ['SLUDGE_BOMB', 'SWORDS_DANCE', 'HYDRO_PUMP', 'SUBSTITUTE'],
+     ('WATER', 'POISON'), 85, ['SURF', 'GROWTH', 'SLEEP_TALK', 'REST'], 'SMOGON_SETUP_DOUBLE'),
     ('swords dance, player hits hard', ['SLUDGE_BOMB', 'SWORDS_DANCE', 'HYDRO_PUMP', 'SUBSTITUTE'],
-     ('WATER', 'POISON'), 70, ['SURF', 'GROWTH', 'SLEEP_TALK', 'REST'], 'SMOGON_SETUP_NONE'),
+     ('WATER', 'POISON'), 130, ['SURF', 'GROWTH', 'SLEEP_TALK', 'REST'], 'SMOGON_SETUP_NONE'),
     ('swords dance, player roars', ['SLUDGE_BOMB', 'SWORDS_DANCE', 'HYDRO_PUMP', 'SUBSTITUTE'],
      ('WATER', 'POISON'), 43, ['SURF', 'ROAR', 'SLEEP_TALK', 'REST'], 'SMOGON_SETUP_NONE'),
     ('swords dance, player hazes', ['SLUDGE_BOMB', 'SWORDS_DANCE', 'HYDRO_PUMP', 'SUBSTITUTE'],
      ('WATER', 'POISON'), 43, ['SURF', 'HAZE', 'SLEEP_TALK', 'REST'], 'SMOGON_SETUP_NONE'),
     ('growth', ['SURF', 'GROWTH', 'REST', 'SLEEP_TALK'], ('WATER', 'WATER'), 43,
      ['SURF', 'GROWTH', 'SLEEP_TALK', 'REST'], 'SMOGON_SETUP_SPECIAL'),
+    ('growth, player hits harder', ['SURF', 'GROWTH', 'REST', 'SLEEP_TALK'], ('WATER', 'WATER'), 70,
+     ['SURF', 'GROWTH', 'SLEEP_TALK', 'REST'], 'SMOGON_SETUP_NONE'),
     ('curse', ['CURSE', 'EARTHQUAKE', 'REST', 'HIDDEN_POWER'], ('WATER', 'GROUND'), 43,
      ['SURF', 'GROWTH', 'SLEEP_TALK', 'REST'], 'SMOGON_SETUP_PHYSICAL'),
     ('curse as a ghost', ['CURSE', 'SHADOW_BALL', 'REST', 'HIDDEN_POWER'], ('GHOST', 'POISON'), 43,
@@ -583,10 +589,20 @@ substitute_cases = [
     ('steel type vs cloyster', 222, ('STEEL', 'STEEL'), [], 0, 20),
     ('tentacruel below half HP', 118, ('WATER', 'POISON'), [], 0, 20),
     ('tentacruel vs sleeping cloyster', 222, ('WATER', 'POISON'), [], 2, 18),
+    # (a last Pokemon that explodes loses the battle: here the save's
+    # others have fainted)
+    ('tentacruel vs a last cloyster', 222, ('WATER', 'POISON'), [], 0, 20),
 ]
+party_hp = [(m[A('wPartyMon%dHP' % k)], m[A('wPartyMon%dHP' % k) + 1]) for k in range(1, 7)]
+cur_battle_mon = m[A('wCurBattleMon')]
 for name, hp, types, pused, pstatus, exp in substitute_cases:
     if SPECIES['CLOYSTER'] not in party:
         print('SKIP', name); continue
+    slot = party.index(SPECIES['CLOYSTER']) + 1
+    w('wCurBattleMon', slot - 1)
+    for k in range(1, 7):
+        last = 'last' in name and k != slot
+        m[A('wPartyMon%dHP' % k)], m[A('wPartyMon%dHP' % k) + 1] = (0, 0) if last else party_hp[k - 1]
     set_ot(dict(TENTACRUEL_MISTY, hp=hp))
     w('wEnemyMonType1', TYPES[types[0]]); w('wEnemyMonType2', TYPES[types[1]])
     set_player(party.index(SPECIES['CLOYSTER']) + 1, ('WATER', 'ICE'), pused)
@@ -598,4 +614,7 @@ for name, hp, types, pused, pstatus, exp in substitute_cases:
     ok &= good
     print('PASS' if good else 'FAIL', 'substitute:', name, 'score', got, 'expected', exp)
 w('wBattleMonStatus', 0)
+for k in range(1, 7):
+    m[A('wPartyMon%dHP' % k)], m[A('wPartyMon%dHP' % k) + 1] = party_hp[k - 1]
+w('wCurBattleMon', cur_battle_mon)
 print('RESULT:', 'ALL OK' if ok else 'NOT OK')

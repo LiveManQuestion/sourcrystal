@@ -81,6 +81,17 @@ AISmogon_GetSetupBoost:
 	call AISmogon_PlayerCanPhaze
 	jr c, .none
 
+; Swords Dance gets its whole boost in one turn, which the KO race already
+; counts: it only needs to survive SMOGON_SD_SAFE_HITS (Tentacruel in front
+; of a Vaporeon that has used Growth).
+	ld a, SWORDS_DANCE
+	call AISmogon_OTMonHasMove
+	ld a, SMOGON_SD_SAFE_HITS
+	jr c, .got_safe_hits
+	ld a, SMOGON_SETUP_SAFE_HITS
+.got_safe_hits
+	push af
+
 ; de = its HP
 	ld a, [wCurOTMon]
 	ld b, a
@@ -99,13 +110,13 @@ AISmogon_GetSetupBoost:
 	inc hl
 	ld e, [hl]
 .got_hp
+	pop bc
 	push de
 	ld a, [wSmogonAIThreat + ATTACKS_BEST]
 	ld d, a
 	ld a, [wSmogonAIThreat + ATTACKS_BEST + 1]
 	ld e, a
 	ld hl, 0
-	ld b, SMOGON_SETUP_SAFE_HITS
 .add_hit
 	add hl, de
 	dec b
@@ -349,11 +360,20 @@ AISmogon_PlayerMayExplode:
 	ret
 
 AISmogon_PlayerCanExplode:
-; Return carry if the player's Pokemon can move and usually has Explosion or
+; Return carry if the player's Pokemon can move, isn't the player's last
+; one (exploding would lose the battle), and usually has Explosion or
 ; Selfdestruct (or has revealed it among its four moves).
 	ld a, [wBattleMonStatus]
 	and SLP_MASK | 1 << FRZ
 	ret nz
+	push bc
+	push de
+	call AISmogon_ScanPlayerParty
+	ld a, c
+	pop de
+	pop bc
+	and a
+	ret z
 	ld a, [wPlayerUsedMoves + NUM_MOVES - 1]
 	and a
 	jr z, .traits

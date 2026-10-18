@@ -1601,9 +1601,9 @@ AI_Smogon_Setup:
 	push hl
 	call AISmogon_ScoreActive
 	pop hl
-; (Unless it only looks that way because it outheals our attacks: then
-; boosting is the way through, past SMOGON_SETUP_GOAL too, enough to beat
-; AI_Setup's discouragement after the first turn.)
+; (Unless it heals and our attacks don't 2HKO it yet: then boosting is the
+; way through, past SMOGON_SETUP_GOAL too, enough to beat AI_Setup's
+; discouragement after the first turn.)
 	call .BreaksHealing
 	jp c, AISmogon_GreatlyEncourage
 	ld a, [wEnemyAISwitchScore]
@@ -1639,19 +1639,25 @@ AI_Smogon_Setup:
 ; Return carry if this Swords Dance or Growth is the way through a Pokemon
 ; that outheals our attacks (Misty's +2 Tentacruel vs a Rest Vaporeon,
 ; which +2 Sludge Bomb doesn't 2HKO from full HP): AISmogon_ScoreActive
-; found our attacks never KO it, three of its strongest hits don't KO us,
-; and our strongest attack, with the boosts we have, doesn't 2HKO it from
-; full HP (7/4 of its highest roll, about two of its lowest). Keeps
-; wEnemyMoveStruct and hl.
+; found it can heal, three of its strongest hits don't KO us, and our
+; strongest attack, with the boosts we have, doesn't 2HKO it from full HP
+; (7/4 of its highest roll, about two of its lowest). (Not "our attacks
+; never KO it": that counts Swords Dance's setup credit, as if unboosted.)
+; Keeps wEnemyMoveStruct and hl.
 	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
 	cp EFFECT_ATTACK_UP_2
 	jr z, .attack_boost
 	cp EFFECT_SP_ATK_UP
 	jr nz, .no_carry
 .attack_boost
-	ld a, [wSmogonAIOurTurns]
-	cp SMOGON_MAX_TURNS
-	jr c, .no_carry
+	ld a, [wSmogonAIPlayerHeal + HEAL_AMOUNT]
+	ld b, a
+	ld a, [wSmogonAIPlayerHeal + HEAL_AMOUNT + 1]
+	or b
+	jr z, .no_carry
+	ld a, [wSmogonAIPlayerHeal + HEAL_PP]
+	and a
+	jr z, .no_carry
 
 ; three of its hits vs our HP
 	push hl

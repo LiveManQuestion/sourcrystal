@@ -22,7 +22,9 @@ Snorlax, `9362c639c`), and Hidden Power's AI_Smart bonus only when it's the
 strongest attack (Venusaur vs Snorlax, `e3e9c0641`), and Swords Dance /
 Growth through a player that out-heals our unboosted attacks (Misty's
 Tentacruel vs Rest Vaporeon, `e79f45c49`), and Substitute against a likely
-Explosion (Misty's Tentacruel vs Cloyster, 2026-10-17).
+Explosion (Misty's Tentacruel vs Cloyster, `7451bb297`), and Swords Dance
+setup credit with two safe hits (Tentacruel and Kingdra vs Vaporeon,
+2026-10-17).
 
 The headless smart player now uses its status moves (Curse, Rest, Sleep
 Talk, Sleep Powder, Roar, Toxic, Explosion); `SMART_PLAYER=basic` is the old
@@ -30,12 +32,12 @@ attack-only player. It beats the AI far more often, so win rates from
 before it aren't comparable.
 
 Last measured (4 trainers x 144 seeds, the user's party, new player), after
-the Substitute fix: AI wins 212 of 576. Koga 2 115/144, Whitney 2 48,
-Misty 2 28, Jasmine 2 21 (the 144-seed numbers swing by ~10 from RNG
-timing alone: Misty is 100/432 over 432 seeds). Engine judge (600k
-iterations per decision) over 144 traced battles: 4588 decisions, total
-regret 59.63. The cache for this ROM is `.aicheck/bdb90da7689462d7`, judge
-in `judge-i600000.jsonl`.
+the Swords Dance credit fix: AI wins 241 of 576. Koga 2 119/144, Whitney 2
+57, Misty 2 38, Jasmine 2 27 (the 144-seed numbers swing by ~10 from RNG
+timing alone; Jasmine swung 20 of 432 on a build that didn't change her
+decisions). Engine judge (600k iterations per decision) over 144 traced
+battles: 4784 decisions, total regret 62.79. The cache for this ROM is
+`.aicheck/8c1d8c1c6fbcbbb7`, judge in `judge-i600000.jsonl`.
 
 ## The loop
 
@@ -71,29 +73,24 @@ in `judge-i600000.jsonl`.
 6. Changelog entry, then commit when the user says so (they review each fix
    and say "commit").
 
-## Candidate patterns (600k-iteration judge, after the Substitute fix)
+## Candidate patterns (600k-iteration judge, after the Swords Dance fix)
 
 Clear disagreements (regret > 0.1) by matchup, AI action and engine action:
 
 ```
 clear decisions regret
-   7    7   2.59  QWILFISH   vs CLOYSTER  curse -> sludgebomb
-   7    8   2.56  TENTACRUEL vs VAPOREON  switch -> swordsdance
-   6   14   1.07  KINGDRA    vs VAPOREON  sleeptalk -> switch (tentacruel)
-   7    8   1.21  QUAGSIRE   vs ZAPDOS    hiddenpowerrock70 -> curse
-   3    9   0.92  TENTACRUEL vs VAPOREON  sludgebomb -> gigadrain
+   4    5   1.40  QWILFISH   vs CLOYSTER  curse -> sludgebomb
+   4   31   1.72  VENUSAUR   vs ZAPDOS    hiddenpowerfire70 -> synthesis
+   4    4   1.08  STEELIX    vs ZAPDOS    rockslide -> curse
+   4   18   1.00  BLISSEY    vs SNORLAX   switch -> switch (another)
+   4    7   0.96  TENTACRUEL vs STEELIX   surf -> gigadrain
 ```
 
-Tentacruel vs Vaporeon (switching out instead of Swords Dance) and Kingdra
-vs Vaporeon (staying in instead of switching to Tentacruel) have one cause:
-`AISmogon_GetSetupBoost` gives Tentacruel no setup credit against Vaporeon,
-because four of Vaporeon's hits (44 each unboosted, 107 at +3) KO it once
-it's below full HP or Vaporeon has Grown. The engine only prefers
-Tentacruel because of Swords Dance (without it, Kingdra stays). The
-Substitute fix made the first one more common (Substitute's HP cost). A
-fix there touches the matchup score (see the pitfalls): keep it narrow.
-Qwilfish and Quagsire are new in this run: check them across seeds first.
-Koga's Tentacruel vs Vaporeon at low HP is the KO-range kind. Venusaur vs
+Nothing is concentrated now. Koga's Qwilfish Cursing in front of Cloyster
+has shown up in three runs (4 clear in 2 of 72 extra Koga battles too):
+the likeliest next one. Venusaur's Growth got slightly worse with the
+wider `.BreaksHealing` (regret 0.25 -> 0.68, 2 clear): watch it. Steelix
+vs Zapdos is new in a run where Steelix's logic didn't change. Venusaur vs
 Snorlax in KO range is left: the gap disappears with the player's bench
 removed.
 
@@ -110,6 +107,13 @@ removed.
   healing). Changes to the matchup score ripple everywhere; prefer local
   fixes.
 - Requiring a sure KO for every Explosion trade cost Misty 20 of 144.
+- A fix can switch off an earlier one: the Swords Dance setup credit made
+  the matchup score stop seeing that a Rest Vaporeon outheals us, which
+  `.BreaksHealing` relied on. The old fixes' `smogon_calls_test.py` cases
+  caught it; run them on every change.
+- Before blaming a change for a trainer's drop, compare its traces with
+  the base's: if every first difference is a different position or one of
+  vanilla's random score points, it's RNG (Jasmine, 62 -> 42 of 432).
 - Removing a score bonus can also remove what put a move ahead of the
   status moves at 20 (Hidden Power on Zapdos tied with Growth): make it
   conditional instead.

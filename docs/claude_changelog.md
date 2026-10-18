@@ -819,3 +819,35 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
     `AISmogon_GetSetupBoost`'s four-hit safety against Vaporeon, so it
     switches out where the engine Swords Dances (2 -> 7 clear); total
     regret 59.53 -> 59.63.
+- **2026-10-17**: Smogon AI: Swords Dance setup credit with two safe hits.
+  Two patterns had one cause: Misty's Tentacruel switching out in front of
+  Vaporeon where the engine Swords Dances (7 clear), and her Kingdra
+  staying in against Vaporeon where the engine switches to Tentacruel (6
+  clear; 18 more in 144 extra Koga and Misty battles). The engine only
+  wants Tentacruel for Swords Dance (without it, Kingdra stays), but
+  `AISmogon_GetSetupBoost` gave no setup credit once four of Vaporeon's
+  hits KO it (85 per Surf after one Growth, or Tentacruel below full HP
+  after a Substitute). Swords Dance now needs `SMOGON_SD_SAFE_HITS` (2):
+  its whole boost takes one turn, which the KO race already counts. The
+  other setup moves keep 4 (only Tentacruel has Swords Dance on the four
+  rematch teams; the Curse users are where matchup changes hurt before).
+  - The credit then hid the healing `.BreaksHealing` looked for (with x2
+    power, a Rest Vaporeon no longer outheals us), so it now asks whether
+    the player can heal (`wSmogonAIPlayerHeal` amount and PP) and leaves
+    the rest to its 2HKO check with our real boosts.
+  - `AISmogon_PlayerCanExplode` is false for the player's last Pokemon
+    (exploding loses the battle): Tentacruel used Substitute against a
+    last Cloyster, where the engine attacks (3 clear). Protect and the
+    switch-in's Explosion-absorber bonus use it too.
+  - Checked: both suites ALL OK (new `smogon_calls_test.py` cases: "+2
+    growth player" setup credit, "last cloyster" Substitute fail on the old
+    build; a Growth case keeps four hits); 4 trainers x 144 seeds: AI wins
+    212 -> 241 of 576 (Misty 28 -> 38 z +1.4, Whitney 48 -> 57, Jasmine 21
+    -> 27, Koga 115 -> 119). Tentacruel switch -> Swords Dance on Vaporeon
+    clear 7 -> 0, Kingdra Sleep Talk -> switch 6 -> 0; Tentacruel regret
+    10.9 -> 8.9, Kingdra 6.5 -> 3.6; total regret 59.6 -> 62.8 over 4784
+    decisions (Jasmine's Steelix 1.1 -> 3.2, whose logic didn't change).
+    An earlier version without the last-Pokemon rule had Jasmine 62 -> 42
+    of 432 (z -2.1, -1.4 on the 288 seeds added after picking her); in her
+    36 traced battles the builds made the same decisions from the same
+    positions except for vanilla's random score points, so it was RNG.
