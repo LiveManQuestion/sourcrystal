@@ -401,12 +401,12 @@ SRAM $01
 	org $ad10
 	"Active Box"
 	"Box Staging 3 (Part 1)"
-	org $b230
+	org $b260
 	"Link Battle Data"
 	"SRAM Hall of Fame"
 	"SRAM Crystal Data"
 	"SRAM Battle Tower"
-	org $be40
+	org $be70
 	"Box Staging 3 (Part 2)"
 SRAM $02
 	"Boxes 1-7"

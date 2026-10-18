@@ -947,3 +947,17 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
     pattern (5 clear) is one battle's won endgame with the AI's move barely
     visited. The save's party always leads Zapdos, so the 576 battles
     barely exercise the change.
+- **2026-10-18**: PKHeX compatibility (`docs/pkhex.md`). Save version 04
+  (`save_migrations/04.asm`) moves the link battle records, Hall of Fame,
+  Crystal data and Battle Tower data up $30 bytes and wSpecialPhoneCallID -
+  wDailyPhoneItemFlags up a byte, to vanilla's addresses (PKHeX had the
+  player's gender, GS Ball flags and Blue Card points wrong). Box staging 3
+  keeps its size: the $30 bytes move from part 2 to part 1, and the migration
+  moves their contents too. Version 03 was never released, so 04 also
+  migrates version 02 saves, running 03's changes first (`SaveCanBeMigrated`
+  accepts `OLDEST_MIGRATABLE_VERSION`). Checked headlessly with a test that
+  migrates the user's save (v3) and the debug save (v2) through the main and
+  the backup copy, comparing every moved byte, staging bytes and checksums;
+  `storage_test.py` OK; PKHeX.Core round trip (gender and Blue Card edits
+  load in game). Also fixed `build_rev.sh` for the gbtower, debug and vc
+  targets (it passed `debug` etc. to make instead of `sour_debug`).

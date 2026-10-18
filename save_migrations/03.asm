@@ -10,22 +10,23 @@
 ; Stadium also reads and changes the PC boxes, so they're back in vanilla's
 ; layout: 14 boxes instead of 16, with box names in wBoxNames. The old box
 ; format isn't converted, so the boxes are emptied.
+;
+; Version 03 was never released, so 04.asm runs these for version 02 saves
+; before its own changes.
 
-MigrateSaveFile:
+MigrateSaveFile03:
 	ld hl, sGameData
 	call MigrateMapIDs
 	ld hl, sGameData
 	call MigrateBoxData
-	newfarcall InitializeSavedBoxes
-	jp ApplySaveVersion
+	newfarjp InitializeSavedBoxes
 
-MigrateBackupSaveFile:
+MigrateBackupSaveFile03:
 	ld hl, sBackupGameData
 	call MigrateMapIDs
 	ld hl, sBackupGameData
 	call MigrateBoxData
-	newfarcall InitializeSavedBoxes
-	jp ApplyBackupSaveVersion
+	newfarjp InitializeSavedBoxes
 
 MigrateBoxData:
 ; hl = the saved copy of wGameData, with its SRAM bank open

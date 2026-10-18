@@ -35,6 +35,8 @@ that, move detail into `docs/` and leave a one-line pointer here.
 - **Pokémon Stadium 2 compatible** (see `docs/stadium2.md`): keep vanilla's
   box layout and the Pokémon Center map IDs on its list (the `UNUSED_*_MAP`
   placeholders hold some).
+- **PKHeX compatible** (see `docs/pkhex.md`): saved data stays at vanilla
+  Crystal's save file offsets.
 - Don't commit or push unless the user asks.
 
 ## Build

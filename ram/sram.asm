@@ -176,7 +176,7 @@ sBox:: box sBox
 SECTION "Box Staging 3 (Part 1)", SRAM
 
 ; the space left before the Link Battle Data
-DEF BOX_STAGING_3_PART_1 EQU $b230 - ($ad10 + BOX_LENGTH + 2)
+DEF BOX_STAGING_3_PART_1 EQU $b260 - ($ad10 + BOX_LENGTH + 2)
 sBoxStaging3Part1:: ds BOX_STAGING_3_PART_1
 sBoxStaging3Part1End::
 
@@ -241,11 +241,12 @@ endr
 for n, 1, BATTLETOWER_PARTY_LENGTH + 1
 sBTMonPrevPrevTrainer{d:n}:: db
 endr
+sBattleTowerDataEnd::
 
 
 SECTION "Box Staging 3 (Part 2)", SRAM
 
-DEF BOX_STAGING_3_PART_2 EQU $c000 - $be40
+DEF BOX_STAGING_3_PART_2 EQU $c000 - $be70
 sBoxStaging3Part2:: ds BOX_STAGING_3_PART_2
 sBoxStaging3Part2End::
 

@@ -3426,7 +3426,7 @@ wFruitTreeFlags:: flag_array NUM_FRUIT_TREES
 
 
 wLuckyNumberDayTimer:: dw
-
+	ds 1
 wSpecialPhoneCallID:: db
 	ds 3
 wBugContestStartTime:: ds 4 ; day, hour, min, sec
@@ -3441,7 +3441,7 @@ wBuenasPassword:: db
 wBlueCardBalance:: db
 wDailyRematchFlags:: ds 6
 wDailyPhoneItemFlags:: ds 4
-	ds 4
+	ds 3
 wKenjiBreakTimer:: ds 2 ; Kenji
 wYanmaMapGroup:: db
 wYanmaMapNumber:: db

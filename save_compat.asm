@@ -1,7 +1,8 @@
 ; This file contains save file migration actions.
-; The migration should only be limited at most 1 version,
+; The migration should only update saves from the last released version,
 ; so as to avoid getting bogged down with too much code.
-; (e.g. version 1 -> 2, not version 1 -> 3.)
+; (e.g. version 1 -> 2, not version 1 -> 3.) Versions that were never
+; released can share a migration with the one before them.
 
 ; Loading a newer save file should either error out or be unstable,
 ; since we don't know what that newer version contains.
@@ -14,11 +15,18 @@
 ; 03 = vX.Y
 ;      * Placeholder maps restore vanilla's map IDs (for Pokemon Stadium 2).
 ;      * Vanilla's PC box layout (for Pokemon Stadium 2). Boxes are emptied.
+; 04 = vX.Y
+;      * Vanilla's addresses for the link battle records, Hall of Fame,
+;        Crystal data, Battle Tower data and Blue Card points (for PKHeX).
+;        Version 02 saves migrate too (03 was never released).
 
 ; When making a breaking change to the save format, the following
 ; should be updated:
-DEF GAME_VERSION EQU 3
+DEF GAME_VERSION EQU 4
+; The oldest version the migration can update.
+DEF OLDEST_MIGRATABLE_VERSION EQU 2
 INCLUDE "save_migrations/03.asm"
+INCLUDE "save_migrations/04.asm"
 
 ;------------------------------------------------------------------------------
 
@@ -73,9 +81,9 @@ SaveCanBeMigrated::
 	sub a, GAME_VERSION
 	jr z, .no
 	jr nc, .unknown
-	cp -1
-	jr z, .yes
-	; gap of more than 1 version
+	cp LOW(OLDEST_MIGRATABLE_VERSION - GAME_VERSION)
+	jr nc, .yes
+	; older than OLDEST_MIGRATABLE_VERSION
 	ld a, MIGRATION_CANNOT_MIGRATE
 	ret
 .yes

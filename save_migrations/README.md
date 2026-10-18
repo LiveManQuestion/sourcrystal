@@ -5,13 +5,23 @@ to a newer one. It's intended as a sort of reference for how and why a
 change had to be made, because putting this stuff behind the git log doesn't
 seem to be the best course of action.
 
-Only the latest migration is `INCLUDE`'d inside of `save_compat.asm`.
+Only the latest migration is `INCLUDE`'d inside of `save_compat.asm`, plus
+the ones it reuses for unreleased versions (04 runs 03 for version 02 saves).
 
 > [!NOTE]
 > Save migration routines end with a `jp ApplySaveVersion`/`ApplyBackupSaveVersion`, to ensure the proper save version is tagged.
 > It is also *always* called `MigrateSaveFile`/`MigrateBackupSaveFile`.
 
 ## Save versions summary
+
+### (save version 04)
+
+* Move the link battle records, Hall of Fame, Crystal data and Battle Tower
+  data up $30 bytes, and wSpecialPhoneCallID - wDailyPhoneItemFlags up a
+  byte, to vanilla's addresses, so PKHeX edits the player's gender, GS Ball
+  flags and Blue Card points correctly. Version 03 was never released, so
+  this migration also updates version 02 saves (running 03.asm's changes
+  first).
 
 ### (save version 03)
 
