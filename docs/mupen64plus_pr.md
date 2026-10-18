@@ -43,9 +43,8 @@ Game Boy RAM, add a flag to `struct file_storage` that only `init_gb_ram()`
   `git branch -f master origin/master` (from another branch) before syncing.
 - Pull request: https://github.com/mupen64plus/mupen64plus-core/pull/1194,
   opened 2026-10-18 from `LiveManQuestion:keep-gb-save-footer`. Check its
-  status with
-  `curl -s https://api.github.com/repos/mupen64plus/mupen64plus-core/pulls/1194`
-  (`gh` isn't installed). Changes asked for in review go on that branch.
+  status and comments with
+  `gh pr view 1194 --repo mupen64plus/mupen64plus-core --comments`. Changes asked for in review go on that branch.
 - RMG (the GUI the user plays with) bundles its own core
   (`/usr/lib/RMG/Core/libmupen64plus.so`); RMG 0.9.0's copy
   (`Source/3rdParty/mupen64plus-core`) still has the bug. RMG picks up
