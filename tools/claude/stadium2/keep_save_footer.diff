@@ -1,15 +1,59 @@
 diff --git a/src/backends/file_storage.c b/src/backends/file_storage.c
-index 0b5d4a83..0baefaad 100644
+index 0b5d4a83..54313896 100644
 --- a/src/backends/file_storage.c
 +++ b/src/backends/file_storage.c
-@@ -103,7 +103,9 @@ static void file_storage_save(void* storage, size_t start, size_t size)
+@@ -36,6 +36,7 @@ int open_file_storage(struct file_storage* fstorage, size_t size, const char* fi
+     fstorage->filename = filename;
+     fstorage->size = size;
+     fstorage->first_access = 1;
++    fstorage->keep_trailing_data = 0;
+ 
+     /* allocate memory for holding data */
+     fstorage->data = malloc(fstorage->size);
+@@ -60,6 +61,7 @@ int open_rom_file_storage(struct file_storage* fstorage, const char* filename)
+     fstorage->size = 0;
+     fstorage->filename = NULL;
+     fstorage->first_access = 1;
++    fstorage->keep_trailing_data = 0;
+ 
+     file_status_t err = load_file(filename, (void**)&fstorage->data, &fstorage->size);
+ 
+@@ -103,7 +105,9 @@ static void file_storage_save(void* storage, size_t start, size_t size)
       * otherwise write only updated chunk */
      if (fstorage->first_access) {
          fstorage->first_access = 0;
 -        err = write_to_file(fstorage->filename, fstorage->data, fstorage->size);
-+        /* rb+, not wb: keep data past the storage size, like the clock
-+         * footer Game Boy emulators append to a cartridge save */
-+        err = write_chunk_to_file(fstorage->filename, fstorage->data, fstorage->size, 0);
++        err = (fstorage->keep_trailing_data)
++            ? write_chunk_to_file(fstorage->filename, fstorage->data, fstorage->size, 0)
++            : write_to_file(fstorage->filename, fstorage->data, fstorage->size);
      }
      else {
          err = write_chunk_to_file(fstorage->filename, fstorage->data + start, size, start);
+diff --git a/src/backends/file_storage.h b/src/backends/file_storage.h
+index c62ad770..88eb400e 100644
+--- a/src/backends/file_storage.h
++++ b/src/backends/file_storage.h
+@@ -32,6 +32,8 @@ struct file_storage
+     size_t offset;
+     const char* filename;
+     int first_access;
++    /* don't truncate the file on first save: keep any data past size */
++    int keep_trailing_data;
+ };
+ 
+ 
+diff --git a/src/main/main.c b/src/main/main.c
+index 87dab35c..ef1d2c08 100644
+--- a/src/main/main.c
++++ b/src/main/main.c
+@@ -1520,6 +1520,10 @@ static void init_gb_ram(void* opaque, size_t ram_size, void** storage, const str
+         DebugMessage(M64MSG_WARNING, "Size mismatch between expected RAM size and effective file size");
+     }
+ 
++    /* Game Boy emulators append extra data to cartridge RAM files,
++     * like the MBC3 RTC state, so don't truncate it */
++    data->ram_fstorage.keep_trailing_data = 1;
++
+     DebugMessage(M64MSG_INFO, "GB Loader RAM: %s - %zu",
+             data->ram_fstorage.filename,
+             data->ram_fstorage.size);

@@ -4,8 +4,11 @@
 # (git-ignored): upstream mupen64plus-core (which has RMG's Transfer Pak fix)
 # plus RMG's RSP/RDP timing patch (Rosalie241/RMG e8d4d6341b). Without that
 # patch the GB Tower loads the cartridge and then hangs on a white screen.
-# keep_save_footer.diff stops the core from truncating the Game Boy save to
-# the cartridge RAM size, which dropped the emulators' clock footer.
+# gb_ram_mirroring.diff makes cartridge ROM and RAM banks past the end of
+# the chips mirror the start, like on hardware (Stadium's Game Pak check reads
+# RAM bank 4 of a 32 KB cartridge). gb_rtc_start_time.diff starts the MBC3
+# clock at power on instead of 1970, which set its day carry bit (Crystal in
+# the GB Tower said the clock may be wrong).
 set -e
 cd "$(dirname "$0")/../../.."
 top=$PWD
@@ -13,11 +16,12 @@ mkdir -p .stadium2
 cd .stadium2
 if [ ! -d core ]; then
 	git clone -q https://github.com/mupen64plus/mupen64plus-core.git core
-	git -C core checkout -q ba95bab
+	git -C core checkout -q 902bc60
 	curl -sfL -H 'Accept: application/vnd.github.v3.diff' \
 		https://api.github.com/repos/Rosalie241/RMG/commits/e8d4d6341b -o rsp_fixes.diff
 	git -C core apply -p4 ../rsp_fixes.diff
-	git -C core apply "$top/tools/claude/stadium2/keep_save_footer.diff"
+	git -C core apply "$top/tools/claude/stadium2/gb_ram_mirroring.diff"
+	git -C core apply "$top/tools/claude/stadium2/gb_rtc_start_time.diff"
 fi
 # Without nasm, build without the dynarec (play.sh then uses the slower
 # cached interpreter).

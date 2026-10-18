@@ -1,0 +1,36 @@
+diff --git a/src/device/gb/gb_cart.c b/src/device/gb/gb_cart.c
+index cbc935af..f9bfab94 100644
+--- a/src/device/gb/gb_cart.c
++++ b/src/device/gb/gb_cart.c
+@@ -58,6 +58,11 @@ static void read_rom(const void* rom_storage, const struct storage_backend_inter
+ {
+     assert(size > 0);
+ 
++    /* banks past the end of the ROM mirror the start, like on hardware */
++    if (irom_storage->size(rom_storage) != 0) {
++        address %= irom_storage->size(rom_storage);
++    }
++
+     if (address + size > irom_storage->size(rom_storage))
+     {
+         DebugMessage(M64MSG_WARNING, "Out of bound read from GB ROM %04x", address);
+@@ -87,6 +92,9 @@ static void read_ram(const void* ram_storage, const struct storage_backend_inter
+         return;
+     }
+ 
++    /* banks past the end of the RAM mirror the start, like on hardware */
++    address %= iram_storage->size(ram_storage);
++
+     if (address + size > iram_storage->size(ram_storage))
+     {
+         DebugMessage(M64MSG_WARNING, "Out of bound read from GB RAM %04x", address);
+@@ -121,6 +129,9 @@ static void write_ram(void* ram_storage, const struct storage_backend_interface*
+         return;
+     }
+ 
++    /* banks past the end of the RAM mirror the start, like on hardware */
++    address %= iram_storage->size(ram_storage);
++
+     if (address + size > iram_storage->size(ram_storage))
+     {
+         DebugMessage(M64MSG_WARNING, "Out of bound write to GB RAM %04x", address);

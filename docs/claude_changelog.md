@@ -987,3 +987,18 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   it back up into view at the bottom of the screen. 3 bytes. Checked
   headlessly (forced rain on the user's save, 30 walks up and down):
   splashes reappearing just above the bottom edge went from 77 to 0.
+- **2026-10-18**: mupen64plus Game Boy cartridge mirroring. The footer fix
+  was merged upstream (`902bc60f`), so `build_core.sh` builds that and
+  applies `tools/claude/stadium2/gb_ram_mirroring.diff` instead: ROM/RAM
+  banks past the end of the chips mirror the start, like on hardware
+  (Stadium's Game Pak check reads RAM bank 4 of 32 KB carts and got nothing).
+  Checked: `gb_cart_test.c` (17 checks pass, 10 fail on upstream), Game Pak
+  check with Sour Crystal, Crystal and Red (no warnings, only Stadium's
+  32-byte pattern changed, footer kept), the Lab boxes and the GB Tower
+  reaching the overworld. Also fixed a core clock bug: the MBC3 clock
+  started at 1970, so Gold/Silver/Crystal in the GB Tower said the clock may
+  be wrong and saved that flag; `gb_rtc_start_time.diff` starts it at power
+  on (`gb_cart_test.c` RTC checks pass, 5 fail on upstream; GB Tower with
+  Crystal and Sour Crystal: no warning, flag stays clear). Both are local
+  commits in `~/mupen64plus-core` (branches `gb-ram-mirroring`,
+  `gb-rtc-start-time`), PRs #1195 and #1196.

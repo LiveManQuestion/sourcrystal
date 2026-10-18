@@ -73,12 +73,25 @@ the same `--corelib`, `--rsp` and cxd4 settings to `run.sh`.
 
 The "Out of bound read from GB RAM 8000" warning is Stadium reading SRAM
 bank 4 during the Game Pak check (a real MBC3 mirrors bank 0 there); it's
-harmless. mupen64plus-core also truncates the Game Boy save to the 32 KB of
-SRAM the first time it writes it (`write_to_file` in `file_storage_save`
-opens it with `wb`), dropping the 48-byte clock footer of a 32816-byte `.sav`,
-so the game then asks to reset the clock. `build_core.sh` applies
-`keep_save_footer.diff`, which writes it with `rb+` instead; RMG's own core
-still truncates. The fix sent upstream: `docs/mupen64plus_pr.md`.
+harmless with `gb_ram_mirroring.diff`, which `build_core.sh` applies: banks
+past the end of the cartridge's ROM or RAM mirror the start, like on
+hardware (upstream returns nothing for them). Stadium writes a 32-byte
+pattern to bank 0 `$A000` before that read, probably to check the mirroring.
+
+mupen64plus-core used to truncate the Game Boy save to the 32 KB of SRAM the
+first time it wrote it, dropping the 48-byte clock footer of a 32816-byte
+`.sav`, so the game then asked to reset the clock. Fixed upstream in
+`902bc60f` (`docs/mupen64plus_pr.md`), which `build_core.sh` builds; RMG's
+own core still truncates until an RMG release picks it up.
+
+Upstream's MBC3 clock starts with `last_time` = 0 (`poweron_mbc3_rtc`), so
+when the GB Tower latches and reads it, the core adds every second since
+1970: past 511 days, which sets the day carry bit that `_FixDays` treats as
+a reset. Gold/Silver/Crystal then say "The clock's time may be wrong"
+(Continue shows TIME ???) and save that flag (`sRTCStatusFlags` = `$80`).
+`gb_rtc_start_time.diff` (in `build_core.sh`) starts it at power on. The
+clock still starts at day 0 each session: it doesn't load the `.sav`
+footer's clock.
 
 ## Testing
 
