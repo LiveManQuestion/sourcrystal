@@ -786,3 +786,16 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
     (more Misty battles reach Tentacruel vs Cloyster: Sludge Bomb ->
     Substitute 2 -> 6 clear, an older pattern). Move layers at most 8.8
     frames on Misty seed 35.
+- **2026-10-17**: Faster `ai_check.sh`: about 30 minutes per uncached ROM,
+  was an hour. The engine judge took 46 of those minutes, and poke-engine's
+  MCTS threads scale badly (11 threads: 3.3x one thread's iterations).
+  `engine_judge.py --iterations N --jobs J` searches each decision for
+  exactly N iterations on one thread, J decisions at a time; `ai_check.sh`
+  uses 600k (the timed judge averaged 543k, minimum 245k under load), so
+  every decision searches at least as deep in 19 minutes, whatever the
+  load. On 291 decisions both judges found the same 19 clear disagreements;
+  over all 4530, the new one finds Misty's sleeping Kingdra should switch
+  to Tentacruel against Vaporeon (14 clear, 2 with the timed judge), which
+  4 s and 6M-iteration searches confirm. The judge's files are named by
+  its settings (`judge-i600000.jsonl`) so the cached battles and traces
+  are reused, and the test suites run alongside the battles.

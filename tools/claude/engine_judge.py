@@ -3,13 +3,17 @@ search engine behind the Foul Play bot.
 
 usage (with the poke-engine venv's Python, see docs/claude_tools.md):
   engine_judge.py TRACE.jsonl... [--ms 500] [--threads 4] [--top 15] [--json OUT]
+  engine_judge.py TRACE.jsonl... --iterations N [--jobs 11] [--top 15] [--json OUT]
   engine_judge.py --report OUT   # report saved results again, without searching
   engine_judge.py --patterns OUT [BASE]  # rank patterns; with BASE, compare them
   engine_judge.py --check        # every move, species and item maps to the engine
 
 For each SwitchSmogon decision in ai_trace.py traces (the turns the AI used
 an item or had no PP left are left out), it rebuilds the position, runs poke-engine's MCTS for
---ms milliseconds with the AI as side one, and compares the AI's action (the
+--ms milliseconds with the AI as side one (or, with --iterations, exactly N
+iterations on one thread, --jobs decisions at a time: the engine's threads
+scale badly, so this searches as deep in less time, and how deep doesn't
+depend on the machine's load), and compares the AI's action (the
 switch-in, or the move it picked) with the engine's: the action the search
 visited most. A decision's regret is the engine's value of its own action
 minus its value of the AI's (values are side one's chances, 0 to 1). It
@@ -35,7 +39,7 @@ Read the results with care:
   little there. Those decisions only compare staying in with switching.
 - MCTS is noisy: a value from few visits means little, so regret is only
   counted when the AI's action got --min-visits visits. Rerun with a larger
-  --ms to see whether a disagreement holds up."""
+  --ms or --iterations to see whether a disagreement holds up."""
 import collections
 import json
 import os
@@ -161,9 +165,10 @@ def ai_action(d):
     return move_id(d['move'], d['party'][d['active']]['dvs'])
 
 
-def judge(d, ms, threads):
+def judge(d, ms, threads, iterations=0):
     """The engine's (value, visits) of each of the AI's options."""
-    result = pe.monte_carlo_tree_search(position(d), duration_ms=ms, threads=threads)
+    result = pe.monte_carlo_tree_search(position(d), duration_ms=ms, iterations=iterations,
+                                        threads=1 if iterations else threads)
     status = d['party'][d['active']]['status']
     return {'ai_raw': ai_action(d), 'visits': result.total_visits,
             'asleep': bool(status & (CONST['SLP_MASK'] | 1 << CONST['FRZ'])),
@@ -228,7 +233,8 @@ def main(argv):
                  '(setup: docs/claude_tools.md)')
     if '--check' in argv:
         return check()
-    opts = {'--ms': 500, '--threads': 4, '--top': 15, '--min-visits': 50, '--json': None, '--report': None}
+    opts = {'--ms': 500, '--threads': 4, '--iterations': 0, '--jobs': 11, '--top': 15, '--min-visits': 50,
+            '--json': None, '--report': None}
     paths = []
     it = iter(argv)
     for a in it:
@@ -244,7 +250,7 @@ def main(argv):
         for j in rows:
             score(j, opts['--min-visits'])
         return report(rows, opts['--top'])
-    rows = []
+    todo = []
     for p in paths:
         for b, line in enumerate(open(p)):
             if not line.startswith('{'):
@@ -255,14 +261,23 @@ def main(argv):
                 if 'state' not in d or 'switched' not in d or d.get('item_used') or \
                         not any(pp & 0x3f for pp in d['party'][d['active']]['pp']):
                     continue
-                j = judge(d, opts['--ms'], opts['--threads'])
-                j.update(trace=os.path.basename(p), battle=b, decision=i, turn=d['turn'],
-                         ai_mon=species_name(d['party'][d['active']]['species']),
-                         player_mon=species_name(d['player']['species']), path=d['path'][-2:],
-                         ai_hp=f'{d["party"][d["active"]]["hp"]}/{d["party"][d["active"]]["max_hp"]}',
-                         player_hp=f'{d["player"]["hp"]}/{d["player"]["max_hp"]}')
-                score(j, opts['--min-visits'])
-                rows.append(j)
+                todo.append((p, b, i, d))
+    search = (opts['--ms'], opts['--threads'], opts['--iterations'])
+    if opts['--iterations'] and opts['--jobs'] > 1:
+        import multiprocessing
+        with multiprocessing.Pool(opts['--jobs']) as pool:
+            results = pool.starmap(judge, [(d, *search) for _, _, _, d in todo], chunksize=1)
+    else:
+        results = [judge(d, *search) for _, _, _, d in todo]
+    rows = []
+    for (p, b, i, d), j in zip(todo, results):
+        j.update(trace=os.path.basename(p), battle=b, decision=i, turn=d['turn'],
+                 ai_mon=species_name(d['party'][d['active']]['species']),
+                 player_mon=species_name(d['player']['species']), path=d['path'][-2:],
+                 ai_hp=f'{d["party"][d["active"]]["hp"]}/{d["party"][d["active"]]["max_hp"]}',
+                 player_hp=f'{d["player"]["hp"]}/{d["player"]["max_hp"]}')
+        score(j, opts['--min-visits'])
+        rows.append(j)
     if opts['--json']:
         with open(opts['--json'], 'w') as f:
             for j in rows:

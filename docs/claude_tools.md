@@ -41,11 +41,15 @@ the user's save files.
   `PLAYER=smart` battles on Koga 2, Misty 2, Whitney 2 and Jasmine 2
   compared with `battle_compare.py`, and `engine_judge.py --patterns` over
   traced battles, compared with the base. Options (environment): `SEEDS=144`
-  battles and `TRACE_SEEDS=36` traced battles per trainer, `MS=400`,
-  `TRAINERS=...`, `SAVE=...`, `NO_JUDGE=1`. Each ROM's results are cached in
-  `.aicheck/` (git-ignored) by its contents, the save and the options, so
-  the base runs once per commit; about an hour per uncached ROM. Run it in
-  the background and read the report; tee it to a file to keep it.
+  battles and `TRACE_SEEDS=36` traced battles per trainer, `ITERS=600000`
+  judge iterations per decision (`JOBS=11` at a time; `ITERS=0` uses the
+  old `MS=400` timed search), `TRAINERS=...`, `SAVE=...`, `NO_JUDGE=1`.
+  Each ROM's results are cached in `.aicheck/` (git-ignored) by its
+  contents, the save, `smart_player.py` and the options (judge files by
+  their search settings), so the base runs once per commit; about 30
+  minutes per uncached ROM (battles 8, traces 2, judge 20; the tests run
+  alongside). Run it in the background and read the report; tee it to a
+  file to keep it.
 - `ai_scenarios.py ROM SYM RAM [-k TEXT]`: exact-state checks of AI_Smogon's
   scores, the heal-move multiplier the engine picks, the switch-in choice by
   type (`switch_cases`) and the power AIGetEnemyMove loads (`hp_cases`).
@@ -111,7 +115,10 @@ the user's save files.
   TRACES...`: switches, replacements, each candidate's average score against
   each player Pokemon, and stay-ins that an independent damage race
   (`smart_player.race`) calls clearly wrong.
-- `engine_judge.py TRACE.jsonl... [--ms 500] [--threads 4] [--json OUT]`: a
+- `engine_judge.py TRACE.jsonl... [--ms 500] [--threads 4] [--json OUT]`
+  (or `--iterations N [--jobs 11]`: N iterations on one thread per
+  decision, decisions in parallel; poke-engine's threads scale badly, 11
+  give only 3.3x one, so this is twice as fast at the same depth): a
   second opinion on every `SwitchSmogon` decision in `ai_trace.py` traces
   from poke-engine, the Gen 2 search engine behind the Foul Play bot
   (`bots/foul-play-main`). It rebuilds each position (both parties, items,

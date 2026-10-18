@@ -31,17 +31,23 @@ before it aren't comparable.
 Last measured (4 trainers x 144 seeds, the user's party, new player), after
 the healer setup fix: AI wins 229 of 576. Koga 2 125/144, Whitney 2 52,
 Misty 2 36, Jasmine 2 16 (the 144-seed numbers swing by ~10 from RNG
-timing alone). Engine judge over 144 traced battles: 4530 decisions, total
-regret 58.52. The cache for this ROM is `.aicheck/a30884bdc99f33a1`.
+timing alone). Engine judge (600k iterations per decision) over 144 traced
+battles: 4530 decisions, total regret 59.53. The cache for this ROM
+(`HEAD` at `e79f45c49`) is `.aicheck/a30884bdc99f33a1`, judge in
+`judge-i600000.jsonl` (`judge.jsonl` is the older timed judge's).
 
 ## The loop
 
 1. Find a pattern: `tools/claude/ai_check.sh` (no arguments: the working
    tree's `sourcrystal.gbc` against `HEAD`). It runs the tests, 576 battles
    and the judge, and prints `engine_judge.py --patterns`. Its cache
-   (`.aicheck/`) starts empty, so the first run takes about an hour per ROM:
-   start it in the background. On a clean tree both sides are the same ROM,
-   so this is one run, and the report's pattern tables are what to pick from.
+   (`.aicheck/`, git-ignored) persists between sessions: on a clean tree
+   both sides are `HEAD`'s ROM, already cached, so the report is instant
+   and its pattern tables are what to pick from. An uncached ROM takes
+   about 30 minutes: start it in the background. The cache misses (and the
+   base reruns) when `smart_player.py`, the save (`sourcrystal.sav`: playing
+   and saving changes it) or the options change, or if `.aicheck/` is
+   deleted (`git clean -x`).
 2. Pick a concentrated pattern: many clear disagreements over several
    battles in one matchup and action ("matchup and AI action -> engine
    action" table). Big totals spread thin over many decisions are noise.
@@ -64,28 +70,29 @@ regret 58.52. The cache for this ROM is `.aicheck/a30884bdc99f33a1`.
 6. Changelog entry, then commit when the user says so (they review each fix
    and say "commit").
 
-## Candidate patterns (latest judge, new player, after the healer setup fix)
+## Candidate patterns (600k-iteration judge, after the healer setup fix)
 
 Clear disagreements (regret > 0.1) by matchup, AI action and engine action:
 
 ```
-clear decisions regret
-   6    6   1.97  TENTACRUEL vs CLOYSTER  sludgebomb -> substitute
-   2   14   1.02  TENTACRUEL vs ZAPDOS    surf -> switch
-   2   14   0.96  KINGDRA    vs VAPOREON  sleeptalk -> switch
-   3   14   0.90  TENTACRUEL vs VAPOREON  sludgebomb -> gigadrain
-   2    2   0.48  QWILFISH   vs CLOYSTER  curse -> sludgebomb
+clear decisions battles regret
+  14   25   2   2.49  KINGDRA    vs VAPOREON  sleeptalk -> switch (tentacruel)
+   6    6   3   1.64  TENTACRUEL vs CLOYSTER  sludgebomb -> substitute
+   3   15   2   0.96  TENTACRUEL vs VAPOREON  sludgebomb -> gigadrain
+   7    9   1   0.89  QWILFISH   vs ZAPDOS    sludgebomb -> switch
+   2   14   2   0.84  TENTACRUEL vs ZAPDOS    surf -> switch
 ```
 
-Misty's Tentacruel vs Cloyster (Substitute where the AI attacks) is the
-most concentrated: check first what the engine knows (Cloyster's moves, an
-Explosion?). Koga's Tentacruel vs Vaporeon at low HP is the KO-range kind
-(every attack KOs, the engine picks Giga Drain or Surf). One Swords Dance
-miss is left (Misty seed 35: +2 Tentacruel vs a 207/327 Vaporeon that just
-switched in, nothing revealed). Venusaur vs Snorlax with Snorlax in KO
-range (both attacks KO, the AI picks the sure-hit Hidden Power, the engine
-Razor Leaf for a Vaporeon switch-in) is left: the gap disappears with the
-player's bench removed.
+Misty's sleeping Kingdra Sleep Talking into Vaporeon where the engine
+switches to Tentacruel: the old timed judge (11 threads, 400 ms) missed
+most of it; 4 s and 6M-iteration searches agree with the new judge on
+Misty seed 5 decision 21. Only 2 battles, so check that it holds across
+seeds. Then Misty's Tentacruel vs Cloyster (Substitute where the AI
+attacks: check what the engine knows first, Cloyster's moves, Explosion?).
+Koga's Tentacruel vs Vaporeon at low HP is the KO-range kind. One Swords
+Dance miss is left (Misty seed 35: +2 Tentacruel vs a 207/327 Vaporeon
+that just switched in, nothing revealed). Venusaur vs Snorlax in KO range
+is left: the gap disappears with the player's bench removed.
 
 ## Pitfalls already hit
 
@@ -109,6 +116,9 @@ player's bench removed.
   user's saves. The user's save has the clock-reset flag set, which stops
   headless battles from starting unless cleared.
 - Trace `scores` are None when the decision didn't compute them.
+- The judge's values depend on its search mode (single-thread values run
+  ~0.05 lower than 11-thread ones): compare regret only between results of
+  the same settings, which `ai_check.sh` does by naming the files.
 - Win-rate z below 2 is noise; a borderline result needs more seeds (the
   user asks "run more seeds").
 - The user's test party (`sourcrystal.sav`): Zapdos, Snorlax, Cloyster,
