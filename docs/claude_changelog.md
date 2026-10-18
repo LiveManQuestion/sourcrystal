@@ -921,3 +921,29 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
     "switch to Gengar" clear 2 -> 1 (freezes are rare; a 20-point gain
     still switches only 70% of the time). Total regret 51.0 -> 54.3 over
     4522 decisions, spread over patterns this doesn't touch (RNG).
+- **2026-10-18**: Smogon AI: a lead stays in to use Spore or Spikes first.
+  The user saw Whitney's Spore Smeargle switch out on its first turn
+  against every lead and never lay Spikes. Its matchup score is always the
+  team's worst (33-49 against 127-191: it has no attacks, and the score is
+  a KO race), so `SwitchSmogon` switched before Spore or Spikes could be
+  used. The engine judge (save's party with each member leading, first
+  decision): switching is right against the faster Zapdos, Exeggutor,
+  Cloyster and Vaporeon, but against Snorlax and Steelix, which Smeargle
+  outspeeds, Spore (0.55) and Spikes (0.53) beat switching (0.48). New
+  `AISmogon_PickedLeadMoveFirst` keeps the active Pokemon in when the
+  picked move is a sleep move (not into a Substitute) or Spikes and lands
+  before the player can hit back: the enemy is faster, or
+  `AISmogon_PlayerSurelyCantAttack`. Smeargle now Spikes in front of
+  Snorlax, Spores then Spikes Steelix, still switches out of the faster
+  leads and comes back to Spore or Spike later. About 36 bytes in bank $0e.
+  - Checked: both suites ALL OK (new `smogon_calls_test.py` lead cases
+    fail on the old build); first-turn judge regret over the six leads
+    0.033 -> 0.003. 4 trainers x 144 seeds: AI wins 234 -> 230 of 576
+    (Jasmine 26 -> 16 z -1.7, Koga 119 -> 127 z +1.3, Misty 39 -> 41,
+    Whitney 50 -> 46; none |z| >= 2). Jasmine is RNG: in 19 of her 36
+    traced battles the first difference is Forretress laying Spikes in front
+    of Snorlax on both builds, decided earlier by the new check, which
+    shifts the RNG timing. The new Blissey vs Zapdos Flamethrower -> switch
+    pattern (5 clear) is one battle's won endgame with the AI's move barely
+    visited. The save's party always leads Zapdos, so the 576 battles
+    barely exercise the change.

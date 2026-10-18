@@ -33,7 +33,9 @@ setup credit with two safe hits (Tentacruel and Kingdra vs Vaporeon,
 Cloyster, `869aa0388`), and free setup behind a Substitute in front of a
 Pokemon that can't attack (Misty's Tentacruel vs a Rest Snorlax), and
 no entry hit from a Pokemon that surely can't attack (Koga's Gengar in
-against a frozen Zapdos).
+against a frozen Zapdos), and a lead staying in to use Spore or Spikes
+before the player can hit back (Whitney's Smeargle, which switched out on
+turn 1 against every lead).
 
 The headless smart player now uses its status moves (Curse, Rest, Sleep
 Talk, Sleep Powder, Roar, Toxic, Explosion); `SMART_PLAYER=basic` is the old
@@ -122,7 +124,10 @@ entry-hit build); none of these is worth a fix:
 The engine-judge loop has reached diminishing returns on the user's party:
 81 clear decisions carry 16 of the 51 regret, the rest is spread thin.
 More signal needs other player teams (a second save, or `smart_player.py`
-with another party) to surface new patterns.
+with another party) to surface new patterns. The save's party always leads
+Zapdos; to test other leads, swap party slots in a copy of the test RAM
+and fix `sChecksum` (sum of `sGameData`..`sGameDataEnd`, little endian),
+as the Smeargle fix did.
 
 ## Pitfalls already hit
 

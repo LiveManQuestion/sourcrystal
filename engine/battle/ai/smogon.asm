@@ -699,6 +699,33 @@ endr
 	ld h, a
 	ret
 
+AISmogon_PickedLeadMoveFirst:
+; Return carry if the move the enemy is about to use (wEnemyMoveStruct) is a
+; sleep move or Spikes that lands before the player can hit back: the enemy
+; is faster, or the player surely can't attack. A Spore Smeargle has no
+; attacks, so its matchups always look bad, and it switched out before it
+; could ever use Spore or Spikes.
+	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
+	cp EFFECT_SPIKES
+	jr z, .first
+	cp EFFECT_SLEEP
+	jr nz, .no
+; Sleep fails through a Substitute.
+	ld a, [wPlayerSubStatus4]
+	bit SUBSTATUS_SUBSTITUTE, a
+	jr nz, .no
+.first
+	call AICompareSpeed
+	ret c
+	call AISmogon_PlayerSurelyCantAttack
+	ret z
+	scf
+	ret
+
+.no
+	and a
+	ret
+
 AISmogon_PickedMoveKOsFirst:
 ; Return carry if the move the enemy is about to use (wCurEnemyMove) is a
 ; sure KO that lands before the player moves: the enemy is faster, or the

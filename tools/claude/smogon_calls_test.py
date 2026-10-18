@@ -14,6 +14,8 @@ game_call.py on hand-made battle states:
 - AI_Smogon_Explosion, AI_Smogon_Toxic, AISmogon_SpikesFirst,
   AI_Smogon_Heal and AI_Smogon_Substitute on positions from Koga 2, Misty 2,
   Whitney 2 and Jasmine 2 against the save's party.
+- AISmogon_PickedLeadMoveFirst (smogon.asm): when Spore or Spikes keeps
+  the active Pokemon in.
 
 usage: smogon_calls_test.py ROM SYM SAVE.ram    (last line RESULT: ALL OK)"""
 import os
@@ -738,4 +740,36 @@ w('wBattleMonStatus', 0)
 for k in range(1, 7):
     m[A('wPartyMon%dHP' % k)], m[A('wPartyMon%dHP' % k) + 1] = party_hp[k - 1]
 w('wCurBattleMon', cur_battle_mon)
+
+# AISmogon_PickedLeadMoveFirst: Whitney's Spore Smeargle stays in to use
+# Spore or Spikes before the player can hit back, instead of switching out
+# on its first turn against every lead.
+SUB = 1 << CONST['SUBSTATUS_SUBSTITUTE']
+lead_cases = [
+    # (name, picked move, Smeargle's speed, player's species, speed, status, substatus 4, expected carry)
+    ('spore, faster than steelix', 'SPORE', 134, 'STEELIX', 95, 0, 0, True),
+    ('spikes, faster than snorlax', 'SPIKES', 134, 'SNORLAX', 74, 0, 0, True),
+    ('spikes, slower than zapdos', 'SPIKES', 134, 'ZAPDOS', 214, 0, 0, False),
+    ('spore, slower than exeggutor', 'SPORE', 134, 'EXEGGUTOR', 137, 0, 0, False),
+    ('spikes, slower than a frozen zapdos', 'SPIKES', 134, 'ZAPDOS', 214, FRZ, 0, True),
+    ('spore, faster, player behind a substitute', 'SPORE', 134, 'STEELIX', 95, 0, SUB, False),
+    ('rapid spin, faster', 'RAPID_SPIN', 134, 'STEELIX', 95, 0, 0, False),
+]
+for name, move, espd, species, pspd, pstatus, psub4, exp in lead_cases:
+    if 'AISmogon_PickedLeadMoveFirst' not in g.sym:
+        ok = False
+        print('FAIL lead move first:', name, '(not in this ROM)')
+        continue
+    g.call('AIGetEnemyMove', A=MOVE_IDS[move])
+    word('wEnemyMonSpeed', espd); word('wBattleMonSpeed', pspd)
+    w('wBattleMonSpecies', SPECIES[species]); w('wBattleMonStatus', pstatus)
+    w('wPlayerSubStatus4', psub4)
+    for i in range(4):
+        w('wPlayerUsedMoves', 0, i)
+    g.call('AISmogon_PickedLeadMoveFirst')
+    carry = bool(g.result['F'] & 0x10)
+    good = carry == exp
+    ok &= good
+    print('PASS' if good else 'FAIL', 'lead move first:', name, 'carry', carry, 'expected', exp)
+w('wBattleMonStatus', 0); w('wPlayerSubStatus4', 0)
 print('RESULT:', 'ALL OK' if ok else 'NOT OK')

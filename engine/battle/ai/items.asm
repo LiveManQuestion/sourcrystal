@@ -181,6 +181,9 @@ SwitchSmogon:
 ; Knocking the player out first beats any switch.
 	call AISmogon_PickedMoveKOsFirst
 	jp c, DontSwitch
+; So does putting it to sleep or laying Spikes before it can hit back.
+	call AISmogon_PickedLeadMoveFirst
+	jp c, DontSwitch
 ; Switching out throws away stat boosts that help and a Substitute.
 	call AISmogon_EnemyHasUsefulBoosts
 	jp c, DontSwitch
