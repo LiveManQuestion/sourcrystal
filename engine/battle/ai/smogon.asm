@@ -1597,6 +1597,13 @@ AI_Smogon_Setup:
 	call AICheckEnemyHalfHP
 	ret nc
 
+; Our attacks already surely KO it in two hits: a boost can't save a turn
+; (Koga's Qwilfish Cursing in front of a half-HP Cloyster).
+	push hl
+	call AISmogon_KOsInTwoHits
+	pop hl
+	jr c, .discourage
+
 ; Don't set up in front of something that hits harder than we do.
 	push hl
 	call AISmogon_ScoreActive

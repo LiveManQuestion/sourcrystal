@@ -24,7 +24,8 @@ Growth through a player that out-heals our unboosted attacks (Misty's
 Tentacruel vs Rest Vaporeon, `e79f45c49`), and Substitute against a likely
 Explosion (Misty's Tentacruel vs Cloyster, `7451bb297`), and Swords Dance
 setup credit with two safe hits (Tentacruel and Kingdra vs Vaporeon,
-2026-10-17).
+`bebf560a6`), and no setup when our attacks already 2HKO (Qwilfish vs
+Cloyster, 2026-10-18).
 
 The headless smart player now uses its status moves (Curse, Rest, Sleep
 Talk, Sleep Powder, Roar, Toxic, Explosion); `SMART_PLAYER=basic` is the old
@@ -32,12 +33,12 @@ attack-only player. It beats the AI far more often, so win rates from
 before it aren't comparable.
 
 Last measured (4 trainers x 144 seeds, the user's party, new player), after
-the Swords Dance credit fix: AI wins 241 of 576. Koga 2 119/144, Whitney 2
-57, Misty 2 38, Jasmine 2 27 (the 144-seed numbers swing by ~10 from RNG
+the 2HKO setup fix: AI wins 238 of 576. Koga 2 125/144, Whitney 2 56,
+Misty 2 36, Jasmine 2 21 (the 144-seed numbers swing by ~10 from RNG
 timing alone; Jasmine swung 20 of 432 on a build that didn't change her
 decisions). Engine judge (600k iterations per decision) over 144 traced
-battles: 4784 decisions, total regret 62.79. The cache for this ROM is
-`.aicheck/8c1d8c1c6fbcbbb7`, judge in `judge-i600000.jsonl`.
+battles: 4444 decisions, total regret 58.60. The cache for this ROM is
+`.aicheck/55844e6c5ee7713d`, judge in `judge-i600000.jsonl`.
 
 ## The loop
 
@@ -73,26 +74,27 @@ battles: 4784 decisions, total regret 62.79. The cache for this ROM is
 6. Changelog entry, then commit when the user says so (they review each fix
    and say "commit").
 
-## Candidate patterns (600k-iteration judge, after the Swords Dance fix)
+## Candidate patterns (600k-iteration judge, after the 2HKO setup fix)
 
 Clear disagreements (regret > 0.1) by matchup, AI action and engine action:
 
 ```
 clear decisions regret
-   4    5   1.40  QWILFISH   vs CLOYSTER  curse -> sludgebomb
-   4   31   1.72  VENUSAUR   vs ZAPDOS    hiddenpowerfire70 -> synthesis
-   4    4   1.08  STEELIX    vs ZAPDOS    rockslide -> curse
-   4   18   1.00  BLISSEY    vs SNORLAX   switch -> switch (another)
-   4    7   0.96  TENTACRUEL vs STEELIX   surf -> gigadrain
+   9    9   1.48  TENTACRUEL vs SNORLAX   sludgebomb -> swordsdance
+   6   15   1.65  TENTACRUEL vs VAPOREON  sludgebomb -> gigadrain
+   6   19   1.42  TENTACRUEL vs ZAPDOS    surf -> switch
+   5   17   1.34  PORYGON2   vs STEELIX   recover -> icebeam
+   5    5   1.08  QWILFISH   vs EXEGGUTOR spikes -> sludgebomb
 ```
 
-Nothing is concentrated now. Koga's Qwilfish Cursing in front of Cloyster
-has shown up in three runs (4 clear in 2 of 72 extra Koga battles too):
-the likeliest next one. Venusaur's Growth got slightly worse with the
-wider `.BreaksHealing` (regret 0.25 -> 0.68, 2 clear): watch it. Steelix
-vs Zapdos is new in a run where Steelix's logic didn't change. Venusaur vs
-Snorlax in KO range is left: the gap disappears with the player's bench
-removed.
+Misty's Tentacruel vs a Snorlax asleep from Rest, behind a Substitute,
+mostly below half HP: `AI_Smogon_Setup`'s "set up only while healthy"
+blocks Swords Dance, but a sleeping Pokemon can't hurt it through the
+Substitute. Small regret per decision (0.1-0.15, one 0.51); it grew with
+the Substitute fix (Tentacruel at lower HP). Koga's Tentacruel vs Vaporeon
+(Giga Drain) is the KO-range kind. Check the others across seeds first.
+Venusaur vs Snorlax in KO range is left: the gap disappears with the
+player's bench removed.
 
 ## Pitfalls already hit
 
@@ -122,6 +124,10 @@ removed.
 - Make the test RAM with `tools/claude/save_ram.py`, never by writing to the
   user's saves. The user's save has the clock-reset flag set, which stops
   headless battles from starting unless cleared.
+- MCTS gives an option it barely visited the average of its first random
+  playouts: in a won endgame the AI's choice can look 0.4 worse after a
+  few hundred visits. Check those with `pe.iterative_deepening_expectiminimax`
+  (its `matrix` is side one's options x side two's, NaN where pruned).
 - Trace `scores` are None when the decision didn't compute them.
 - The judge's values depend on its search mode (single-thread values run
   ~0.05 lower than 11-thread ones): compare regret only between results of

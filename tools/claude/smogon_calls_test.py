@@ -577,6 +577,38 @@ for name, stage, hp, pused, exp in heal_setup_cases:
     print('PASS' if good else 'FAIL', 'setup:', name, 'score', got, 'expected', exp)
 w('wEnemyAtkLevel', 7)
 
+# AI_Smogon_Setup when our attacks already 2HKO (Koga's Qwilfish vs the
+# save's Cloyster at half HP, its last Pokemon): Curse can't save a turn.
+curse_cases = [
+    # (name, Cloyster's HP, expected score)
+    ('qwilfish vs half-HP cloyster', 118, 22),
+    ('qwilfish vs full-HP cloyster', 206, 19),
+]
+saved_hp = [(m[A('wPartyMon%dHP' % k)], m[A('wPartyMon%dHP' % k) + 1]) for k in range(1, 7)]
+saved_cur = m[A('wCurBattleMon')]
+for name, php, exp in curse_cases:
+    if SPECIES['CLOYSTER'] not in party:
+        print('SKIP', name); continue
+    slot = party.index(SPECIES['CLOYSTER']) + 1
+    w('wCurBattleMon', slot - 1)
+    for k in range(1, 7):
+        if k != slot:
+            m[A('wPartyMon%dHP' % k)], m[A('wPartyMon%dHP' % k) + 1] = 0, 0
+    set_ot(dict(QWILFISH_KOGA, hp=203))
+    set_player(party.index(SPECIES['CLOYSTER']) + 1, ('WATER', 'ICE'), [])
+    word('wBattleMonHP', php)
+    w('wBattleWeather', 0); w('wCriticalHit', 0); w('wEnemySubStatus5', 0)
+    g.call('AIGetEnemyMove', A=MOVE_IDS['CURSE'])
+    w('wEnemyAIMoveScores', 20)
+    g.call('AI_Smogon_Setup', HL=A('wEnemyAIMoveScores'), frames=2500)
+    got = m[A('wEnemyAIMoveScores')]
+    good = got == exp
+    ok &= good
+    print('PASS' if good else 'FAIL', 'setup:', name, 'score', got, 'expected', exp)
+for k in range(1, 7):
+    m[A('wPartyMon%dHP' % k)], m[A('wPartyMon%dHP' % k) + 1] = saved_hp[k - 1]
+w('wCurBattleMon', saved_cur)
+
 # AI_Smogon_Substitute vs a likely Explosion (Misty's Tentacruel vs the
 # save's Cloyster): a Substitute wastes it, so it's greatly encouraged, unless
 # Explosion would barely hurt or the player has shown it doesn't have it.

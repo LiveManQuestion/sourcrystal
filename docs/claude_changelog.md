@@ -851,3 +851,18 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
     of 432 (z -2.1, -1.4 on the 288 seeds added after picking her); in her
     36 traced battles the builds made the same decisions from the same
     positions except for vanilla's random score points, so it was RNG.
+- **2026-10-18**: Smogon AI: no setup when our attacks already 2HKO. Koga's
+  Qwilfish Cursed in front of a half-HP Cloyster (the player's last
+  Pokemon, in three runs), where the engine uses Sludge Bomb (4 clear in 2
+  battles, 4 more in 2 of 72 extra Koga battles). MCTS overstates the gap
+  (Curse got a few hundred visits next to Sludge Bomb's 600k), but a
+  depth-7 expectiminimax search agrees on the order: Sludge Bomb 2HKOs it,
+  and a boost can't save a turn. `AI_Smogon_Setup` now discourages every
+  setup move when `AISmogon_KOsInTwoHits` (a sure 2HKO with our current
+  boosts) holds.
+  - Checked: both suites ALL OK (new `smogon_calls_test.py` "qwilfish vs
+    half-HP cloyster" case fails on the old build; full HP unchanged); 4
+    trainers x 144 seeds: AI wins 241 -> 238 of 576 (Koga 119 -> 125,
+    Whitney 57 -> 56, Misty 38 -> 36, Jasmine 27 -> 21 z -0.9). Curse ->
+    Sludge Bomb on Cloyster clear 4 -> 0, all Curse decisions' regret 6.37
+    -> 3.14; total regret 62.8 -> 58.6.
