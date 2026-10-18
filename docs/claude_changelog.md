@@ -866,3 +866,15 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
     Whitney 57 -> 56, Misty 38 -> 36, Jasmine 27 -> 21 z -0.9). Curse ->
     Sludge Bomb on Cloyster clear 4 -> 0, all Curse decisions' regret 6.37
     -> 3.14; total regret 62.8 -> 58.6.
+- **2026-10-18**: `ai_check.sh` reuses work: the 144 traced battles are
+  seeds 1-36 of the 576 (all 144 checked identical to `battle.py`'s lines),
+  so `ai_trace.py` now prints `battle.py`'s line too (its switch log and
+  routine counts moved to `Battle.log_switches` in `battle_harness.py`)
+  and the battles start after the traced seeds; and `engine_judge.py
+  --cache` keeps every position's search (keyed by poke-engine's
+  `State.to_string()`, in `.aicheck/judge-cache-i600000.jsonl`, seeded
+  with the 15734 positions of the earlier runs), so a position the base
+  ROM or another decision already reached isn't searched again (28% of
+  the last run's decisions). A reused search is as deep as a new one; on
+  a small rerun every battle line matched the full run's and the judge
+  searched nothing.

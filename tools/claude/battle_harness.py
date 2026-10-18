@@ -187,6 +187,52 @@ class Battle:
             result['player_actions'] = self.player.actions
         return result
 
+    LOGGED_ROUTINES = [
+        'AI_Smogon', 'SwitchSmogon', 'AISmogon_ChooseReplacement', 'AISmogon_CanStopSetup', 'AI_Smogon_Screens',
+        'AI_Smogon_BatonPass', 'AI_Smogon_Encore', 'AI_Smogon_HealBell', 'AI_Smogon_Explosion', 'AI_Smogon_Phaze',
+        'AI_Smogon_Haze', 'AI_Smogon_Setup', 'AI_Smogon_Spikes', 'AI_Smogon_Toxic', 'AI_Smogon_Sleep',
+        'AI_Smogon_RapidSpin', 'AI_Smogon_Heal', 'AISmogon_PlayerIsPhysical', 'AISmogon_PlayerCanPhaze',
+        'AISmogon_FindBestSwitchIn']
+
+    def log_switches(self):
+        """Hook battle.py's log: every enemy switch-in ('mid' when the AI chose
+        to switch, with the active and best switch-in matchup scores, 'forced'
+        after a faint or Roar) and how often each LOGGED_ROUTINES routine ran.
+        Call before start(); returns add(result), which gives run()'s result
+        with 'switches' first and 'hooks' last, as battle.py prints it."""
+        mem, W = self.mem, self.W
+        counts = collections.Counter()
+        switch_log = []
+        pending = {'mid': False}
+
+        def on_try_switch(ctx):
+            counts['AI_TrySwitch'] += 1
+            pending['mid'] = True
+            pending['scores'] = (mem[W('wEnemyAISwitchScore')], mem[W('wSmogonAIBestScore')])
+
+        def on_load_switch(ctx):
+            b = self.pb.register_file.B
+            length = W('wOTPartyMon2') - W('wOTPartyMon1')
+            switch_log.append({'kind': 'mid' if pending['mid'] else 'forced', 'from': mem[W('wEnemyMonSpecies')],
+                               'from_hp': self.word(W('wEnemyMonHP')),
+                               'to': mem[W('wOTPartyMon1Species') + b * length], 'vs': mem[W('wBattleMonSpecies')],
+                               'scores': pending.get('scores') if pending['mid'] else None})
+            pending['mid'] = False
+
+        def count(name):
+            def cb(ctx):
+                counts[name] += 1
+            return cb
+
+        self.on('AI_TrySwitch', on_try_switch)
+        self.on('LoadEnemyMonToSwitchTo', on_load_switch)
+        for n in self.LOGGED_ROUTINES:
+            if n in self.sym:
+                self.on(n, count(n))
+            else:
+                print('missing symbol', n)
+        return lambda result: {'switches': switch_log, **result, 'hooks': dict(counts)}
+
     def screenshot(self, path):
         import struct
         import zlib

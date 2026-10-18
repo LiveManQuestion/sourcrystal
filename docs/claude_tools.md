@@ -46,10 +46,14 @@ the user's save files.
   old `MS=400` timed search), `TRAINERS=...`, `SAVE=...`, `NO_JUDGE=1`.
   Each ROM's results are cached in `.aicheck/` (git-ignored) by its
   contents, the save, `smart_player.py` and the options (judge files by
-  their search settings), so the base runs once per commit; about 30
-  minutes per uncached ROM (battles 8, traces 2, judge 20; the tests run
-  alongside). Run it in the background and read the report; tee it to a
-  file to keep it.
+  their search settings), so the base runs once per commit; about 25
+  minutes per uncached ROM (traces 2, battles 6, judge up to 19; the tests
+  run alongside). The traced battles are the battles' first seeds, so
+  those come from the traces, and every judged position is kept in
+  `.aicheck/judge-cache-i<ITERS>.jsonl` (shared by all ROMs: the engine only
+  sees the position), so positions an earlier run reached aren't searched
+  again. Run it in the background and read the report; tee it to a file
+  to keep it.
 - `ai_scenarios.py ROM SYM RAM [-k TEXT]`: exact-state checks of AI_Smogon's
   scores, the heal-move multiplier the engine picks, the switch-in choice by
   type (`switch_cases`) and the power AIGetEnemyMove loads (`hp_cases`).
@@ -65,8 +69,10 @@ the user's save files.
   PyBoy draws Bill's PC as a white screen; test it through RAM.
 - `battle_harness.py`: the battle setup shared by `battle.py`, `ai_trace.py`
   and `ai_profile.py` (`Battle(...)`, `.on(label, fn)`, `.start()`,
-  `.run(frames)`). `.on()` lets several callbacks share a label: PyBoy allows
-  one hook per address and raises "Hook already registered" otherwise.
+  `.run(frames)`, `.log_switches()` for `battle.py`'s switch log and
+  routine counts). `.on()` lets several callbacks share a label: PyBoy
+  allows one hook per address and raises "Hook already registered"
+  otherwise.
 - `battle.py [--smart] ROM SYM RAM "BUGSY 2" SEED [frames]`: one Challenge
   Mode battle against a Smogon-AI trainer. JSON line with crashes, AI routine
   counts, the enemy's moves, every enemy switch-in, and `player_left` /
@@ -116,9 +122,11 @@ the user's save files.
   each player Pokemon, and stay-ins that an independent damage race
   (`smart_player.race`) calls clearly wrong.
 - `engine_judge.py TRACE.jsonl... [--ms 500] [--threads 4] [--json OUT]`
-  (or `--iterations N [--jobs 11]`: N iterations on one thread per
-  decision, decisions in parallel; poke-engine's threads scale badly, 11
-  give only 3.3x one, so this is twice as fast at the same depth): a
+  (or `--iterations N [--jobs 11] [--cache FILE]`: N iterations on one
+  thread per decision, decisions in parallel; poke-engine's threads scale
+  badly, 11 give only 3.3x one, so this is twice as fast at the same depth;
+  the cache, keyed by the engine's `State.to_string()`, searches each
+  position once): a
   second opinion on every `SwitchSmogon` decision in `ai_trace.py` traces
   from poke-engine, the Gen 2 search engine behind the Foul Play bot
   (`bots/foul-play-main`). It rebuilds each position (both parties, items,

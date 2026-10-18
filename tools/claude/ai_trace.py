@@ -194,8 +194,9 @@ def run(argv):
     battle.on('AISmogon_ScoreActive', on_scoring('active'))
     battle.on('AISmogon_FindBestSwitchIn', on_scoring('best'))
     battle.on('LoadEnemyMonToSwitchTo', on_switch_in)
+    add_log = battle.log_switches()
     battle.start()
-    result = battle.run(frames)
+    result = add_log(battle.run(frames))
     battle.stop()
     for d in decisions:
         d.pop('loaded', None)

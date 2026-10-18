@@ -48,7 +48,7 @@ battles: 4444 decisions, total regret 58.60. The cache for this ROM is
    (`.aicheck/`, git-ignored) persists between sessions: on a clean tree
    both sides are `HEAD`'s ROM, already cached, so the report is instant
    and its pattern tables are what to pick from. An uncached ROM takes
-   about 30 minutes: start it in the background. The cache misses (and the
+   about 25 minutes: start it in the background. The cache misses (and the
    base reruns) when `smart_player.py`, the save (`sourcrystal.sav`: playing
    and saving changes it) or the options change, or if `.aicheck/` is
    deleted (`git clean -x`).

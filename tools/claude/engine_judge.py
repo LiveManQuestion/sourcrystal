@@ -3,7 +3,7 @@ search engine behind the Foul Play bot.
 
 usage (with the poke-engine venv's Python, see docs/claude_tools.md):
   engine_judge.py TRACE.jsonl... [--ms 500] [--threads 4] [--top 15] [--json OUT]
-  engine_judge.py TRACE.jsonl... --iterations N [--jobs 11] [--top 15] [--json OUT]
+  engine_judge.py TRACE.jsonl... --iterations N [--jobs 11] [--cache FILE] [--top 15] [--json OUT]
   engine_judge.py --report OUT   # report saved results again, without searching
   engine_judge.py --patterns OUT [BASE]  # rank patterns; with BASE, compare them
   engine_judge.py --check        # every move, species and item maps to the engine
@@ -13,7 +13,9 @@ an item or had no PP left are left out), it rebuilds the position, runs poke-eng
 --ms milliseconds with the AI as side one (or, with --iterations, exactly N
 iterations on one thread, --jobs decisions at a time: the engine's threads
 scale badly, so this searches as deep in less time, and how deep doesn't
-depend on the machine's load), and compares the AI's action (the
+depend on the machine's load; --cache FILE keeps every position's search,
+so a position an earlier run reached with the same settings, or another
+decision reached, isn't searched again), and compares the AI's action (the
 switch-in, or the move it picked) with the engine's: the action the search
 visited most. A decision's regret is the engine's value of its own action
 minus its value of the AI's (values are side one's chances, 0 to 1). It
@@ -41,6 +43,7 @@ Read the results with care:
   counted when the AI's action got --min-visits visits. Rerun with a larger
   --ms or --iterations to see whether a disagreement holds up."""
 import collections
+import hashlib
 import json
 import os
 import sys
@@ -165,16 +168,23 @@ def ai_action(d):
     return move_id(d['move'], d['party'][d['active']]['dvs'])
 
 
-def judge(d, ms, threads, iterations=0):
-    """The engine's (value, visits) of each of the AI's options."""
-    result = pe.monte_carlo_tree_search(position(d), duration_ms=ms, iterations=iterations,
+def search(state, ms, threads, iterations=0):
+    """The engine's search of a position (State.to_string()): its iterations
+    and the (value, visits) of each of side one's options."""
+    result = pe.monte_carlo_tree_search(pe.State.from_string(state), duration_ms=ms, iterations=iterations,
                                         threads=1 if iterations else threads)
-    status = d['party'][d['active']]['status']
-    return {'ai_raw': ai_action(d), 'visits': result.total_visits,
-            'asleep': bool(status & (CONST['SLP_MASK'] | 1 << CONST['FRZ'])),
-            'locked': move_id(d['move'], d['party'][d['active']]['dvs']) if d.get('player_switched') else None,
+    return {'visits': result.total_visits,
             'options': {o.move_choice: (o.total_score / o.visits if o.visits else 0, o.visits)
                         for o in result.side_one}}
+
+
+def judge(d, found):
+    """A decision's record from the search of its position."""
+    status = d['party'][d['active']]['status']
+    return {'ai_raw': ai_action(d), 'visits': found['visits'],
+            'asleep': bool(status & (CONST['SLP_MASK'] | 1 << CONST['FRZ'])),
+            'locked': move_id(d['move'], d['party'][d['active']]['dvs']) if d.get('player_switched') else None,
+            'options': found['options']}
 
 
 def score(j, min_visits):
@@ -234,12 +244,12 @@ def main(argv):
     if '--check' in argv:
         return check()
     opts = {'--ms': 500, '--threads': 4, '--iterations': 0, '--jobs': 11, '--top': 15, '--min-visits': 50,
-            '--json': None, '--report': None}
+            '--json': None, '--report': None, '--cache': None}
     paths = []
     it = iter(argv)
     for a in it:
         if a in opts:
-            opts[a] = next(it) if a in ('--json', '--report') else int(next(it))
+            opts[a] = next(it) if a in ('--json', '--report', '--cache') else int(next(it))
         else:
             paths.append(a)
     if '--patterns' in paths:
@@ -262,15 +272,39 @@ def main(argv):
                         not any(pp & 0x3f for pp in d['party'][d['active']]['pp']):
                     continue
                 todo.append((p, b, i, d))
-    search = (opts['--ms'], opts['--threads'], opts['--iterations'])
+    settings = (opts['--ms'], opts['--threads'], opts['--iterations'])
+    states = [position(d).to_string() for _, _, _, d in todo]
+    keys = [hashlib.sha1(s.encode()).hexdigest() for s in states]
+    # Each position is searched once: in earlier runs (--cache, the same
+    # settings), or once for all the decisions that reach it.
+    cache = {}
+    if opts['--cache']:
+        if not opts['--iterations']:
+            sys.exit('--cache needs --iterations: a timed search depends on the machine\'s load')
+        if os.path.exists(opts['--cache']):
+            for line in open(opts['--cache']):
+                c = json.loads(line)
+                cache[c['key']] = c
+    new = {}
+    for k, s in zip(keys, states):
+        if k not in cache:
+            new.setdefault(k, s)
     if opts['--iterations'] and opts['--jobs'] > 1:
         import multiprocessing
         with multiprocessing.Pool(opts['--jobs']) as pool:
-            results = pool.starmap(judge, [(d, *search) for _, _, _, d in todo], chunksize=1)
+            found = pool.starmap(search, [(s, *settings) for s in new.values()], chunksize=1)
     else:
-        results = [judge(d, *search) for _, _, _, d in todo]
+        found = [search(s, *settings) for s in new.values()]
+    for k, f in zip(new, found):
+        cache[k] = dict(key=k, **f)
+    if opts['--cache'] and new:
+        with open(opts['--cache'], 'a') as f:
+            for k in new:
+                f.write(json.dumps(cache[k]) + '\n')
+    print(f'{len(todo)} decisions, {len(new)} positions searched, {len(todo) - len(new)} reused', file=sys.stderr)
     rows = []
-    for (p, b, i, d), j in zip(todo, results):
+    for (p, b, i, d), k in zip(todo, keys):
+        j = judge(d, cache[k])
         j.update(trace=os.path.basename(p), battle=b, decision=i, turn=d['turn'],
                  ai_mon=species_name(d['party'][d['active']]['species']),
                  player_mon=species_name(d['player']['species']), path=d['path'][-2:],

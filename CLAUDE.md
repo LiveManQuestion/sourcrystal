@@ -116,7 +116,7 @@ AI change: `cmp_data.py` (expect `ALL IDENTICAL`), `damage_diff.py` (0
 mismatches), `ai_scenarios.py ROM SYM RAM` (`RESULT: ALL OK`) and
 `battle_matrix.sh` (no crashes; compare with `battle_compare.py`). For a
 Smogon AI change, `ai_check.sh` runs the tests, the battles and the engine
-judge against `HEAD` in one report (cached; about 30 minutes per new ROM).
+judge against `HEAD` in one report (cached; about 25 minutes per new ROM).
 Headless tests use PyBoy (`~/.local/share/uv/tools/pyboy/bin/python`) and the
 user's `sourcrystal.sav` as cartridge RAM, made with `save_ram.py` (not `head
 -c`: a clock-reset flag in the save stops battles from starting). Never

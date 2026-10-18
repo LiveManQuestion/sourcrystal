@@ -32,7 +32,7 @@ iters=${ITERS:-600000}
 jobs=${JOBS:-11}
 if [ "$iters" -gt 0 ]; then
 	jname=judge-i$iters
-	search="--iterations $iters --jobs $jobs"
+	search="--iterations $iters --jobs $jobs --cache $root/.aicheck/judge-cache-i$iters.jsonl"
 else
 	jname=judge
 	search="--ms $ms --threads 11"
@@ -65,12 +65,6 @@ run_rom() {
 	local dir=$root/.aicheck/$key
 	mkdir -p "$dir"
 	cp "$r" "$dir/rom.gbc"; cp "${r%.gbc}.sym" "$dir/rom.sym"; cp "$work/save.ram" "$dir/save.ram"
-	if [ ! -f "$dir/matrix.done" ]; then
-		echo "$(basename "$r"): $seeds battles per trainer..." >&2
-		PLAYER=smart SEEDS=$seeds TRAINERS=$trainers "$here/battle_matrix.sh" "$dir" "$dir/save.ram" "$dir/rom.gbc" > /dev/null 2>&1
-		rm -rf "$dir/runs"
-		touch "$dir/matrix.done"
-	fi
 	if [ -n "$judge" ] && [ ! -f "$dir/traces.done" ] && [ ! -f "$dir/judge.done" ]; then
 		echo "$(basename "$r"): $trace_seeds traced battles per trainer..." >&2
 		rm -rf "$dir/traces"; mkdir -p "$dir/traces"
@@ -82,6 +76,41 @@ run_rom() {
 			'"$P"' '"$here"'/ai_trace.py run '"$dir"'/rom.gbc '"$dir"'/rom.sym '"$dir"'/save.ram "$t" $s 2>/dev/null \
 				| grep "^{" > "'"$dir"'/traces/${t// /_}_$s.jsonl"'
 		touch "$dir/traces.done"
+	fi
+	if [ ! -f "$dir/matrix.done" ]; then
+		# The traced battles are the battles' first seeds, played the same
+		# way (ai_trace.py prints battle.py's line plus its decisions): take
+		# those from the traces, unless one is missing or older than that.
+		local first=1 traced=$((trace_seeds < seeds ? trace_seeds : seeds))
+		if [ -f "$dir/traces.done" ] && python3 - "$dir/traces" "$trainers" "$traced" > "$dir/traced.jsonl" <<'PY'
+import json, os, sys
+traces, trainers, n = sys.argv[1], sys.argv[2].split('|'), int(sys.argv[3])
+for t in trainers:
+    for s in range(1, n + 1):
+        path = os.path.join(traces, '%s_%d.jsonl' % (t.replace(' ', '_'), s))
+        line = open(path).readline() if os.path.exists(path) else ''
+        if not line.startswith('{'):
+            sys.exit(1)
+        r = json.loads(line)
+        if 'hooks' not in r:
+            sys.exit(1)
+        for k in ('decisions', 'candidates', 'switch_ins'):
+            r.pop(k)
+        print(json.dumps(r))
+PY
+		then
+			first=$((traced + 1))
+		else
+			: > "$dir/traced.jsonl"
+		fi
+		echo "$(basename "$r"): $seeds battles per trainer ($((first - 1)) from the traces)..." >&2
+		: > "$dir/rom.jsonl"
+		if [ "$first" -le "$seeds" ]; then
+			PLAYER=smart FIRST_SEED=$first SEEDS=$seeds TRAINERS=$trainers "$here/battle_matrix.sh" "$dir" "$dir/save.ram" "$dir/rom.gbc" > /dev/null 2>&1
+		fi
+		cat "$dir/traced.jsonl" >> "$dir/rom.jsonl"
+		rm -rf "$dir/runs" "$dir/traced.jsonl"
+		touch "$dir/matrix.done"
 	fi
 	if [ -n "$judge" ] && [ ! -f "$dir/$jname.done" ]; then
 		echo "$(basename "$r"): the judge ($search)..." >&2
