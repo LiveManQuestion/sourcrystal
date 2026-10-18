@@ -878,3 +878,23 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   the last run's decisions). A reused search is as deep as a new one; on
   a small rerun every battle line matched the full run's and the judge
   searched nothing.
+- **2026-10-18**: Smogon AI: free setup behind a Substitute. Misty's
+  Tentacruel, behind a Substitute in front of a Snorlax asleep from Rest,
+  used Sludge Bomb where the engine uses Swords Dance (9 clear in 6 of 36
+  battles, 8 more in 6 of 72 extra Misty battles). `AI_Smogon_Setup`
+  returned at "set up only while healthy" (69/253 HP after the
+  Substitute) or discouraged it for the losing matchup (190/253), before
+  its "a sleeping Pokemon can't punish setup" check. Now, with our
+  Substitute up and `AISmogon_PlayerCantAttack`, every setup move but
+  Belly Drum skips both checks and is greatly encouraged (past AI_Setup's
+  +2), unless our attacks already 2HKO or the boost reached
+  `SMOGON_SETUP_GOAL`. 36 bytes in bank $0e.
+  - Checked: both suites ALL OK (new `smogon_calls_test.py` "behind a
+    sub vs sleeping snorlax" cases fail on the old build); 4 trainers x
+    144 seeds: AI wins 238 -> 235 of 576 (Misty 36 -> 48 z +1.6, Koga 125
+    -> 119 z -1.0, Whitney 56 -> 51, Jasmine 21 -> 17; none |z| >= 2).
+    Sludge Bomb -> Swords Dance on Snorlax clear 9 -> 0, Tentacruel vs
+    Snorlax 11 -> 1; total regret 58.6 -> 51.0. Qwilfish Curse -> Sludge
+    Bomb on Cloyster (0 -> 3) and Tentacruel Surf -> switch on Zapdos (6
+    -> 10) grew, but neither reaches the new code (Qwilfish has no
+    Substitute; a switch decision): RNG.

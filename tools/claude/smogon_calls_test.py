@@ -609,6 +609,37 @@ for k in range(1, 7):
     m[A('wPartyMon%dHP' % k)], m[A('wPartyMon%dHP' % k) + 1] = saved_hp[k - 1]
 w('wCurBattleMon', saved_cur)
 
+# AI_Smogon_Setup behind a Substitute (Misty's Tentacruel vs the save's Rest
+# Snorlax): a sleeping Pokemon can't punish the boost, even below half HP or
+# in a losing matchup.
+SUB = 1 << CONST['SUBSTATUS_SUBSTITUTE']
+free_setup_cases = [
+    # (name, Tentacruel's HP, its Substitute, Attack stage, Snorlax's status, expected score)
+    ('tentacruel behind a sub vs sleeping snorlax', 69, SUB, 7, 3, 17),
+    ('tentacruel behind a sub vs sleeping snorlax, above half HP', 190, SUB, 7, 3, 17),
+    ('tentacruel behind a sub vs awake snorlax', 190, SUB, 7, 0, 22),
+    ('tentacruel without a sub vs sleeping snorlax', 190, 0, 7, 3, 22),
+    ('tentacruel without a sub below half HP', 69, 0, 7, 3, 20),
+    ('+2 tentacruel behind a sub vs sleeping snorlax', 190, SUB, 9, 3, 22),
+]
+for name, hp, sub, stage, pstatus, exp in free_setup_cases:
+    if SPECIES['SNORLAX'] not in party:
+        print('SKIP', name); continue
+    set_ot(dict(TENTACRUEL_MISTY, hp=hp))
+    w('wEnemyMonDVs', TENTACRUEL_MISTY['dvs'][0]); w('wEnemyMonDVs', TENTACRUEL_MISTY['dvs'][1], 1)
+    w('wEnemyAtkLevel', stage); word('wEnemyMonAttack', TENTACRUEL_MISTY['stats'][0] * (stage - 5) // 2)
+    set_player(party.index(SPECIES['SNORLAX']) + 1, ('NORMAL', 'NORMAL'), ['DOUBLE_EDGE', 'REST'])
+    w('wBattleMonStatus', pstatus); w('wEnemySubStatus4', sub)
+    w('wBattleWeather', 0); w('wCriticalHit', 0); w('wEnemySubStatus5', 0)
+    g.call('AIGetEnemyMove', A=MOVE_IDS['SWORDS_DANCE'])
+    w('wEnemyAIMoveScores', 20)
+    g.call('AI_Smogon_Setup', HL=A('wEnemyAIMoveScores'), frames=2500)
+    got = m[A('wEnemyAIMoveScores')]
+    good = got == exp
+    ok &= good
+    print('PASS' if good else 'FAIL', 'setup:', name, 'score', got, 'expected', exp)
+w('wEnemyAtkLevel', 7); w('wBattleMonStatus', 0); w('wEnemySubStatus4', 0)
+
 # AI_Smogon_Substitute vs a likely Explosion (Misty's Tentacruel vs the
 # save's Cloyster): a Substitute wastes it, so it's greatly encouraged, unless
 # Explosion would barely hurt or the player has shown it doesn't have it.

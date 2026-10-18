@@ -1593,6 +1593,27 @@ AI_Smogon_Setup:
 	bit SUBSTATUS_TOXIC, a
 	jr nz, .discourage
 
+; Behind a Substitute, in front of a Pokemon that can't attack this turn,
+; the boost is free even below half HP or in a losing matchup (Misty's
+; Tentacruel vs a Rest Snorlax). Not Belly Drum, which fails below half HP.
+	ld a, [wEnemySubStatus4]
+	bit SUBSTATUS_SUBSTITUTE, a
+	jr z, .not_free
+	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
+	cp EFFECT_BELLY_DRUM
+	jr z, .not_free
+	call AISmogon_PlayerCantAttack
+	jr z, .not_free
+	push hl
+	call AISmogon_KOsInTwoHits
+	pop hl
+	jr c, .discourage
+	call .GetBoostLevel
+	cp SMOGON_SETUP_GOAL
+	jr nc, .discourage
+	jp AISmogon_GreatlyEncourage
+.not_free
+
 ; Set up only while healthy (this also keeps Belly Drum from failing).
 	call AICheckEnemyHalfHP
 	ret nc
