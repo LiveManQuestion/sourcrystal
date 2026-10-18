@@ -73,9 +73,12 @@ the same `--corelib`, `--rsp` and cxd4 settings to `run.sh`.
 
 The "Out of bound read from GB RAM 8000" warning is Stadium reading SRAM
 bank 4 during the Game Pak check (a real MBC3 mirrors bank 0 there); it's
-harmless. mupen64plus also saves only the 32 KB of SRAM, dropping the
-48-byte clock footer of a 32816-byte `.sav`, so the game asks to reset the
-clock afterwards.
+harmless. mupen64plus-core also truncates the Game Boy save to the 32 KB of
+SRAM the first time it writes it (`write_to_file` in `file_storage_save`
+opens it with `wb`), dropping the 48-byte clock footer of a 32816-byte `.sav`,
+so the game then asks to reset the clock. `build_core.sh` applies
+`keep_save_footer.diff`, which writes it with `rb+` instead; RMG's own core
+still truncates.
 
 ## Testing
 

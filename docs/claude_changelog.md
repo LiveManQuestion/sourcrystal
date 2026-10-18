@@ -961,3 +961,9 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   `storage_test.py` OK; PKHeX.Core round trip (gender and Blue Card edits
   load in game). Also fixed `build_rev.sh` for the gbtower, debug and vc
   targets (it passed `debug` etc. to make instead of `sour_debug`).
+- **2026-10-18**: Stadium 2 no longer makes the game ask to reset the clock.
+  mupen64plus-core truncated the Game Boy save to 32 KB on its first write,
+  dropping the emulators' 48-byte clock footer; `build_core.sh` now applies
+  `tools/claude/stadium2/keep_save_footer.diff`. Checked headlessly: after a
+  Game Pak check the save stayed 32816 bytes and identical. RMG's bundled
+  core still truncates.
