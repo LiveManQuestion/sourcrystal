@@ -122,3 +122,100 @@ upstream fails 10 mirroring and 5 RTC checks), plus Stadium 2 headless runs
 `gh pr view 1195 --repo mupen64plus/mupen64plus-core --comments` (and 1196).
 Possible next change: load the RTC from the `.sav` footer so the clock
 carries over from Game Boy emulators.
+
+## Answering review of #1195 and #1196
+
+Facts to answer with. Make any change asked for on the fork branch
+(`~/mupen64plus-core`, `gb-ram-mirroring` / `gb-rtc-start-time`), rerun
+`gb_cart_test.c` and a Stadium run, then update the matching diff in
+`tools/claude/stadium2/`. Ask before pushing; don't add a "Generated with
+Claude Code" line to replies.
+
+### #1195 (bank mirroring)
+
+- The change: `address %= size` before the bounds check in `read_rom()`,
+  `read_ram()` and `write_ram()` (`src/device/gb/gb_cart.c`). `read_rom()`
+  skips it if the ROM size is 0; RAM is checked for NULL just above.
+- Why mirroring is right: an MBC drives bank bits the chip has no pins for,
+  so they're ignored and the bank wraps. A 32 KB RAM chip (4 x 8 KB) has
+  2 bank address lines, so on MBC3 bank 4 = bank 0. Same for ROM (bank 9 of
+  8 = bank 1) and MBC2's 512x4 bit RAM repeating every `$200` through
+  `$A000-$BFFF`. Other emulators (SameBoy, mGBA, Gambatte) and Pan Docs
+  are believed to agree, but that wasn't checked: look before citing them.
+- Modulo equals hardware masking for power-of-two sizes. Every RAM size the
+  core accepts is one (header `$149`: 2, 8, 32, 128, 64 KB; MBC2 512). ROM
+  sizes are powers of two except the unofficial 1.1/1.2/1.5 MB header codes;
+  for those modulo and masking differ only past the end, which used to
+  return nothing anyway.
+- Before: out-of-range reads returned without touching the buffer (the
+  Transfer Pak buffer kept its previous contents), writes were dropped, and
+  each logged "Out of bound ...". After: no warning for them.
+- `write_ram()` takes a `uint16_t` address; bank 7 `$BFFF` is `$FFFF`, so it
+  fits. Not changed: MBC5 masks the RAM bank with `& 0x7` (128 KB carts
+  can't reach banks 8-15); that's an older limit, not part of this PR.
+- What Stadium 2 does: in the Game Pak check it writes `$55`, `$AA`, then a
+  32-byte counting pattern (different start value each run) to RAM bank 0
+  `$A000`, reads RAM bank 1 `$A000-$AD1F` (party data), bank 0 `$ABE0`,
+  then bank 4 `$A000`. Probably a RAM size/mirroring probe. It passed before
+  too, so no visible symptom in Stadium; the PR is about accuracy and the
+  warning.
+- Tested: `gb_cart_test.c` (upstream fails 10 checks, the branch passes);
+  Stadium 2 (US) Game Pak check with Crystal (US), Red (US) and Sour Crystal:
+  0 warnings, save changed only by the 32-byte pattern, the 48-byte RTC
+  footer kept; Lab PC boxes; GB Tower to the overworld.
+
+### #1196 (RTC start time)
+
+- The change: `poweron_mbc3_rtc()` (`src/device/gb/mbc3_rtc.c`) sets
+  `last_time = iclock->get_time(clock)` instead of 0. Only called for carts
+  with `GED_RTC`, and `main.c` always passes `g_iclock_ctime_plus_delta`
+  (host time plus the user's delta), so `iclock` isn't NULL.
+- The bug: `update_rtc_regs()` adds `now - last_time`. With `last_time` = 0
+  the first read or latch added about 20,800 days (1.8e9 s), past the 9-bit
+  day counter, so DH bit 7 (carry) was set: the test read DH `$80`, DL `$61`.
+- Effect in games: Crystal's `_FixDays` treats a set carry (or halt) bit as
+  a clock reset and records `RTC_RESET` (`$80`) in `sRTCStatusFlags` (SRAM
+  `$AC60`, file offset `0xC60`). In the GB Tower that showed "The clock's
+  time may be wrong", the Continue screen showed `TIME ???`, and the flag was
+  saved to the cartridge, so a Game Boy emulator showed it too. Stadium
+  latches the RTC (writes 1 to `$6000`) and reads registers `$0C`-`$08`
+  when the GB Tower starts.
+- Why not 0 like the AF-RTC (`af_rtc.c`) and 64DD RTC: those add elapsed
+  time to `now`, which counts from 1970 on purpose to give the date. The
+  MBC3 registers count time elapsed since the clock was set; they're no
+  date.
+- Savestates: they store `last_time` and restore it, so loading a state
+  continues the clock with the real time that passed since. A state made
+  with the old code before the RTC's first update has `last_time` = 0 and
+  still shows the bug once.
+- Known limits, not in this PR: the RTC starts at day 0 each power on (it
+  doesn't read the `.sav` footer that Game Boy emulators write, nor write it
+  back); the halt bit isn't implemented (existing TODO); writing an RTC
+  register doesn't first bring `last_time` up to date, so time since the
+  last update gets added after the write (Crystal reads the clock often, so
+  it's small). Loading the footer would be the follow-up.
+- Tested: `gb_cart_test.c` RTC checks (power on at 2027: DH and DL read 0;
+  after 2d 3h 4m 5s the registers read exactly that; upstream fails 5);
+  GB Tower with Crystal (US) and Sour Crystal: no warning, play time shown
+  (30:46 on the vanilla save), flag still `$00` in the saved file. Upstream:
+  flag `$80` after every run.
+
+### Reproducing
+
+- Build: `bash tools/claude/stadium2/build_core.sh` (upstream `902bc60` +
+  RMG's RSP patch + both diffs) into `.stadium2/core`.
+- Unit test: the gcc line at the top of `gb_cart_test.c`, against
+  `.stadium2/core` or a checkout of either branch.
+- Stadium: `Xvfb :77 -screen 0 800x600x24 &`, then `run.sh` with
+  `--corelib .stadium2/core/projects/unix/libmupen64plus.so.2 --rsp
+  /usr/lib/RMG/Plugin/RSP/mupen64plus-rsp-cxd4.so --set
+  'rsp-cxd4[DisplayListToGraphicsPlugin]=True'` (add `--verbose` for the
+  Transfer Pak log; `tpak.py` summarizes it). The GB Tower needs `--gfx
+  /usr/lib/RMG/Plugin/GFX/mupen64plus-video-GLideN64.so` (Rice draws a white
+  screen). Keys to reach it: `wait:35000 Return:300 wait:10000`, `x:300
+  wait:15000`, `x:300 wait:8000 k:300 wait:2000`, `x:300 wait:10000`,
+  `x:300 wait:20000`, `wait:30000`, then Continue with `Return:200
+  wait:5000 Return:200 wait:5000 x:200 wait:5000 x:200 wait:8000`. Quit
+  with `xkey.py Escape` so the save is written. Use copies of saves; the
+  project-root `sourcrystal.sav` (2026-10-16) already has the RTC reset
+  flag set, so use another save for clock tests.
