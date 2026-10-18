@@ -78,7 +78,7 @@ SRAM the first time it writes it (`write_to_file` in `file_storage_save`
 opens it with `wb`), dropping the 48-byte clock footer of a 32816-byte `.sav`,
 so the game then asks to reset the clock. `build_core.sh` applies
 `keep_save_footer.diff`, which writes it with `rb+` instead; RMG's own core
-still truncates.
+still truncates. The fix sent upstream: `docs/mupen64plus_pr.md`.
 
 ## Testing
 
