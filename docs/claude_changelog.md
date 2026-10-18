@@ -799,3 +799,23 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   4 s and 6M-iteration searches confirm. The judge's files are named by
   its settings (`judge-i600000.jsonl`) so the cached battles and traces
   are reused, and the test suites run alongside the battles.
+- **2026-10-17**: Smogon AI: Substitute against a likely Explosion. Misty's
+  +2 Tentacruel vs the save's Cloyster used Sludge Bomb where the engine
+  uses Substitute (6 clear in 3 battles, 5 more in 4 of 72 extra Misty
+  battles). The engine only wants it because Cloyster has Explosion
+  (without it, it Swords Dances): an Explosion into a Substitute is wasted.
+  `AI_Smogon_Substitute` only encouraged it against a sleeping player; now,
+  above half HP, it's greatly encouraged when the player can move and
+  usually has Explosion or Selfdestruct (`AISmogon_PlayerCanExplode`, split
+  out of `AISmogon_PlayerMayExplode`: a Substitute lasts, so it doesn't
+  wait for Spikes like Protect), unless we resist Normal.
+  - Checked: both suites ALL OK (new `smogon_calls_test.py` "substitute"
+    cases: unrevealed Cloyster and after Spikes fail on the old build);
+    4 trainers x 144 seeds: AI wins 229 -> 212 of 576 (Koga 125 -> 115 z
+    -1.6, which has no Substitute user, Misty 36 -> 28 z -1.1, Jasmine 16
+    -> 21, Whitney 52 -> 48); 288 more Misty seeds: 65 -> 72, so 101 -> 100
+    of 432 (z -0.1). Sludge Bomb -> Substitute on Cloyster clear 6 -> 1.
+    Side effect: the Substitute's HP cost puts Tentacruel below
+    `AISmogon_GetSetupBoost`'s four-hit safety against Vaporeon, so it
+    switches out where the engine Swords Dances (2 -> 7 clear); total
+    regret 59.53 -> 59.63.

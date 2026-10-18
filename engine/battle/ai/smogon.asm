@@ -1525,11 +1525,25 @@ AISmogon_SandstormImmune:
 	ret
 
 AI_Smogon_Substitute:
+	call AICheckEnemyHalfHP
+	ret nc
+; An Explosion into a Substitute is wasted, so a Substitute lasts until the
+; player explodes (Misty's Tentacruel vs Cloyster), unless it would barely
+; hurt.
+	push hl
+	call AISmogon_PlayerCanExplode
+	pop hl
+	jr nc, .no_explosion
+	ld a, [wEnemyMonType1]
+	call AISmogon_ResistsExplosion
+	jr z, .no_explosion
+	ld a, [wEnemyMonType2]
+	call AISmogon_ResistsExplosion
+	jp nz, AISmogon_GreatlyEncourage
+.no_explosion
 ; A sleeping or frozen Pokemon can't break a Substitute.
 	call AISmogon_PlayerCantAttack
 	ret z
-	call AICheckEnemyHalfHP
-	ret nc
 	jp AISmogon_Encourage
 
 AI_Smogon_Setup:

@@ -333,29 +333,11 @@ AISmogon_ResistsExplosion:
 	ret
 
 AISmogon_PlayerMayExplode:
-; Return carry if the player's Pokemon is likely to explode now: it usually
-; has Explosion or Selfdestruct (or has revealed it among its four moves), it
-; can move, and it has done its job (Spikes are down on the AI's side) or is
-; below half HP.
-	ld a, [wBattleMonStatus]
-	and SLP_MASK | 1 << FRZ
-	ret nz
-	ld a, [wPlayerUsedMoves + NUM_MOVES - 1]
-	and a
-	jr z, .traits
-	ld a, EXPLOSION
-	call AISmogon_PlayerRevealedMove
-	jr c, .worn_down
-	ld a, SELFDESTRUCT
-	call AISmogon_PlayerRevealedMove
+; Return carry if the player's Pokemon is likely to explode now: it can
+; (AISmogon_PlayerCanExplode), and it has done its job (Spikes are down on
+; the AI's side) or is below half HP.
+	call AISmogon_PlayerCanExplode
 	ret nc
-	jr .worn_down
-
-.traits
-	call AISmogon_GetPlayerTraits
-	and SMOGON_EXPLODER
-	ret z
-.worn_down
 	ld a, [wEnemyScreens]
 	bit SCREENS_SPIKES, a
 	scf
@@ -364,6 +346,28 @@ AISmogon_PlayerMayExplode:
 	call AICheckPlayerHalfHP
 	pop bc
 	ccf
+	ret
+
+AISmogon_PlayerCanExplode:
+; Return carry if the player's Pokemon can move and usually has Explosion or
+; Selfdestruct (or has revealed it among its four moves).
+	ld a, [wBattleMonStatus]
+	and SLP_MASK | 1 << FRZ
+	ret nz
+	ld a, [wPlayerUsedMoves + NUM_MOVES - 1]
+	and a
+	jr z, .traits
+	ld a, EXPLOSION
+	call AISmogon_PlayerRevealedMove
+	ret c
+	ld a, SELFDESTRUCT
+	jp AISmogon_PlayerRevealedMove
+
+.traits
+	call AISmogon_GetPlayerTraits
+	and SMOGON_EXPLODER
+	ret z
+	scf
 	ret
 
 AISmogon_PlayerThreatensSleep:

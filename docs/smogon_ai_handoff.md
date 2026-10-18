@@ -21,7 +21,8 @@ no Explosion into raised Defense without a sure KO (Forretress vs Curse
 Snorlax, `9362c639c`), and Hidden Power's AI_Smart bonus only when it's the
 strongest attack (Venusaur vs Snorlax, `e3e9c0641`), and Swords Dance /
 Growth through a player that out-heals our unboosted attacks (Misty's
-Tentacruel vs Rest Vaporeon, 2026-10-17).
+Tentacruel vs Rest Vaporeon, `e79f45c49`), and Substitute against a likely
+Explosion (Misty's Tentacruel vs Cloyster, 2026-10-17).
 
 The headless smart player now uses its status moves (Curse, Rest, Sleep
 Talk, Sleep Powder, Roar, Toxic, Explosion); `SMART_PLAYER=basic` is the old
@@ -29,12 +30,12 @@ attack-only player. It beats the AI far more often, so win rates from
 before it aren't comparable.
 
 Last measured (4 trainers x 144 seeds, the user's party, new player), after
-the healer setup fix: AI wins 229 of 576. Koga 2 125/144, Whitney 2 52,
-Misty 2 36, Jasmine 2 16 (the 144-seed numbers swing by ~10 from RNG
-timing alone). Engine judge (600k iterations per decision) over 144 traced
-battles: 4530 decisions, total regret 59.53. The cache for this ROM
-(`HEAD` at `e79f45c49`) is `.aicheck/a30884bdc99f33a1`, judge in
-`judge-i600000.jsonl` (`judge.jsonl` is the older timed judge's).
+the Substitute fix: AI wins 212 of 576. Koga 2 115/144, Whitney 2 48,
+Misty 2 28, Jasmine 2 21 (the 144-seed numbers swing by ~10 from RNG
+timing alone: Misty is 100/432 over 432 seeds). Engine judge (600k
+iterations per decision) over 144 traced battles: 4588 decisions, total
+regret 59.63. The cache for this ROM is `.aicheck/bdb90da7689462d7`, judge
+in `judge-i600000.jsonl`.
 
 ## The loop
 
@@ -70,29 +71,31 @@ battles: 4530 decisions, total regret 59.53. The cache for this ROM
 6. Changelog entry, then commit when the user says so (they review each fix
    and say "commit").
 
-## Candidate patterns (600k-iteration judge, after the healer setup fix)
+## Candidate patterns (600k-iteration judge, after the Substitute fix)
 
 Clear disagreements (regret > 0.1) by matchup, AI action and engine action:
 
 ```
-clear decisions battles regret
-  14   25   2   2.49  KINGDRA    vs VAPOREON  sleeptalk -> switch (tentacruel)
-   6    6   3   1.64  TENTACRUEL vs CLOYSTER  sludgebomb -> substitute
-   3   15   2   0.96  TENTACRUEL vs VAPOREON  sludgebomb -> gigadrain
-   7    9   1   0.89  QWILFISH   vs ZAPDOS    sludgebomb -> switch
-   2   14   2   0.84  TENTACRUEL vs ZAPDOS    surf -> switch
+clear decisions regret
+   7    7   2.59  QWILFISH   vs CLOYSTER  curse -> sludgebomb
+   7    8   2.56  TENTACRUEL vs VAPOREON  switch -> swordsdance
+   6   14   1.07  KINGDRA    vs VAPOREON  sleeptalk -> switch (tentacruel)
+   7    8   1.21  QUAGSIRE   vs ZAPDOS    hiddenpowerrock70 -> curse
+   3    9   0.92  TENTACRUEL vs VAPOREON  sludgebomb -> gigadrain
 ```
 
-Misty's sleeping Kingdra Sleep Talking into Vaporeon where the engine
-switches to Tentacruel: the old timed judge (11 threads, 400 ms) missed
-most of it; 4 s and 6M-iteration searches agree with the new judge on
-Misty seed 5 decision 21. Only 2 battles, so check that it holds across
-seeds. Then Misty's Tentacruel vs Cloyster (Substitute where the AI
-attacks: check what the engine knows first, Cloyster's moves, Explosion?).
-Koga's Tentacruel vs Vaporeon at low HP is the KO-range kind. One Swords
-Dance miss is left (Misty seed 35: +2 Tentacruel vs a 207/327 Vaporeon
-that just switched in, nothing revealed). Venusaur vs Snorlax in KO range
-is left: the gap disappears with the player's bench removed.
+Tentacruel vs Vaporeon (switching out instead of Swords Dance) and Kingdra
+vs Vaporeon (staying in instead of switching to Tentacruel) have one cause:
+`AISmogon_GetSetupBoost` gives Tentacruel no setup credit against Vaporeon,
+because four of Vaporeon's hits (44 each unboosted, 107 at +3) KO it once
+it's below full HP or Vaporeon has Grown. The engine only prefers
+Tentacruel because of Swords Dance (without it, Kingdra stays). The
+Substitute fix made the first one more common (Substitute's HP cost). A
+fix there touches the matchup score (see the pitfalls): keep it narrow.
+Qwilfish and Quagsire are new in this run: check them across seeds first.
+Koga's Tentacruel vs Vaporeon at low HP is the KO-range kind. Venusaur vs
+Snorlax in KO range is left: the gap disappears with the player's bench
+removed.
 
 ## Pitfalls already hit
 

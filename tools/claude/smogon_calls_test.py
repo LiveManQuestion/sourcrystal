@@ -11,9 +11,9 @@ game_call.py on hand-made battle states:
   credit a Pokemon that can boost safely gets in the KO race.
 - AISmogon_ScoreActive's stalemate flag (wSmogonAIActiveStalled), on
   positions from Koga 2 against the save's party.
-- AI_Smogon_Explosion, AI_Smogon_Toxic, AISmogon_SpikesFirst and
-  AI_Smogon_Heal on positions from Koga 2, Misty 2, Whitney 2 and Jasmine 2
-  against the save's party.
+- AI_Smogon_Explosion, AI_Smogon_Toxic, AISmogon_SpikesFirst,
+  AI_Smogon_Heal and AI_Smogon_Substitute on positions from Koga 2, Misty 2,
+  Whitney 2 and Jasmine 2 against the save's party.
 
 usage: smogon_calls_test.py ROM SYM SAVE.ram    (last line RESULT: ALL OK)"""
 import os
@@ -570,4 +570,32 @@ for name, stage, hp, pused, exp in heal_setup_cases:
     ok &= good
     print('PASS' if good else 'FAIL', 'setup:', name, 'score', got, 'expected', exp)
 w('wEnemyAtkLevel', 7)
+
+# AI_Smogon_Substitute vs a likely Explosion (Misty's Tentacruel vs the
+# save's Cloyster): a Substitute wastes it, so it's greatly encouraged, unless
+# Explosion would barely hurt or the player has shown it doesn't have it.
+substitute_cases = [
+    # (name, Tentacruel's HP, its types, Cloyster's revealed moves, its status, expected score)
+    ('tentacruel vs cloyster', 222, ('WATER', 'POISON'), [], 0, 17),
+    ('tentacruel vs cloyster after spikes', 222, ('WATER', 'POISON'), ['SPIKES', 'SURF'], 0, 17),
+    ('tentacruel vs cloyster without explosion', 222, ('WATER', 'POISON'),
+     ['SPIKES', 'SURF', 'TOXIC', 'ICE_BEAM'], 0, 20),
+    ('steel type vs cloyster', 222, ('STEEL', 'STEEL'), [], 0, 20),
+    ('tentacruel below half HP', 118, ('WATER', 'POISON'), [], 0, 20),
+    ('tentacruel vs sleeping cloyster', 222, ('WATER', 'POISON'), [], 2, 18),
+]
+for name, hp, types, pused, pstatus, exp in substitute_cases:
+    if SPECIES['CLOYSTER'] not in party:
+        print('SKIP', name); continue
+    set_ot(dict(TENTACRUEL_MISTY, hp=hp))
+    w('wEnemyMonType1', TYPES[types[0]]); w('wEnemyMonType2', TYPES[types[1]])
+    set_player(party.index(SPECIES['CLOYSTER']) + 1, ('WATER', 'ICE'), pused)
+    w('wBattleMonStatus', pstatus)
+    w('wEnemyAIMoveScores', 20)
+    g.call('AI_Smogon_Substitute', HL=A('wEnemyAIMoveScores'), frames=600)
+    got = m[A('wEnemyAIMoveScores')]
+    good = got == exp
+    ok &= good
+    print('PASS' if good else 'FAIL', 'substitute:', name, 'score', got, 'expected', exp)
+w('wBattleMonStatus', 0)
 print('RESULT:', 'ALL OK' if ok else 'NOT OK')
