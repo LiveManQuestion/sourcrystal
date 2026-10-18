@@ -1,0 +1,14 @@
+# ripgrep (and Claude's Grep) skips these in repo-wide searches; they are
+# untracked reference copies, still searchable by naming the path
+# (rg PATTERN pokecrystal-master/).
+/PKHeX-Avalonia/
+/polishedcrystal-master/
+/pokecrystal-master/
+/pokered-master/
+/pokestadiumgs-master/
+/pokecrystal_wiki/
+/smogonairesources/
+/illegalmovecombos/
+/bots/
+/2026-*.txt
+/docs/claude_changelog.md

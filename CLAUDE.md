@@ -59,6 +59,13 @@ that, move detail into `docs/` and leave a one-line pointer here.
 - `rgblink` reports out-of-range `jr` at link time for forward references,
   with `file(line)` locations. Fix by using `jp`.
 
+## Searching
+
+`.ignore` keeps ripgrep/Grep out of the untracked reference copies, the
+session transcripts and the changelog; to search them, name the path
+(`rg X pokecrystal-master/`). In Bash, give `rg` a path (`rg X .`): with
+none and no terminal it reads stdin and hangs.
+
 ## Shell gotcha
 
 The Bash tool's shell doesn't word-split unquoted variables (zsh-like), so
