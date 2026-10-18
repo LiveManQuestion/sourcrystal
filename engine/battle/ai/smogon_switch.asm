@@ -815,7 +815,8 @@ AISmogon_ScoreMatchup:
 	ld b, a
 
 ; A switch-in takes a hit on the way in, unless it replaces a fainted
-; Pokemon.
+; Pokemon or the player's surely can't attack (Koga's Gengar in for Tentacruel
+; against a frozen Zapdos).
 	ld a, [wCurOTMon]
 	ld c, a
 	ld a, [wSmogonAIMon]
@@ -825,6 +826,8 @@ AISmogon_ScoreMatchup:
 	ld a, [hli]
 	or [hl]
 	jr z, .no_entry_hit
+	call AISmogon_PlayerSurelyCantAttack
+	jr nz, .no_entry_hit
 	dec b
 	dec b
 .no_entry_hit

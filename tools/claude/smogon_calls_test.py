@@ -680,4 +680,62 @@ w('wBattleMonStatus', 0)
 for k in range(1, 7):
     m[A('wPartyMon%dHP' % k)], m[A('wPartyMon%dHP' % k) + 1] = party_hp[k - 1]
 w('wCurBattleMon', cur_battle_mon)
+
+# AISmogon_PlayerSurelyCantAttack: frozen, or asleep without Sleep Talk
+# (revealed, or usual for its species until four other moves are revealed).
+FRZ = 1 << CONST['FRZ']
+cant_attack_cases = [
+    # (name, species, status, revealed moves, expected nz)
+    ('frozen zapdos', 'ZAPDOS', FRZ, [], True),
+    ('awake zapdos', 'ZAPDOS', 0, [], False),
+    ('sleeping zapdos, sleep talk usual', 'ZAPDOS', 3, ['REST'], False),
+    ('sleeping zapdos, sleep talk revealed', 'ZAPDOS', 3, ['REST', 'SLEEP_TALK'], False),
+    ('sleeping zapdos, four other moves', 'ZAPDOS', 3, ['REST', 'THUNDER', 'HIDDEN_POWER', 'REFLECT'], True),
+    ('sleeping exeggutor', 'EXEGGUTOR', 3, [], True),
+]
+for name, species, status, used, exp in cant_attack_cases:
+    w('wBattleMonSpecies', SPECIES[species]); w('wBattleMonStatus', status)
+    for i in range(4):
+        w('wPlayerUsedMoves', MOVE_IDS[used[i]] if i < len(used) else 0, i)
+    g.call('AISmogon_PlayerSurelyCantAttack')
+    got = not g.result['F'] & 0x80
+    good = got == exp
+    ok &= good
+    print('PASS' if good else 'FAIL', 'surely can\'t attack:', name, 'got', got, 'expected', exp)
+w('wBattleMonStatus', 0)
+
+# A switch-in takes no hit on the way in when the player surely can't
+# attack (Koga's Tentacruel, with Gengar in the back, vs the save's last
+# Pokemon, a frozen Zapdos): Gengar's score, Tentacruel's is 120.
+entry_cases = [
+    # (name, Zapdos's status, its revealed moves, expected Gengar score)
+    ('gengar vs frozen zapdos', FRZ, [], 140),
+    ('gengar vs awake zapdos', 0, [], 120),
+    ('gengar vs sleeping zapdos, sleep talk usual', 3, [], 120),
+]
+for name, pstatus, pused, exp in entry_cases:
+    if SPECIES['ZAPDOS'] not in party:
+        print('SKIP', name); continue
+    slot = party.index(SPECIES['ZAPDOS']) + 1
+    w('wCurBattleMon', slot - 1)
+    for k in range(1, 7):
+        m[A('wPartyMon%dHP' % k)], m[A('wPartyMon%dHP' % k) + 1] = (0, 0) if k != slot else party_hp[k - 1]
+    set_ot(GENGAR, 1)
+    set_ot(TENTACRUEL)
+    w('wOTPartyCount', 2); w('wOTPartySpecies', SPECIES['GENGAR'], 1); w('wOTPartySpecies', 0xff, 2)
+    w('wEnemyMonDVs', 255); w('wEnemyMonDVs', 255, 1); w('wEnemyTurnsTaken', 3)
+    set_player(slot, ('ELECTRIC', 'FLYING'), pused)
+    word('wBattleMonHP', 164); w('wBattleMonStatus', pstatus)
+    w('wBattleWeather', 0); w('wCriticalHit', 0)
+    g.call('AISmogon_ScoreActive', frames=1500)
+    g.call('AISmogon_FindBestSwitchIn', frames=4000)
+    got = m[A('wSmogonAIBestScore')]
+    good = got == exp and m[A('wSmogonAIBestMon')] == 1
+    ok &= good
+    print('PASS' if good else 'FAIL', 'entry hit:', name, 'score', got, 'expected', exp,
+          'active', m[A('wEnemyAISwitchScore')])
+w('wBattleMonStatus', 0)
+for k in range(1, 7):
+    m[A('wPartyMon%dHP' % k)], m[A('wPartyMon%dHP' % k) + 1] = party_hp[k - 1]
+w('wCurBattleMon', cur_battle_mon)
 print('RESULT:', 'ALL OK' if ok else 'NOT OK')

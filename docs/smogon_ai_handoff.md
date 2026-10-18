@@ -1,7 +1,7 @@
 # Smogon AI: engine judge handoff
 
 Notes for the next Claude session working on the Smogon AI (Challenge Mode
-trainer AI) with the engine judge. Updated 2026-10-18 after the free-setup fix, branch
+trainer AI) with the engine judge. Updated 2026-10-18 after the entry-hit fix, branch
 `smogon-ai`. Read CLAUDE.md, `docs/battle_ai.md` and `docs/claude_tools.md`
 first; `docs/claude_changelog.md` has the reasoning behind every fix below.
 
@@ -31,7 +31,9 @@ Explosion (Misty's Tentacruel vs Cloyster, `7451bb297`), and Swords Dance
 setup credit with two safe hits (Tentacruel and Kingdra vs Vaporeon,
 `bebf560a6`), and no setup when our attacks already 2HKO (Qwilfish vs
 Cloyster, `869aa0388`), and free setup behind a Substitute in front of a
-Pokemon that can't attack (Misty's Tentacruel vs a Rest Snorlax).
+Pokemon that can't attack (Misty's Tentacruel vs a Rest Snorlax), and
+no entry hit from a Pokemon that surely can't attack (Koga's Gengar in
+against a frozen Zapdos).
 
 The headless smart player now uses its status moves (Curse, Rest, Sleep
 Talk, Sleep Powder, Roar, Toxic, Explosion); `SMART_PLAYER=basic` is the old
@@ -39,12 +41,12 @@ attack-only player. It beats the AI far more often, so win rates from
 before it aren't comparable.
 
 Last measured (4 trainers x 144 seeds, the user's party, new player), after
-the free-setup fix: AI wins 235 of 576. Koga 2 119/144, Whitney 2 51,
-Misty 2 48, Jasmine 2 17 (the 144-seed numbers swing by ~10 from RNG
+the entry-hit fix: AI wins 234 of 576. Koga 2 119/144, Whitney 2 50,
+Misty 2 39, Jasmine 2 26 (the 144-seed numbers swing by ~10 from RNG
 timing alone; Jasmine swung 20 of 432 on a build that didn't change her
 decisions). Engine judge (600k iterations per decision) over 144 traced
-battles: 4494 decisions, total regret 50.98. The cache for this ROM is
-`.aicheck/fe010ce29ba6223a`, judge in `judge-i600000.jsonl`.
+battles: 4522 decisions, total regret 54.26. The cache for this ROM is
+`.aicheck/22baed759b3705fb`, judge in `judge-i600000.jsonl`.
 
 ## The loop
 
@@ -88,24 +90,24 @@ battles: 4494 decisions, total regret 50.98. The cache for this ROM is
 6. Changelog entry, then commit when the user says so (they review each fix
    and say "commit").
 
-## Candidate patterns (600k-iteration judge, after the free-setup fix)
+## Candidate patterns (600k-iteration judge, after the entry-hit fix)
 
 Clear disagreements (regret > 0.1) by matchup, AI action and engine action:
 
 ```
 clear decisions regret
-  10   28   2.35  TENTACRUEL vs ZAPDOS    surf -> switch
-   3   13   0.78  TENTACRUEL vs VAPOREON  sludgebomb -> gigadrain
-   3   16   0.89  PORYGON2   vs STEELIX   recover -> icebeam
-   3    5   0.96  QWILFISH   vs CLOYSTER  curse -> sludgebomb
+   5   26   1.11  TENTACRUEL vs ZAPDOS    surf -> switch (left over: asleep)
+   4    5   0.89  SKARMORY   vs STEELIX   steelwing -> toxic (new)
+   3   13   0.85  PORYGON2   vs STEELIX   recover -> icebeam
+   3   12   0.74  TENTACRUEL vs VAPOREON  sludgebomb -> gigadrain
 ```
 
-Tentacruel vs Zapdos (Surf where the engine switches) grew 6 -> 10 with
-the last fix's reshuffle and is now the most concentrated: trace more Misty
-seeds first. Koga's Tentacruel vs Vaporeon (Giga Drain) is
-the KO-range kind. Qwilfish's Curse on a full-HP Cloyster appeared only
-after an RNG reshuffle (no Substitute involved). Venusaur vs Snorlax in KO
-range is left: the gap disappears with the player's bench removed.
+Few patterns are left above noise: 81 clear decisions carry 16 of the 51
+regret, the rest is spread thin. What's left of Tentacruel vs Zapdos is
+mostly a sleeping Zapdos with Sleep Talk (engine: Nidoking, ~0.1 each).
+Skarmory vs Steelix appeared after the reshuffle: trace more Jasmine seeds
+before believing it. Venusaur vs Snorlax in KO range is left: the gap
+disappears with the player's bench removed.
 
 ## Pitfalls already hit
 

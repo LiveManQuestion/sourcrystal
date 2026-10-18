@@ -2195,6 +2195,28 @@ AISmogon_PlayerCantAttack:
 	inc a
 	ret
 
+AISmogon_PlayerSurelyCantAttack:
+; Same as AISmogon_PlayerCantAttack, but a sleeping Pokemon that usually has
+; Sleep Talk may still attack until it has revealed four other moves.
+; Keeps bc, de and hl.
+	call AISmogon_PlayerCantAttack
+	ret z
+	ld a, [wBattleMonStatus]
+	and SLP_MASK
+	jr z, .cant
+	ld a, [wPlayerUsedMoves + NUM_MOVES - 1]
+	and a
+	jr nz, .cant
+	call AISmogon_GetPlayerTraits
+	; usually has Sleep Talk: z
+	and SMOGON_SLEEP_TALK
+	xor SMOGON_SLEEP_TALK
+	ret
+
+.cant
+	or 1
+	ret
+
 AISmogon_GetPlayerTraits:
 ; Return the SmogonTraits flags of the player's active Pokemon in a.
 	push hl

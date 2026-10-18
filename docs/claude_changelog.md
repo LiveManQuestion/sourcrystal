@@ -898,3 +898,26 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
     Bomb on Cloyster (0 -> 3) and Tentacruel Surf -> switch on Zapdos (6
     -> 10) grew, but neither reaches the new code (Qwilfish has no
     Substitute; a switch decision): RNG.
+- **2026-10-18**: Smogon AI: no entry hit from a Pokemon that surely can't
+  attack. Koga's Tentacruel stayed in with Surf against a frozen Zapdos
+  (the player's last Pokemon), where the engine switches to Gengar, which
+  outspeeds it and hits it super effectively (10 clear Surf -> switch in 5
+  of 36 battles; in 72 extra Koga battles the same for Tentacruel and
+  Venusaur, 0.23-0.43 each). Gengar scored 132 to Tentacruel's 120, short
+  of `SMOGON_SWITCH_MARGIN`, because `AISmogon_ScoreMatchup` charged it a
+  hit on the way in. Now there's no entry hit when
+  `AISmogon_PlayerSurelyCantAttack` (new: frozen, or asleep without Sleep
+  Talk revealed or usual for its species, counting the SmogonTraits flag
+  until four other moves are revealed). The first version used
+  `AISmogon_PlayerCantAttack`, which also made Tentacruel switch to Gengar
+  in front of a sleeping Zapdos that hadn't revealed Sleep Talk yet, where
+  the engine rates Gengar below Surf. 33 bytes in bank $0e.
+  - Checked: both suites ALL OK (new `smogon_calls_test.py` cases: the
+    helper, and Gengar's switch-in score vs a frozen Zapdos, 132 -> 140 on
+    the old -> new build; the awake and sleeping ones unchanged); 4
+    trainers x 144 seeds: AI wins 235 -> 234 of 576 (Jasmine 17 -> 26 z
+    +1.5, Misty 48 -> 39 z -1.2, Koga 119, Whitney 51 -> 50; none |z| >=
+    2). Tentacruel Surf -> switch on Zapdos clear 10 -> 5; frozen-Zapdos
+    "switch to Gengar" clear 2 -> 1 (freezes are rare; a 20-point gain
+    still switches only 70% of the time). Total regret 51.0 -> 54.3 over
+    4522 decisions, spread over patterns this doesn't touch (RNG).
