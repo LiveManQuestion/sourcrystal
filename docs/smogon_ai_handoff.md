@@ -102,12 +102,27 @@ clear decisions regret
    3   12   0.74  TENTACRUEL vs VAPOREON  sludgebomb -> gigadrain
 ```
 
-Few patterns are left above noise: 81 clear decisions carry 16 of the 51
-regret, the rest is spread thin. What's left of Tentacruel vs Zapdos is
-mostly a sleeping Zapdos with Sleep Talk (engine: Nidoking, ~0.1 each).
-Skarmory vs Steelix appeared after the reshuffle: trace more Jasmine seeds
-before believing it. Venusaur vs Snorlax in KO range is left: the gap
-disappears with the player's bench removed.
+Checked with 72 more seeds each of Jasmine and Koga (37-108, on the
+entry-hit build); none of these is worth a fix:
+- Skarmory vs Steelix and Porygon2 vs Steelix (Jasmine): gone in the
+  extra seeds, single-battle noise. (Skarmory's was a won endgame where the
+  engine prefers Toxic on a Steel type, i.e. passing.)
+- Tentacruel vs low-HP Snorlax (Sludge Bomb -> Surf) and vs low-HP Steelix
+  (Surf -> Giga Drain), 4-5 clear each: both moves are sure KOs; the AI's
+  move got ~1000 MCTS visits against 600k (the barely-visited pitfall).
+- Tentacruel vs a sleeping Zapdos (engine: switch to Nidoking): Zapdos is
+  the player's last Pokemon and has no Drill Peck, so Nidoking (immune to
+  Thunder) walls it; the AI can't know the set (Zapdos's usual attacks
+  include Drill Peck).
+- Venusaur vs a frozen Zapdos (engine: switch to Gengar, 0.96): Venusaur's
+  +1 Special Attack keeps it in (`AISmogon_EnemyHasUsefulBoosts`), and even
+  without that Gengar scores 140 to its 128, short of the margin. Freezes
+  are rare (3 battles in 108). A fix would need a smaller switch margin
+  against a frozen player, which a 576-battle run can't measure.
+The engine-judge loop has reached diminishing returns on the user's party:
+81 clear decisions carry 16 of the 51 regret, the rest is spread thin.
+More signal needs other player teams (a second save, or `smart_player.py`
+with another party) to surface new patterns.
 
 ## Pitfalls already hit
 
