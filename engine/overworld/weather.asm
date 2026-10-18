@@ -220,6 +220,7 @@ DoSnowFall:
 .loop
 	; if the sprite is hidden, skip it
 	ld hl, SPRITEOAMSTRUCT_YCOORD
+	add hl, de
 	ld a, [hl]
 	cp OAM_YCOORD_HIDDEN
 	jr z, .next
@@ -509,6 +510,7 @@ DoRainFall:
 .loop
 	; if the sprite is hidden, skip it
 	ld hl, SPRITEOAMSTRUCT_YCOORD
+	add hl, de
 	ld a, [hl]
 	cp OAM_YCOORD_HIDDEN
 	jr z, .next
@@ -655,6 +657,7 @@ DoSandFall:
 .loop
 	; if the sprite is hidden, skip it
 	ld hl, SPRITEOAMSTRUCT_YCOORD
+	add hl, de
 	ld a, [hl]
 	cp OAM_YCOORD_HIDDEN
 	jr z, .next

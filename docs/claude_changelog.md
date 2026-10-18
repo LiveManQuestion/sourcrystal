@@ -980,3 +980,10 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   `TRAINERTYPE_VARIABLE`). Comments now note code oddities without changing
   them: `ReadTrainerPartyPieces` gets its 1 from `CountSetBits` on ROM
   $0002. All four ROMs and `.sym` files byte-identical.
+- **2026-10-18**: Weather fix: `DoSnowFall`, `DoRainFall` and `DoSandFall`
+  checked whether a sprite was hidden by reading address 0 instead of the
+  sprite (missing `add hl, de`), so they moved hidden sprites too. A rain
+  splash hidden by `RainSplashCleanup` keeps its tile, so walking down moved
+  it back up into view at the bottom of the screen. 3 bytes. Checked
+  headlessly (forced rain on the user's save, 30 walks up and down):
+  splashes reappearing just above the bottom edge went from 77 to 0.
