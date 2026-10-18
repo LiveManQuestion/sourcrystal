@@ -1,9 +1,14 @@
 # Smogon AI: engine judge handoff
 
 Notes for the next Claude session working on the Smogon AI (Challenge Mode
-trainer AI) with the engine judge. Written 2026-10-17 at `bebd07720`, branch
+trainer AI) with the engine judge. Updated 2026-10-18 at `cf3171ef9`, branch
 `smogon-ai`. Read CLAUDE.md, `docs/battle_ai.md` and `docs/claude_tools.md`
 first; `docs/claude_changelog.md` has the reasoning behind every fix below.
+
+To pick up where the last session stopped: on a clean tree, run
+`tools/claude/ai_check.sh` (HEAD's ROM is cached, so the report comes back
+at once), read its "matchup and AI action -> engine action" table next to
+the candidates below, and start the loop at step 2.
 
 ## Where things stand
 
@@ -25,7 +30,7 @@ Tentacruel vs Rest Vaporeon, `e79f45c49`), and Substitute against a likely
 Explosion (Misty's Tentacruel vs Cloyster, `7451bb297`), and Swords Dance
 setup credit with two safe hits (Tentacruel and Kingdra vs Vaporeon,
 `bebf560a6`), and no setup when our attacks already 2HKO (Qwilfish vs
-Cloyster, 2026-10-18).
+Cloyster, `869aa0388`).
 
 The headless smart player now uses its status moves (Curse, Rest, Sleep
 Talk, Sleep Powder, Roar, Toxic, Explosion); `SMART_PLAYER=basic` is the old
@@ -56,12 +61,20 @@ battles: 4444 decisions, total regret 58.60. The cache for this ROM is
    battles in one matchup and action ("matchup and AI action -> engine
    action" table). Big totals spread thin over many decisions are noise.
 3. Understand it before fixing it. Read the decisions
-   (`.aicheck/<key>/judge.jsonl`, `--report`, the traces in
+   (`.aicheck/<key>/judge-i600000.jsonl`, `--report`, the traces in
    `.aicheck/<key>/traces/`: `move_scores`, `path`, `scores`) and rebuild the
    position in `tools/claude/smogon_calls_test.py` (`set_ot`, `set_player`,
    `g.call(..., poke=...)`) to read what the AI computed. My first guess
    was wrong more than once (Venusaur: not an Ice Beam fear, a tie with an
    unboosted KO race).
+   A pattern from one run can be a few unlucky battles: trace and judge
+   more seeds on the same ROM before fixing (seeds 37-108 of one trainer:
+   `ai_trace.py run ROM SYM RAM "KOGA 2" SEED` per seed into a folder, 12
+   at a time, then `engine_judge.py FOLDER/*.jsonl --iterations 600000
+   --jobs 11 --cache .aicheck/judge-cache-i600000.jsonl --json OUT`, with
+   the ROM, SYM and RAM from the `.aicheck/<key>/` folder; about 10 minutes
+   per 72 battles). For a borderline win rate, `battle_matrix.sh` with
+   `FIRST_SEED=145 SEEDS=432` on both ROMs, then `battle_compare.py`.
 4. Rule out what the AI can't know. The engine sees the player's whole party,
    moves, items and PP. Example: Blissey switching out of Steelix (4 clear)
    was Steelix having used all its Earthquake PP.
