@@ -52,7 +52,8 @@ SwapStorageBoxSlots:
 .not_equal
 	; Convert destination slot 0 to a real destination, if we can.
 	push de
-	and a ; a is c from beforehand.
+	; a is c from beforehand.
+	and a
 	jr nz, .got_dest
 
 	ld e, PARTY_LENGTH
@@ -328,7 +329,7 @@ DoPartySwap:
 ; copy of the current box in sBox), so Pokemon Stadium 2 and other tools can
 ; read and change the boxes. A slot map per box lets mons sit in any of its
 ; slots.
-;
+
 ; Changing a box copies it to one of the WRAM box buffers. Buffers are only
 ; written to SRAM when saving, so resetting without saving leaves the saved
 ; boxes as they were. When every buffer is in use, the game must be saved

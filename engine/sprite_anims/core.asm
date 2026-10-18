@@ -117,7 +117,8 @@ DoNextFrameForFirst16Sprites:
 	ld b, h
 	push hl
 	push de
-	call DoSpriteAnimFrame ; Uses a massive dw
+	; Uses a massive dw
+	call DoSpriteAnimFrame
 	call UpdateAnimFrame
 	pop de
 	pop hl

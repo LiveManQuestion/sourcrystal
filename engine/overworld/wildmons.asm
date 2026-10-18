@@ -35,7 +35,8 @@ GetTimeOfDayNotEve:
 	ld a, [wTimeOfDay]
 	cp EVE_F
 	ret nz
-	ld a, DAY_F ; ld a, DAY_F to make evening use day encounters or NITE_F to make evening use nite encounters
+	; Evening uses the day encounters (NITE_F here would use the night ones).
+	ld a, DAY_F
 	ret
 
 FindNest:
@@ -222,7 +223,8 @@ if DEF(_DEBUG)
 	ldh a, [hJoypadDown]
 	and B_BUTTON
 	cp B_BUTTON
-	jr z, .no_battle ; ignore encounters
+	; holding B in the debug ROM skips wild encounters
+	jr z, .no_battle
 endc
 ; Try to trigger a wild encounter.
 	call .EncounterRate
@@ -433,9 +435,12 @@ LoadWildMonDataPointer:
 	jr z, _WaterWildmonLookup
 
 _GrassWildmonLookup:
-	ld hl, wSwarmFlags ; check if the flag is set
+; Use the swarm table if a swarm is on (the alternate swarm first, then the
+; normal one), then the regular Johto/Kanto tables. Challenge Mode has its
+; own version of each table.
+	ld hl, wSwarmFlags
 	bit SWARMFLAGS_ALT_SWARM_F, [hl]
-	jr z, .check_normal_flag ;if not, then check for the alt swarm flag too
+	jr z, .check_normal_flag
 	ld a, [wChallengeMode]
 	bit GAME_CHALLENGE_MODE_F, a
 	jr nz, .ChallengeModeSwarmGrassAlt
@@ -447,7 +452,7 @@ _GrassWildmonLookup:
 .check_normal_flag
 	ld hl, wDailyFlags1
 	bit DAILYFLAGS1_SWARM_F, [hl]
-	jr z, .no_swarm ; if not, then skip generating a swarm
+	jr z, .no_swarm
 	ld a, [wChallengeMode]
 	bit GAME_CHALLENGE_MODE_F, a
 	jr nz, .ChallengeModeSwarmGrass
@@ -473,9 +478,12 @@ _GrassWildmonLookup:
 	jr _NormalWildmonOK
 
 _WaterWildmonLookup:
-	ld hl, wSwarmFlags ; check if the flag is set
+; Use the swarm table if a swarm is on (the alternate swarm first, then the
+; normal one), then the regular Johto/Kanto tables. Challenge Mode has its
+; own version of each table.
+	ld hl, wSwarmFlags
 	bit SWARMFLAGS_ALT_SWARM_F, [hl]
-	jr z, .check_normal_flag ;if not, then check for the alt swarm flag too
+	jr z, .check_normal_flag
 	ld a, [wChallengeMode]
 	bit GAME_CHALLENGE_MODE_F, a
 	jr nz, .ChallengeModeSwarmWaterAlt
@@ -487,7 +495,7 @@ _WaterWildmonLookup:
 .check_normal_flag
 	ld hl, wDailyFlags1
 	bit DAILYFLAGS1_SWARM_F, [hl]
-	jr z, .no_swarm ; if not, then skip generating a swarm
+	jr z, .no_swarm
 	ld a, [wChallengeMode]
 	bit GAME_CHALLENGE_MODE_F, a
 	jr nz, .ChallengeModeSwarmWater
@@ -805,11 +813,14 @@ JumpRoamMons:
 JumpRoamMon:
 .loop
 	ld hl, RoamMaps
-.innerloop1                   ; This loop happens to be unnecessary.
-	call Random               ; Choose a random number.
-	maskbits NUM_ROAMMON_MAPS ; Mask the number to limit it between 0 and 15.
-	cp NUM_ROAMMON_MAPS       ; If the number is not less than 16, try again.
-	jr nc, .innerloop1        ; I'm sure you can guess why this check is bogus.
+.innerloop1
+	; 0-15 are all valid indexes into RoamMaps,
+	; so this retry loop is unnecessary
+	; since NUM_ROAMMON_MAPS happens to be 16
+	call Random
+	maskbits NUM_ROAMMON_MAPS
+	cp NUM_ROAMMON_MAPS
+	jr nc, .innerloop1
 	inc a
 	ld b, a
 .innerloop2 ; Loop to get hl to the address of the chosen roam map.
@@ -1051,18 +1062,19 @@ RandomPhoneMon:
 ; b = trainer type
 	ld b, a
 	
-; TRAINERTYPE_VARIABLE increment trainer group.
+; A TRAINERTYPE_VARIABLE trainer has a party for each mode, each starting
+; with its own trainer type: Normal Mode's, then after a $fe delimiter
+; Challenge Mode's (see data/trainers/parties.asm).
 	bit TRAINERTYPE_VARIABLE_F, b
 	jr z, .no_variance
 	ld a, [wTrainerGroupBank]
 	call GetFarByte
 	inc hl
 	ld b, a
-;Check if challenge mode is active. If no, skip next step.
 	ld a, [wChallengeMode]
 	and a
 	jr z, .no_variance
-;Find delimiter then load next byte
+; In Challenge Mode, skip to the $fe delimiter and read the type after it.
 .find_delimiter
 	ld a, [wTrainerGroupBank]
 	call GetFarByte

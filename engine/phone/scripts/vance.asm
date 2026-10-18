@@ -21,7 +21,8 @@ VancePhoneCallerScript:
 	iftrue VanceBattleReminder
 	farscall PhoneScript_GreetPhone_Male
 	farscall PhoneScript_Random3
-	ifequal 0, VanceWantsRematch ; 33% chance for a rematch
+	; 33% chance for a rematch
+	ifequal 0, VanceWantsRematch
 	farsjump Phone_GenericCall_Male
 
 VanceWantsRematch:

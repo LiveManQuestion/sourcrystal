@@ -1,3 +1,6 @@
+; Disabled move animation test: uncomment the lines down to the ;ENDC
+; below to make the debug ROM play every move's animation in turn, each
+; time a move is used (press A or B for the next one).
 ;IF DEF(_DEBUG) ; for testing animations
 ;MoveTable:
 ;	db POUND

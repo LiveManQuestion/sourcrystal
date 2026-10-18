@@ -2354,7 +2354,7 @@ Script_checksave:
 	ret
 
 Script_trainerpic:
-; script command 0xac
+; script command $aa
 ; parameters:
 ;     trainer (TrainerParam)
 

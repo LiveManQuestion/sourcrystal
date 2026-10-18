@@ -24,7 +24,7 @@ MountMoon1FCheckRivalAndMushroom:
 .TinyMushroom
 	variablesprite SPRITE_MUSHROOM_1, SPRITE_TINYMUSHROOM
 .finishMushroom
-	;fallthrough
+	; fallthrough
 	checkevent EVENT_BEAT_RIVAL_IN_MT_MOON
 	iffalse .notgone
 	endcallback
@@ -97,8 +97,9 @@ MountMoon1FRivalBattleScript:
 	playmapmusic
 	end
 
-MountMoon1FMushroom: ;Daily
-; This whole script is written out rather than as an itemball
+MountMoon1FMushroom: ; Daily
+; Written out instead of an itemball, since the item depends on whether a
+; Big Mushroom spawned.
 	scall MountMoon1FParasBattle
 	checkevent EVENT_MOUNT_MOON_1F_BIG_MUSHROOM_SPAWN
 	iffalse .skipBigMushroom

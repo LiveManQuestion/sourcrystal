@@ -1,20 +1,18 @@
 ; version 01 -> 02: convert wPhoneList into bitflags.
-;
-; Previously, wPhoneList was just a literal list of contact IDs
-; (phone_contacts.asm) with a maximum capacity of CONTACT_LIST_SIZE.
-; We wanted to increase this CONTACT_LIST_SIZE, but it ended up shifting
-; everything, which also invalidated the save file completely, thus prompting
-; the creation of this save file migration system.
-;
-; This next idea is to just make the wPhoneList a bit flag array. That way your
-; phone can make like the Pokedex: you can collect 'em all. This loses the
-; property of the player adding contacts sequentially, but I wonder if that
-; is *really* important compared to the increased capacity.
+; (Kept for reference: save_compat.asm no longer includes it.)
+
+; wPhoneList used to be a list of contact IDs (phone_contacts.asm), holding
+; at most CONTACT_LIST_SIZE (10). Making the list longer would have moved
+; everything after it in the save, which led to this save migration system.
+
+; Instead, wPhoneList became a bit flag array with a bit for every contact,
+; like the Pokedex, so the phone can hold all of them. The phone no longer
+; lists contacts in the order they were added.
 
 MigrateSaveFile:
 	ld hl, sPlayerData + (wPhoneList - wPlayerData)
-; WRAM at this point isn't loaded yet, so it should be safe to use as a
-; scratch space. Let's move the original contact list there.
+; WRAM isn't loaded yet, so wPhoneList can hold a copy of the old contact
+; list meanwhile.
 	ld de, wPhoneList
 	ld c, 0
 .continue_memmove
@@ -53,14 +51,11 @@ MigrateSaveFile:
 	jr nz, .continue_convert
 
 ; **HOTFIX**
-; Saved weather map group format changed between 6.2 and 7.0, but the migration
-; code did not account for it, leading to things like raining indoors. This
-; self-corrects within the day, but it is still odd.
-;
+; The saved random weather maps changed format between 6.2 and 7.0, and the
+; migration missed it, so it could rain indoors until the next day.
 ; old format: group1, group2, mapId1, mapId2
 ; new format: group1, mapId1, group2, mapId2
-;
-; A swap operation between the middle bits should suffice here.
+; Swapping the middle two bytes fixes it.
 	ld hl, sPlayerData + (wWeatherRandomMapJohto+1 - wPlayerData)
 	call .do_swap
 	ld hl, sPlayerData + (wWeatherRandomMapKanto+1 - wPlayerData)
@@ -79,7 +74,7 @@ MigrateSaveFile:
 	ret
 
 MigrateBackupSaveFile:
-; eh same code as above. should I like make a macro or something for these?
+; Same as MigrateSaveFile, for the backup save.
 	ld hl, sBackupPlayerData + (wPhoneList - wPlayerData)
 	ld de, wPhoneList
 	ld c, 0

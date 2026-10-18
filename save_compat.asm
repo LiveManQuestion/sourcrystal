@@ -52,27 +52,25 @@ ApplyBackupSaveVersion:
 	const MIGRATION_SHOULD_MIGRATE
 	const MIGRATION_CANNOT_MIGRATE
 	const MIGRATION_UNKNOWN
-; a = current game version
-;
+SaveCanBeMigrated::
+; a = the save file's version
 ; returns:
 ;    a = MIGRATION_*
 ;    f = may be affected
-SaveCanBeMigrated::
-; Saves that have not been tagged yet MAY have another value already written on it, due
-; to not being explicitly written.
 
-; If the save file has a random value written on it, AND the player is sure they are
-; updating from a version prior to the save tagging, the player may force a migration
-; to happen, like so:
+; Saves from before version 01 never wrote a version, so that byte may hold
+; anything. If it holds a random value, a player who knows the save is that
+; old can force a migration like so:
 	push af
-		ldh a, [hJoypadDown] ; press RIGHT while selecting "CONTINUE"
+		; press RIGHT while selecting "CONTINUE"
+		ldh a, [hJoypadDown]
 		and D_RIGHT
 		cp D_RIGHT
 		jr z, .force_migration
 	pop af
 
-; On some emulators, this value will be $ff. Assuming that's the majority of cases,
-; we can simply detect that here:
+; On some emulators, an unwritten version byte is $ff, so treat $ff as an old
+; save:
 	assert GAME_VERSION < $ff
 	cp -1
 	jr z, .yes
@@ -92,7 +90,8 @@ SaveCanBeMigrated::
 .no
 	ld a, MIGRATION_NO_CHANGE_NEEDED
 	ret
-.unknown ; save file version is greater, don't know what to do
+; the save is from a newer version: don't know what to do
+.unknown
 	ld a, MIGRATION_UNKNOWN
 	ret
 .force_migration

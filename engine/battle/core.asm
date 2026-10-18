@@ -153,6 +153,7 @@ StartAutomaticBattleWeather:
 	jp EmptyBattleTextbox
 
 SafariBattleTurn:
+; Run battle turns until the battle ends. Returning ends the battle.
 .loop
 	call CheckSafariBattleOver
 	ret c
@@ -228,7 +229,7 @@ WildFled_EnemyFled_LinkBattleCanceled:
 BattleTurn:
 .loop
 	call CheckContestBattleOver
-	ret c ; quit
+	ret c
 
 	xor a
 	ld [wPlayerIsSwitching], a
@@ -248,20 +249,20 @@ BattleTurn:
 	farcall Function100da5
 	farcall StartMobileInactivityTimer
 	farcall Function100dd8
-	ret c ; quit
+	ret c
 .not_disconnected
 
 	call CheckPlayerLockedIn
 	jr c, .skip_iteration
 .loop1
 	call BattleMenu
-	ret c ; quit
+	ret c
 	ld a, [wBattleEnded]
 	and a
-	ret nz ; quit
+	ret nz
 	ld a, [wForcedSwitch] ; roared/whirlwinded/teleported
 	and a
-	ret nz ; quit
+	ret nz
 .skip_iteration
 	call ParsePlayerAction
 	push af
@@ -270,7 +271,7 @@ BattleTurn:
 	jr nz, .loop1
 
 	call EnemyTriesToFlee
-	ret c ; quit
+	ret c
 
 	call DetermineMoveOrder
 	jr c, .false
@@ -280,20 +281,20 @@ BattleTurn:
 	call Battle_PlayerFirst
 .proceed
 	call CheckMobileBattleError
-	ret c ; quit
+	ret c
 
 	ld a, [wForcedSwitch]
 	and a
-	ret nz ; quit
+	ret nz
 
 	ld a, [wBattleEnded]
 	and a
-	ret nz ; quit
+	ret nz
 
 	call HandleBetweenTurnEffects
 	ld a, [wBattleEnded]
 	and a
-	ret nz ; quit
+	ret nz
 	jp .loop
 
 HandleBetweenTurnEffects:
@@ -1774,7 +1775,7 @@ HandleWeather:
 	call SetPlayerTurn
 
 .PlayWeatherAnimation:
-	xor a ; uses one byte of ROM, compared to two for "ld a, 1"
+	xor a
 	ld [wNumHits], a
 	call SetPlayerTurn
 	ld hl, .WeatherAnimations
@@ -2203,7 +2204,7 @@ IsAnyMonHoldingExpShare:
 	ret
 
 CountBits:
-; Returns amount of bits in a in a.
+; Return the number of set bits in a, in a.
 	push bc
 	ld b, 0
 .loop
@@ -3363,7 +3364,7 @@ ScoreMonTypeMatchups:
 	inc b
 	sla c
 	jr nc, .loop3
-	ret ; quit
+	ret
 
 .okay2
 	ld b, -1
@@ -3373,7 +3374,7 @@ ScoreMonTypeMatchups:
 	inc b
 	sla c
 	jr c, .loop4
-	ret ; quit
+	ret
 
 .loop5
 	ld a, [wOTPartyCount]
@@ -3396,7 +3397,7 @@ ScoreMonTypeMatchups:
 	ld a, [hl]
 	or c
 	jr z, .loop5
-	ret ; quit
+	ret
 
 LoadEnemyMonToSwitchTo:
 	; 'b' contains the PartyNr of the mon the AI will switch to
@@ -4606,7 +4607,7 @@ CheckDanger:
 	jr z, .no_danger
 	ld a, [wBattleLowHealthAlarm]
 	and a
-	ret nz ; done
+	ret nz
 	ld a, [wPlayerHPPal]
 	cp HP_RED
 	jr z, .danger
@@ -4614,12 +4615,12 @@ CheckDanger:
 .no_danger
 	ld hl, wLowHealthAlarm
 	ld [hl], 0
-	ret ; done
+	ret
 
 .danger
 	ld hl, wLowHealthAlarm
 	set DANGER_ON_F, [hl]
-	ret ; done
+	ret
 
 PrintPlayerHUD:
 	ld de, wBattleMonNickname
@@ -4920,7 +4921,8 @@ BattleMenu_Rock:
 	call StdBattleTextbox
 	ld hl, wEnemyMonCatchRate
 	ld a, [hl]
-	add a ; double the catch rate
+; Double the catch rate (up to $ff).
+	add a
 	jr nc, .noCarry
 	ld a, $FF
 
@@ -4930,20 +4932,24 @@ BattleMenu_Rock:
 	call Call_PlayBattleAnim
 	ld hl, wSafariMonAngerCount
 	ld de, wSafariMonEating
-	; fallthrough to BaitRockCommon
+	; fallthrough
 
 BaitRockCommon:
+; Clear the counter at de and add 1-5 to the one at hl: a rock clears
+; wSafariMonEating and raises wSafariMonAngerCount, bait the reverse.
 	xor a
-	ld [de], a ; zero the Eating Counter (if rock thrown) or Anger Counter (if bait thrown)
-.random_loop ; Loop until we get a number less than 5
+	ld [de], a
+; Pick a random number from 0 to 4...
+.random_loop
 	call BattleRandom
 	and 7
 	cp 5
 	jr nc, .random_loop
-	inc a ; increment the random number, for a a value between 1 and 5 inclusive
+; ...and add 1 to it (up to $ff).
+	inc a
 	ld b, a
 	ld a, [hl]
-	add b ; increase Eating or Anger count by that amount
+	add b
 	jr nc, .noCarry
 	ld a, $FF
 .noCarry
@@ -4952,32 +4958,29 @@ BaitRockCommon:
 	ret
 
 CheckSafariMonRan:
-; Wildmon always runs when player is out of Safari Balls
+; The wild Pokemon always runs when the player is out of Safari Balls.
 	ld a, [wSafariBallsRemaining]
 	and a
 	jp z, WildFled_EnemyFled_LinkBattleCanceled
-; Otherwise, check its speed, bait, and rock factors
-; this is basically taken directly from Gen 1
+; Otherwise it runs if a random number is below b, which starts as twice
+; the low byte of its Speed, like in Gen 1. If that's over 255, it always runs.
 	ld a, [wEnemyMonSpeed + 1]
 	add a
-	ld b, a ; init b (which is later compared with random value) to (enemy speed % 256) * 2
-	jp c, WildFled_EnemyFled_LinkBattleCanceled ; if (enemy speed % 256) > 127, the enemy runs
+	ld b, a
+	jp c, WildFled_EnemyFled_LinkBattleCanceled
+; Eating: divide b by 4 (less likely to run).
 	ld a, [wSafariMonEating]
-	and a ; is bait factor 0?
+	and a
 	jr z, .check_escape_factor
-; bait factor is not 0
-; divide b by 4 {making the mon less likely to run}
 	srl b
 	srl b
 .check_escape_factor
+; Angry: double b, up to 255 (more likely to run).
 	ld a, [wSafariMonAngerCount]
-	and a ; is escape factor 0?
+	and a
 	jr z, .compare_with_random_value
-; escape factor is not 0
-; multiply b by 2 (making mon more likely to run)
 	sla b
 	jr nc, .compare_with_random_value
-; cap b at 255
 	ld b, $FF
 .compare_with_random_value
 	call BattleRandom
@@ -5143,7 +5146,7 @@ BattleMenu_Pack:
 	ret
 
 BattleMenu_PKMN:
-; is actually "BAIT" in safari game
+; In a Safari battle, this menu option is BAIT.
 	ld a, [wBattleType]
 	cp BATTLETYPE_SAFARI
 	jp z, BattleMenu_Bait
@@ -5213,8 +5216,9 @@ BattleMenuPKMN_Loop:
 BattleMenu_Bait:
 	ld hl, BattleText_ThrewBait
 	call StdBattleTextbox
+; Halve the catch rate.
 	ld hl, wEnemyMonCatchRate
-	srl [hl] ; halve the catch rate
+	srl [hl]
 	ld de, ANIM_SAFARI_THROW_BAIT
 	call Call_PlayBattleAnim
 	ld hl, wSafariMonEating
@@ -6137,7 +6141,7 @@ LoadEnemyMon:
 	ld a, [wBaseItems]
 	jr c, .UpdateItem
 
-; From there, an 5% chance for Item2 (10% of (100% - 50%) = 5%)
+; From there, a 5% chance for Item2 (10% of (100% - 50%) = 5%)
 	call BattleRandom
 	cp 10 percent
 	ld a, [wBaseItems+1]
@@ -6235,13 +6239,12 @@ LoadEnemyMon:
 	jr z, .ForceShiny
 
 .GenerateDVs:
-; Swarms have their own shiny calculations, and so wants
-; to be prioritized.
+; Swarm Pokemon have their own shiny odds, checked first.
 	ld hl, wDailyFlags1
 	bit DAILYFLAGS1_SWARM_F, [hl]
 	jr z, .check_alt_swarm
 	farcall GenerateSwarmShiny
-	; Got DVs here, must skip normal shiny roll and other calculations
+	; That made the DVs: skip the normal shiny roll
 	jr .next
 
 .check_alt_swarm
@@ -6249,15 +6252,12 @@ LoadEnemyMon:
 	bit SWARMFLAGS_ALT_SWARM_F, [hl]
 	jr z, .check_charm
 	farcall GenerateAltSwarmShiny
-	; Skip; same here
 	jr .next
 
-; Normal shiny calculations etc.
 .check_charm
-; See if a SHINY CHARM is in the bag.
+; With a SHINY CHARM in the bag, roll for a shiny up to three times.
 	call CheckShinyCharm
 	jr c, .IncreaseShiny
-	; go to normal shiny roll
 	jr .normalcalc
 
 .IncreaseShiny:
@@ -6269,18 +6269,8 @@ if DEF(_DEBUG)
 	jr nz, .ForceShiny
 endc
 
-; Try to roll a shiny thrice in succession.
-; If I understand probability correctly, this SHOULD triple
-; the chances of rolling a shiny.
-	call BattleRandom
-	ld b, a
-	call BattleRandom
-	ld c, a
-	newfarcall CheckShininess
-; Got a shiny, use that
-	jr c, .UpdateDVs
-
-; Roll once more
+; Roll twice here and once more in .normalcalc. Three rolls give about
+; three times the chance of a shiny.
 	call BattleRandom
 	ld b, a
 	call BattleRandom
@@ -6288,7 +6278,15 @@ endc
 	newfarcall CheckShininess
 	jr c, .UpdateDVs
 
-; Roll a final time
+; Second roll
+	call BattleRandom
+	ld b, a
+	call BattleRandom
+	ld c, a
+	newfarcall CheckShininess
+	jr c, .UpdateDVs
+
+; Third roll
 	jr .normalcalc
 
 .ForceShiny:
@@ -7542,7 +7540,7 @@ InitEnemyTrainer:
 	ld [wBattleMode], a
 
 	call IsGymLeader
-	ret nc ; done
+	ret nc
 	xor a
 	ld [wCurPartyMon], a
 	ld a, [wPartyCount]
@@ -7559,7 +7557,7 @@ InitEnemyTrainer:
 .skipfaintedmon
 	pop bc
 	dec b
-	ret z ;done
+	ret z
 	ld hl, wCurPartyMon
 	inc [hl]
 	jr .partyloop
@@ -8521,7 +8519,8 @@ GetWeatherImage:
 	
 .done
 	push bc
-	ld b, BANK(WeatherImages) ; c = 4
+	; c = 4 tiles (set above)
+	ld b, BANK(WeatherImages)
 	ld hl, vTiles0
 	call Request2bpp
 	pop bc

@@ -12,7 +12,9 @@ NEXTU
 sSortedPhoneContacts:: ds NUM_PHONE_CONTACTS
 
 NEXTU
-sMoveDescriptionScratch:: ds (SCREEN_WIDTH * 2) + 5 ; ballpark estimate for text length
+; room for a move description (PrintMoveDescriptionToScratch), with a few
+; bytes to spare
+sMoveDescriptionScratch:: ds (SCREEN_WIDTH * 2) + 5
 
 ENDU
 
@@ -82,7 +84,7 @@ sBoxStaging2End::
 
 
 SECTION "Box Save Status", SRAM
-sWritingBackup:: db ; 1 if we're saving, anything else if not.
+sWritingBackup:: db ; 1 while saving (SetSavePhase), 0 otherwise
 ; bit n set: box buffer n is staged; bit 7: boxes that aren't staged are empty
 sStagedBoxes:: db
 

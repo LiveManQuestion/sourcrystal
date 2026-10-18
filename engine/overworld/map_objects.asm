@@ -2929,7 +2929,8 @@ InitSprites:
 	and ~(1 << 7)
 	ldh [hCurSpriteTile], a
 	xor a
-	bit 7, [hl] ; tiles $80+ are in VRAM bank 0
+	; tiles $80+ are in VRAM bank 0
+	bit 7, [hl]
 	jr nz, .not_vram1
 	or VRAM_BANK_1
 .not_vram1

@@ -23,7 +23,8 @@ EoinPhoneCallerScript: ; Calls you
 	iftrue EoinBattleReminder
 	farscall PhoneScript_GreetPhone_Male
 	farscall PhoneScript_Random2
-	ifequal 0, EoinWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, EoinWantsBattle
 	farjump Phone_GenericCall_Male
 
 EoinWantsBattle:

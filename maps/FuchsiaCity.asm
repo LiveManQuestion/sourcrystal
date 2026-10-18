@@ -25,21 +25,21 @@ FuchsiaCityFlypointCallback:
 	endcallback
 
 FuchsiaCityFruittrees:
-;Berry:
+; Berry
 	checkflag ENGINE_DAILY_FUCHSIA_BERRY
 	iftrue .NoBerry
 	appear FUCHSIACITY_BERRY
 .NoBerry:
-	;fallthrough
+	; fallthrough
 
-;Apricorn:
+; Apricorn
 	checkflag ENGINE_DAILY_FUCHSIA_APRICORN
 	iftrue .NoApricorn
 	appear FUCHSIACITY_APRICORN
 .NoApricorn:
-	;fallthrough
+	; fallthrough
 
-;Helix
+; Helix Fossil
 	setevent EVENT_FUCHSIA_CITY_KABUTO
 	setevent EVENT_FUCHSIA_CITY_OMANYTE
 	checkevent EVENT_MT_MORTAR_OBTAINED_FOSSIL

@@ -29,14 +29,14 @@ Route42Fruittrees:
 	iftrue .NoApricorn
 	appear ROUTE_42_APRICORN
 .NoApricorn:
-	;fallthrough
+	; fallthrough
 
 .APRICORN_2:
 	checkflag ENGINE_DAILY_ROUTE_42_APRICORN_2
 	iftrue .NoAPRICORN_2
 	appear ROUTE_42_APRICORN_2
 .NoAPRICORN_2:
-	;fallthrough
+	; fallthrough
 
 .APRICORN_3:
 	checkflag ENGINE_DAILY_ROUTE_42_APRICORN_3

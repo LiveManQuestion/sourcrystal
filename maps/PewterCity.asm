@@ -20,28 +20,28 @@ PewterCityFlypointCallback:
 	endcallback
 
 PewterCityFruittrees:
-;Berry:
+; Berry
 	checkflag ENGINE_DAILY_PEWTER_BERRY
 	iftrue .NoBerry
 	appear PEWTERCITY_BERRY
 .NoBerry:
-	;fallthrough
+	; fallthrough
 
-;Apricorn:
+; Apricorn
 	checkflag ENGINE_DAILY_PEWTER_APRICORN
 	iftrue .NoApricorn
 	appear PEWTERCITY_APRICORN
 .NoApricorn:
-	;fallthrough
+	; fallthrough
 
-;BERRY_2:
+; Second berry
 	checkflag ENGINE_DAILY_PEWTER_BERRY_2
 	iftrue .NoBERRY_2
 	appear PEWTERCITY_BERRY_2
 .NoBERRY_2:
-	;fallthrough
+	; fallthrough
 
-;APRICORN_2:
+; Second Apricorn
 	checkflag ENGINE_DAILY_PEWTER_APRICORN_2
 	iftrue .NoAPRICORN_2
 	appear PEWTERCITY_APRICORN_2

@@ -1120,10 +1120,12 @@ DebugRoomMenu_PokemonGet:
 	dw DebugRoomMenu_PokemonGet_Page4Values
 
 DebugRoom_SavePokemon:
-	; IF YOU NEED THIS WORKING, ADAPT IT FOR NEWBOX!
+	; Disabled: the code below writes straight to the saved boxes, which
+	; the Storage System (engine/pc/bills_pc.asm) now manages. To bring it
+	; back, add the Pokemon through the Storage System instead.
 	ret
 
-; Used to reference old box data, now dummied out.
+; The disabled code, which wrote the Pokemon into the old box format:
 ;	call YesNoBox
 ;	ret c
 ;

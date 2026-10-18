@@ -49,7 +49,8 @@ MACRO update_pushed_af_flags
 	ld hl, sp+$2
 	ld a, [hli] ; reads current flags
 	assert HIGH(wStackBottom) == HIGH(wStackTop)
-	inc l ; more efficient than 'inc hl'
+	; more efficient than 'inc hl'
+	inc l
 	ld [hl], a ; overwrites pushed flags
 	pop hl
 	pop af

@@ -26,7 +26,7 @@ VioletCityFruittrees:
 	iftrue .NoBerry
 	appear VIOLETCITY_BERRY
 .NoBerry:
-	;fallthrough
+	; fallthrough
 
 .Apricorn:
 	checkflag ENGINE_DAILY_VIOLET_APRICORN

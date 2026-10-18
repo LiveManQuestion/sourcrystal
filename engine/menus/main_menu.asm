@@ -260,19 +260,22 @@ MainMenuJoypadLoop:
 	ret
 
 MainMenu_PrintCurrentVersion:
-	lb bc, 1, 5 ;Box - Width
+; Print the version string in a 1x5 textbox below the main menu, which is
+; taller with a save file.
+	lb bc, 1, 5
 	ld a, [wSaveFileExists]
 	and a
 	jr nz, .has_save_file
-; no save file
-	hlcoord 13, 15 ;Box - Position
+; no save file: box at (13, 15), text at (14, 16)
+	hlcoord 13, 15
 	call Textbox
-	hlcoord 14, 16 ;Text - Width
+	hlcoord 14, 16
 	jr .no_save_file
 .has_save_file
-	hlcoord 13, 11 ;Box - Position
+; box at (13, 11), text at (14, 12)
+	hlcoord 13, 11
 	call Textbox
-	hlcoord 14, 12 ;Text - Width
+	hlcoord 14, 12
 .no_save_file
 	ld de, .VersionString
 	jp PlaceString

@@ -13,7 +13,8 @@ TullyPhoneCalleeScript: ; You call
 .NotSunday:
 	checkflag ENGINE_TULLY_GAVE_WATER_STONE
 	iftrue .skipWaterStone
-	farscall PhoneScript_Random11 ; 9% chance when you call them
+	; 9% chance when you call them
+	farscall PhoneScript_Random11
 	ifequal 0, TullyHasWaterStone
 	setflag ENGINE_TULLY_GAVE_WATER_STONE
 .skipWaterStone
@@ -34,11 +35,13 @@ TullyPhoneCallerScript: ; Calls you
 	checkflag ENGINE_TULLY_READY_FOR_REMATCH
 	iftrue TullyBattleReminder
 	farscall PhoneScript_GreetPhone_Male
-	farscall PhoneScript_Random3 ; 25% chance when you call them
+	; 33% chance when they call you
+	farscall PhoneScript_Random3
 	ifequal 0, TullyHasWaterStone
 	setflag ENGINE_TULLY_GAVE_WATER_STONE
 	farscall PhoneScript_Random2
-	ifequal 0, TullyWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, TullyWantsBattle
 	farsjump Phone_GenericCall_Male
 
 TullyWantsBattle:

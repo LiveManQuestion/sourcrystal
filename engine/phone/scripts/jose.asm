@@ -13,7 +13,8 @@ JosePhoneCalleeScript: ; You call
 .NotSaturday:
 	checkflag ENGINE_JOSE_GAVE_STAR_PIECE
 	iftrue .skipStarPiece
-	farscall PhoneScript_Random11 ; 9% chance when you call them
+	; 9% chance when you call them
+	farscall PhoneScript_Random11
 	ifequal 0, JoseHasStarPiece
 	setflag ENGINE_JOSE_GAVE_STAR_PIECE
 .skipStarPiece
@@ -34,11 +35,13 @@ JosePhoneCallerScript: ; Calls you
 	checkflag ENGINE_JOSE_READY_FOR_REMATCH
 	iftrue JoseBattleReminder
 	farscall PhoneScript_GreetPhone_Male
-	farscall PhoneScript_Random3 ; 25% chance when they call you
+	; 33% chance when they call you
+	farscall PhoneScript_Random3
 	ifequal 0, JoseHasStarPiece
 	setflag ENGINE_JOSE_GAVE_STAR_PIECE
 	farscall PhoneScript_Random2
-	ifequal 0, JoseWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, JoseWantsBattle
 	farscall PhoneScript_Random3
 	ifequal 0, JoseFoundRare
 	farsjump Phone_GenericCall_Male

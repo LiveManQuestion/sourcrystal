@@ -967,3 +967,16 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   `tools/claude/stadium2/keep_save_footer.diff`. Checked headlessly: after a
   Game Pak check the save stayed 32816 bytes and identical. RMG's bundled
   core still truncates.
+- **2026-10-18**: Comment pass over Sour Crystal's own asm (new files and
+  Sour-changed lines; vanilla pret comments, `engine/link/`, tools left
+  alone), following STYLE.md: explanations on instructions moved above the
+  code (short value labels and data table comments stay inline), no bare `;`
+  lines, a space after `;`, typos and informal notes rewritten. Wrong
+  comments fixed: phone call chances (`random N` is a 1 in N chance; most
+  were labelled 1 in N+1), the radio swarm segment numbers, `TRAINERTYPE_*_F`
+  bit numbers, `IsEvenSpriteIndex` (1 for odd sprites) and the sunlight
+  steps (1, not 2) in `weather.asm`, the town map palette range, the safari,
+  shiny and exp split explanations, the trainer party format (now documents
+  `TRAINERTYPE_VARIABLE`). Comments now note code oddities without changing
+  them: `ReadTrainerPartyPieces` gets its 1 from `CountSetBits` on ROM
+  $0002. All four ROMs and `.sym` files byte-identical.

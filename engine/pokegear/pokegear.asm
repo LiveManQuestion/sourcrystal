@@ -630,13 +630,14 @@ PagerCardRoutines:
 FlyPagerRoutine:
 	call GetMapEnvironment
 	call CheckOutdoorMap
-	jr nz, .FlyStartUp         ;checks if the player is outside
+	; indoors, blank the screen first
+	jr nz, .FlyStartUp
 	call ClearBGPalettes
 	ld a, $90
 	ld [hWY], a
 
 .FlyStartUp
-	farcall MonMenu_FlyPager   ;Regardless this code must trigger if the player is outside or not.
+	farcall MonMenu_FlyPager
 	jr nz, FinishPagerRoutine
 	call GetMapEnvironment
 	call CheckOutdoorMap
@@ -662,7 +663,8 @@ FlyPagerRoutine:
 	ld [wJumptableIndex], a
 	ret
 
-; all other pager functions had to be mvoed below FlyPagerRoutine due to its code setup
+; The other pager routines are below FlyPagerRoutine, since they jr to
+; FinishPagerRoutine above it.
 CutPagerRoutine:
 	farcall MonMenu_CutPager
 	ret nz
@@ -792,7 +794,8 @@ PokegearPager_UpdateDisplayList:
 	; hl = the coords to print the name
 	call PlaceString
 	pop bc
-	inc c ; advance to the next bit in wPagerFlags
+	; advance to the next bit in wPagerFlags
+	inc c
 	ld a, [wPokegearPagerLoadNameBuffer]
 	inc a
 	ld [wPokegearPagerLoadNameBuffer], a
@@ -1186,16 +1189,19 @@ PokegearMap_InitPlayerIcon:
 	ret
 
 PokegearMap_InitRoamingIcon:
-; Assume that roaming is only in Johto
-	or a ; reset flags
+; Show the roaming legendaries on the Johto map (they only roam in Johto).
+	; clear carry
+	or a
 	farcall RegionCheck
-	ret c ; Exit if in Victory Road
+	; Exit if in Victory Road
+	ret c
 	ld a, e
 	and a
-	ret nz ; Exit if in Kanto
+	; Exit if in Kanto
+	ret nz
 
-; clear palette temp stuff so we don't
-; copy weird shit later down the line
+; clear the roaming Pokemon's palettes, so missing ones don't get leftover
+; palettes later
 	ld hl, wRoamMon1PaletteTemp
 	assert wRoamMon2PaletteTemp == wRoamMon1PaletteTemp + 1
 	assert wRoamMon3PaletteTemp == wRoamMon2PaletteTemp + 1
@@ -1204,11 +1210,10 @@ PokegearMap_InitRoamingIcon:
 	ld [hli], a
 	ld [hl], a
 
-; Instantiate the graphics and the sprite objects
-; .roammon_1
-; pre-allocate sprite even when unused, so that
-; the palette indices to be applied can be correct
-; even when any one of them is missing
+; Load the graphics and create the sprites. Each roaming Pokemon gets a
+; sprite even when it isn't roaming, so the palettes applied below go to the
+; right sprites when one of them is missing.
+; roaming Pokemon 1:
 	call .InstantiateSprite
 	ld a, [wRoamMon1Species]
 	and a
@@ -1250,7 +1255,8 @@ PokegearMap_InitRoamingIcon:
 	call .InstantiateSprite
 	ld a, [wRoamMon3Species]
 	and a
-	jr z, .apply_roam_palettes ; no more roaming mons
+	; no more roaming mons
+	jr z, .apply_roam_palettes
 ; third roam mon's sprites loaded into $78
 	ld [wTempSpecies], a
 	ld e, $78
@@ -1288,9 +1294,9 @@ PokegearMap_InitRoamingIcon:
 	ld hl, wShadowOAMSprite08Attributes
 	ld a, [wSwarmFlags]
 	bit SWARMFLAGS_SWARM_ACTIVE, a
-	jr z, .got_v_oam_addr ; no swarms
-; because the one swarm sprite got loaded,
-; offset the sprite index by +4
+	jr z, .got_v_oam_addr
+; with a swarm, its sprite comes first: the roaming Pokemon start at
+; sprite 12
 	ld hl, wShadowOAMSprite12Attributes
 .got_v_oam_addr
 	ld a, 5
@@ -1300,7 +1306,9 @@ PokegearMap_InitRoamingIcon:
 	inc a ; a = 7
 	jr .SetPaletteAttrs
 
-.TranslateAndApplyCoord: ; uses `hl`
+.TranslateAndApplyCoord:
+; Place sprite bc at the Town Map location of the map at hl
+; (wRoamMon#MapGroup).
 	push bc
 		ld a, [hli] ; wRoamMon#MapGroup
 		ld b, a
@@ -1348,7 +1356,8 @@ PokegearMap_InitRoamingIcon:
 
 .ConvertToMenuMonPal:
 	and a
-	ret z ; don't convert if 0
+	; don't convert if 0
+	ret z
 	dec a
 	ld b, 0
 	ld c, a
@@ -1829,10 +1838,10 @@ PokegearPhone_UpdateDisplayList:
 ; wPhoneList is now a bitflag to essentially allow for every phone contact
 ; to be obtained. However, if we use it directly, it would end up being like
 ; the Pokedex where there'd be gaps in between each contact.
-;
+
 ; What this does is sort whatever is in there to sSortedPhoneContacts so that
 ; the phone display can use it to display contacts without any gaps.
-;
+
 ; SRAM must already be opened to BANK(sSortedPhoneContacts).
 SortPhoneContacts:
 	; First, clear the sorted phone contact list
@@ -1843,7 +1852,6 @@ SortPhoneContacts:
 	ld [hli], a
 	dec c
 	jr nz, .clear
-	; Seems better to just reload `hl` than doing a push/pop ?
 	ld hl, sSortedPhoneContacts
 	
 	; Now we can start filling it in.
@@ -1858,15 +1866,12 @@ SortPhoneContacts:
 		call FlagAction
 	pop hl
 	pop de
-	; After FlagAction `c` will either be zero or some bitmasked
-	; flag which I don't really care about.
+	; c is nonzero if the contact is in wPhoneList
 	ld a, c
 	and a
-	; Since everything has been cleared to 00 prior, it should be safe
-	; for display. And there'll be no gaps in the contact list.
+	; Skipped contacts leave no gap: the list was cleared to PHONE_00.
 	jr z, .skip
-	; `de` contains the phone contact index because
-	; we restored it.
+	; de = the phone contact index
 	assert NUM_PHONE_CONTACTS < $100
 
 	ld a, e
@@ -1879,9 +1884,7 @@ SortPhoneContacts:
 	inc e
 	ld a, e
 	cp NUM_PHONE_CONTACTS
-	; After this, `hl` will contain the last address of the sorted phone
-	; contacts list (plus 1) which can be used to count the number of contacts
-	; that we have?
+	; hl ends just past the last sorted contact
 	ret z
 	jr .keep_going
 
@@ -1898,9 +1901,9 @@ PokegearPhone_DeletePhoneNumber:
 	ld d, 0
 	ld b, RESET_FLAG
 	ld hl, wPhoneList
+	; No need to re-sort the contact list here: updating the display
+	; does it.
 	jp FlagAction
-	; No need to re-sort the contact list here, the display update function
-	; should handle that
 
 PokegearPhoneContactSubmenu:
 	; Index here starts with PHONE_00
@@ -2376,7 +2379,8 @@ RadioChannels:
 	ret
 
 LoadStation_OaksPokemonTalk:
-	farcall TownMap_InitCursorAndPlayerIconPositions ; used to load values for swarm region.
+	; used to load values for swarm region.
+	farcall TownMap_InitCursorAndPlayerIconPositions
 	xor a ; OAKS_POKEMON_TALK
 	ld [wCurRadioLine], a
 	ld [wNumRadioLinesPrinted], a
@@ -3458,7 +3462,7 @@ TownMapPals:
 ; Current tile
 	ld a, [hli]
 	push hl
-; The palette map covers tiles $00 to $5f; $70 and above use palette 0
+; The palette map covers tiles $00 to $6f; $70 and above use palette 0
 	cp $70
 	jr nc, .pal0
 
@@ -3512,7 +3516,7 @@ TownMapMon:
 ; Get FlyMon icon
 	ld e, $08 ; starting tile in VRAM
 	farcall GetSpeciesIcon
-	farcall SetMenuMonIconColor ; ??????????
+	farcall SetMenuMonIconColor
 ; Animation/palette
 	depixel 0, 0
 	ld a, SPRITE_ANIM_OBJ_PARTY_MON

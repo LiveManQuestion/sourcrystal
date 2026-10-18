@@ -109,19 +109,19 @@ RadioJumptable:
 	dw BuenasPassword20  ; $52
 	dw BuenasPassword21  ; $53
 	dw RadioScroll       ; $54
-; Swarm lol
-	dw OaksPKMNTalkSwarm1  ; $58
-	dw OaksPKMNTalkSwarm2  ; $59
-	dw OaksPKMNTalkSwarm3  ; $5a
-	dw OaksPKMNTalkSwarm4  ; $5b
-	dw OaksPKMNTalkSwarm5  ; $5c
-	dw OaksPKMNTalkSwarm6  ; $5d
-	dw OaksPKMNTalkSwarm7  ; $5e
-	dw OaksPKMNTalkSwarm8  ; $5f
-	dw OaksPKMNTalkSwarm9  ; $60
-	dw OaksPKMNTalkSwarm10 ; $61
-	dw OaksPKMNTalkSwarm11 ; $62
-	dw OaksPKMNTalkSwarm12 ; $63
+; Oak's Pokémon Talk swarm news (see OaksPKMNTalkSwarm1)
+	dw OaksPKMNTalkSwarm1  ; $55
+	dw OaksPKMNTalkSwarm2  ; $56
+	dw OaksPKMNTalkSwarm3  ; $57
+	dw OaksPKMNTalkSwarm4  ; $58
+	dw OaksPKMNTalkSwarm5  ; $59
+	dw OaksPKMNTalkSwarm6  ; $5a
+	dw OaksPKMNTalkSwarm7  ; $5b
+	dw OaksPKMNTalkSwarm8  ; $5c
+	dw OaksPKMNTalkSwarm9  ; $5d
+	dw OaksPKMNTalkSwarm10 ; $5e
+	dw OaksPKMNTalkSwarm11 ; $5f
+	dw OaksPKMNTalkSwarm12 ; $60
 	assert_table_length NUM_RADIO_SEGMENTS
 
 PrintRadioLine:
@@ -212,8 +212,10 @@ OaksPKMNTalkSwarm1:
 	jr nz, .done
 
 .generate_flag
-	call Random ; generate a random number below 8
-	and %11 ; '3' in bit  (increase bit number with each new added swarm)
+	; pick the normal (0) or alternate (1) swarm, retrying on 2 and 3
+	; (use those for new kinds of swarms)
+	call Random
+	and %11
 	and a
 	jr z, .normal_swarm
 	cp 1
@@ -241,7 +243,8 @@ OaksPKMNTalkSwarm1:
 	call .InJohto
 	jr nc, .generate_number_kanto
 	ld a, (SwarmLocationDataJohtoEnd - SwarmLocationDataJohto) / 5
-	call RandomRange ; genrate a random number between 0 and a
+	; pick a random location from 0 to a - 1
+	call RandomRange
 	ld hl, SwarmLocationDataJohto
 	ld bc, 5
 	call AddNTimes
@@ -272,7 +275,8 @@ OaksPKMNTalkSwarm1:
 	call .InJohto
 	jr nc, .generate_alt_number_kanto
 	ld a, (SwarmLocationDataJohtoAltEnd - SwarmLocationDataJohtoAlt) / 5
-	call RandomRange ; genrate a random number between 0 and a
+	; pick a random location from 0 to a - 1
+	call RandomRange
 	ld hl, SwarmLocationDataJohtoAlt
 	ld bc, 5
 	call AddNTimes
@@ -299,7 +303,8 @@ OaksPKMNTalkSwarm1:
 
 .generate_number_kanto
 	ld a, (SwarmLocationDataKantoEnd - SwarmLocationDataKanto) / 5
-	call RandomRange ; genrate a random number between 0 and a
+	; pick a random location from 0 to a - 1
+	call RandomRange
 	ld hl, SwarmLocationDataKanto
 	ld bc, 5
 	call AddNTimes
@@ -326,7 +331,8 @@ OaksPKMNTalkSwarm1:
 
 .generate_alt_number_kanto
 	ld a, (SwarmLocationDataKantoAltEnd - SwarmLocationDataKantoAlt) / 5
-	call RandomRange ; genrate a random number between 0 and a
+	; pick a random location from 0 to a - 1
+	call RandomRange
 	ld hl, SwarmLocationDataKantoAlt
 	ld bc, 5
 	call AddNTimes
@@ -367,7 +373,6 @@ OaksPKMNTalkSwarm1:
 
 .InJohto:
 ; if in Johto or on the S.S. Aqua, set carry
-
 ; otherwise clear carry
 	ld a, [wPokegearMapPlayerIconLandmark]
 	cp LANDMARK_FAST_SHIP
@@ -566,17 +571,17 @@ OPT_SwarmText2:
 	db "@"
 
 OPT_SwarmText3:
-	; @ 
+	; @ has
 	text_jump _OPT_SwarmText3
 	db "@"
 
 OPT_SwarmText4:
-	; have be seen at
+	; been spotted at
 	text_jump _OPT_SwarmText4
 	db "@"
 
 OPT_SwarmText5:
-	; @ .
+	; @!
 	text_jump _OPT_SwarmText5
 	db "@"
 
@@ -586,12 +591,12 @@ OPT_SwarmText6:
 	db "@"
 
 OPT_SwarmText7:
-	; want to catch a
+	; want to catch
 	text_jump _OPT_SwarmText7
 	db "@"
 
 OPT_SwarmText8:
-	; @ ,
+	; a @,
 	text_jump _OPT_SwarmText8
 	db "@"
 
@@ -601,7 +606,7 @@ OPT_SwarmText9:
 	db "@"
 
 OPT_SwarmText10:
-	; @ .
+	; @!
 	text_jump _OPT_SwarmText5
 	db "@"
 

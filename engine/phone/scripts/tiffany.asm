@@ -15,7 +15,8 @@ TiffanyPhoneCalleeScript: ; You call
 .NotTuesday:
 	checkflag ENGINE_TIFFANY_GAVE_POKE_DOLL
 	iftrue .skipPokeDoll
-	farscall PhoneScript_Random2 ; 33% chance when you call them
+	; 50% chance when you call them
+	farscall PhoneScript_Random2
 	ifequal 0, TiffanyHasPokeDoll
 .skipPokeDoll
 	farsjump TiffanyNoItemScript
@@ -37,11 +38,13 @@ TiffanyPhoneCallerScript: ; Calls you
 	farscall PhoneScript_Random4
 	ifequal 0, TiffanysFamilyMembers
 	farscall PhoneScript_GreetPhone_Female
-	farscall PhoneScript_Random2 ; 33% chance when they call you
+	; 50% chance when they call you
+	farscall PhoneScript_Random2
 	ifequal 0, TiffanyHasPokeDoll
 	setflag ENGINE_TIFFANY_GAVE_POKE_DOLL
 	farscall PhoneScript_Random2
-	ifequal 0, TiffanyWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, TiffanyWantsBattle
 	farsjump Phone_GenericCall_Female
 
 TiffanyWantsBattle:

@@ -71,7 +71,8 @@ DoBattleTransition:
 	farcall ReanchorBGMap_NoOAMUpdate
 	ld a, [wCurWeather]
 	and a
-	jr nz, .skip_update_sprites ; lets the rain still be on screen for a bit
+	; lets the rain still be on screen for a bit
+	jr nz, .skip_update_sprites
 	call UpdateSprites
 .skip_update_sprites
 	call DelayFrame
@@ -756,7 +757,8 @@ StartTrainerBattle_LoadPokeBallGraphics:
 ; ret:
 ;   de = address of palette to replace
 ;   if carry: no such palette found
-	call .find_dyn_pal ; XXX can be optimized later...
+	; XXX can be optimized later...
+	call .find_dyn_pal
 	ld a, c
 	cp 8
 	jr nc, .nothing_found

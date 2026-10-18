@@ -30,7 +30,8 @@ ToddPhoneCallerScript: ; Calls you
 	checkflag ENGINE_TODD_SATURDAY_MORNING
 	iftrue .TryForSale
 	farscall PhoneScript_Random2
-	ifequal 0, ToddWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, ToddWantsBattle
 	farscall PhoneScript_Random3
 	ifequal 0, ToddFoundRare
 	farsjump Phone_GenericCall_Male

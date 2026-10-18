@@ -13,7 +13,8 @@ DougPhoneCalleeScript: ; You call
 .NotWednesday:
 	checkflag ENGINE_DOUG_GAVE_BERRY
 	iftrue .Generic
-	farscall PhoneScript_Random2 ; 33% chance when you call them
+	; 50% chance when you call them
+	farscall PhoneScript_Random2
 	ifequal 0, DougHasBerry
 	setflag ENGINE_DOUG_GAVE_BERRY
 
@@ -31,7 +32,8 @@ DougPhoneCallerScript: ; Calls you
 	checkflag ENGINE_DOUG_READY_FOR_REMATCH
 	iftrue DougRematchAndBerryReminder
 	farscall PhoneScript_GreetPhone_Male
-	farscall PhoneScript_Random2 ; 33% chance when they call you
+	; 50% chance when they call you
+	farscall PhoneScript_Random2
 	ifequal 0, DougHasBerry
 	setflag ENGINE_DOUG_GAVE_BERRY
 	farscall PhoneScript_Random2

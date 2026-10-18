@@ -66,7 +66,8 @@ GetNewBaseExp:
 	ld a, BANK(EvosAttacks)
 	call GetFarByte
 	and a
-	ld a, 4 ; basic mon (not evolved, but can evolve): *4/20 -> *0.2
+	; basic mon (not evolved, but can evolve): *4/20 -> *0.2
+	ld a, 4
 	jr nz, .got_multiplier
 	jr .stage_1_or_nonevolver
 
@@ -77,10 +78,12 @@ GetNewBaseExp:
 	jr c, .legendary
 	farcall GetPreEvolution
 .legendary
-	ld a, 10 ; stage 2 or legendary: *10/20 -> *0.5
+	; stage 2 or legendary: *10/20 -> *0.5
+	ld a, 10
 	jr c, .got_multiplier
 .stage_1_or_nonevolver
-	ld a, 7 ; stage 1 or non-evolver: *7/20 -> *0.35
+	; stage 1 or non-evolver: *7/20 -> *0.35
+	ld a, 7
 .got_multiplier
 	ldh [hMultiplier], a
 	call Multiply

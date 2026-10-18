@@ -45,7 +45,7 @@ ShakeHeadbuttTree:
 	; shift all sprites left in OAM by 4 slots
 	; hl = source, de = destination, bc = length
 	ldh a, [hUsedOAMIndex]
-	; a = (NUM_SPRITE_OAM_STRUCTS * SPRITEOAMSTRUCT_LENGTH - a
+	; a = (NUM_SPRITE_OAM_STRUCTS * SPRITEOAMSTRUCT_LENGTH) - a
 	cpl
 	add NUM_SPRITE_OAM_STRUCTS * SPRITEOAMSTRUCT_LENGTH + 1
 	ld h, HIGH(wShadowOAM)
@@ -165,7 +165,8 @@ HideHeadbuttTree:
 
 	ld a, [wMapTileset]
 	cp TILESET_KANTO
-	ld a, $74 ; grass tile (custom for headbutt)
+	; grass tile (custom for headbutt)
+	ld a, $74
 	jr z, .replacement_tile_determined
 
 	ld a, $05 ; grass tile
@@ -243,8 +244,6 @@ OWCutAnimation:
 	jr .loop
 
 .finish
-	; clear wCurSpriteOAMAddr -> hUsedOAMIndex
-
 	; shift all sprites right in OAM by 4 slots
 	; hl = source, de = destination, bc = length
 	ldh a, [hUsedOAMIndex]
@@ -447,12 +446,15 @@ FlyFromAnim:
 	farcall CheckForUsedObjPals
 	ldh a, [hUsedOAMIndex]
 	cp (NUM_SPRITE_OAM_STRUCTS - NUM_FLYFROM_ANIM_OAMS - 1) * SPRITEOAMSTRUCT_LENGTH
-	call nc, ClearNormalSprites ; not enough OAM slots, clear all sprites.
+	; not enough OAM slots, clear all sprites.
+	call nc, ClearNormalSprites
 	ld a, [wUsedObjectPals]
-	set 7, a ; slot 7 already reserved for leaves.
+	; slot 7 already reserved for leaves.
+	set 7, a
 	ld [wUsedObjectPals], a
 	inc a
-	call z, ClearSprites ; no more object palettes available, clear all sprites.
+	; no more object palettes available, clear all sprites.
+	call z, ClearSprites
 	call HidePlayerSprite
 	call DelayFrame
 	ld a, [wStateFlags]

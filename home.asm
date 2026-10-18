@@ -67,7 +67,8 @@ TestBitAInHL::
 	add a
 	add $46
 	ldh [hCodeBuffer+1], a
-	ld a, $cb ; 'bit N, [hl]' opcode prefix
+	; 'bit N, [hl]' opcode prefix
+	ld a, $cb
 	ldh [hCodeBuffer+0], a
 	ld a, $c9 ; 'ret' opcode
 	ldh [hCodeBuffer+2], a

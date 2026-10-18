@@ -21,7 +21,8 @@ AidenPhoneCallerScript: ; Calls you
 	iftrue AidenBattleReminder
 	farscall PhoneScript_GreetPhone_Male
 	farscall PhoneScript_Random2
-	ifequal 0, AidenWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, AidenWantsBattle
 	farjump Phone_GenericCall_Male
 
 AidenWantsBattle:

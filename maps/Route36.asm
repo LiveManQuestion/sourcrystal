@@ -30,14 +30,14 @@ Route36FruittreesandArthurCallback:
 	iftrue .NoBerry
 	appear ROUTE_36_BERRY
 .NoBerry:
-	;fallthrough
+	; fallthrough
 
 .Apricorn:
 	checkflag ENGINE_DAILY_ROUTE_36_APRICORN
 	iftrue .NoApricorn
 	appear ROUTE_36_APRICORN
 .NoApricorn:
-	;fallthrough
+	; fallthrough
 
 .ArthurCallback:
 	readvar VAR_WEEKDAY

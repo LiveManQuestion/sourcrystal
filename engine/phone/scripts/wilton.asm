@@ -13,7 +13,8 @@ WiltonPhoneCalleeScript: ; You call
 .NotThursday:
 	checkflag ENGINE_WILTON_GAVE_BALL_ITEM
 	iftrue .Generic
-	farscall PhoneScript_Random2 ; 33% chance when you call them
+	; 50% chance when you call them
+	farscall PhoneScript_Random2
 	ifequal 0, WiltonHasItem
 	setflag ENGINE_WILTON_GAVE_BALL_ITEM
 
@@ -35,11 +36,13 @@ WiltonPhoneCallerScript: ; Calls you
 	checkflag ENGINE_WILTON_READY_FOR_REMATCH
 	iftrue WiltonBattleReminder
 	farscall PhoneScript_GreetPhone_Male
-	farscall PhoneScript_Random2 ; 33% chance when you call them
+	; 50% chance when they call you
+	farscall PhoneScript_Random2
 	ifequal 0, WiltonHasItem
 	setflag ENGINE_WILTON_GAVE_BALL_ITEM
 	farscall PhoneScript_Random2
-	ifequal 0, WiltonWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, WiltonWantsBattle
 	farsjump Phone_GenericCall_Male
 
 WiltonWantsBattle:

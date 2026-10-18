@@ -506,7 +506,7 @@ RuinsOfAlphResearchCenterTutotScientistScript:
 	writetext RuinsOfAlphResearchCenterTutorShallITeachText
 	callasm .SetupMovesMenu
 	callasm .LoadMovesMenu
-	; closewindow ; doesn't work for some reason… it leaves the textbox border hanging
+	; (closewindow here would leave the textbox border on screen)
 	writetext RuinsOfAlphResearchCenterTutorMoveText
 	ifequal 2, .NotEnough
 	iffalse .CloseTutor
@@ -663,12 +663,11 @@ RuinsOfAlphResearchCenterTutotScientistScript:
 	ld c, VAR_UNOWNCOUNT
 	farcall _GetVarAction
 	ld a, [de]
-; cut the menu
-	; the way this works requires this condition to hold
-	; i don't feel like doing a full 16-bit add
+; Cut the menu to fewer moves for fewer Unown caught: all of them with
+; every Unown, 20 with 21+, 15 with 14+, 10 with 7+, and 5 otherwise.
+	; adding to l alone below needs the list in one 256-byte page
 	assert HIGH(wRuinsMoveTutorScratch) \
 		== HIGH(wRuinsMoveTutorScratch + 25)
-;--
 	ld hl, wRuinsMoveTutorScratch
 	cp NUM_UNOWN
 	jr nc, .got_menu
@@ -784,8 +783,8 @@ RuinsOfAlphResearchCenterTutotScientistScript:
 	end
 
 .PayTutorInShards:
-; this is a variable `takeitem`, and idk what the script equivalent of this
-; is soooo...
+; Take [wRuinsMoveTutorScratch] Opal Shards: a takeitem with a variable
+; quantity, which the script command can't do.
 	ld a, OPAL_SHARD
 	ld [wCurItem], a
 	ld a, [wRuinsMoveTutorScratch] ; should have been set back in .LoadMovesMenu

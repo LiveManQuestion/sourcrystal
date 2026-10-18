@@ -117,7 +117,7 @@ ReassociateMapObjectsOrDelete:
 	ld a, d
 	ld [hli], a ; MapX
 	ld a, e
-	ld [hli], a; MapY
+	ld [hli], a ; MapY
 	ld a, d
 	ld [hli], a ; LastMapX
 	ld a, e
@@ -209,7 +209,7 @@ ReassociateMapObjectsOrDelete:
 	cp d
 	jr nz, .next_map_object
 
-	; they match, so reassociate the the mapobject to the object.
+	; they match, so reassociate the mapobject to the object.
 	ld d, b
 	ld e, c
 	pop bc

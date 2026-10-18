@@ -77,7 +77,7 @@ ENDR
 	jr .set_weather
 
 .sun
-; gate nighttime, just to be safe
+; no sunlight at night
 	ld a, [wTimeOfDay]
 	cp NITE_F
 	jr z, .none
@@ -88,7 +88,7 @@ ENDR
 	ld a, [wWeatherFlags]
 	bit OW_WEATHER_DO_FLY_F, a
 	jr nz, .skip_cooldown
-	; if there was weather running then no cooldown
+	; no cooldown if there was no weather before
 	ld a, [wCurWeather]
 	and a
 	jr z, .skip_cooldown

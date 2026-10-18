@@ -25,14 +25,16 @@ GiveExperiencePoints:
 	call GetPartyParamLocation
 	ld a, [hli]
 	or [hl]
-	jp z, .next_mon ; fainted
+	; Skip fainted Pokemon
+	jp z, .next_mon
 
+; Skip Pokemon that neither fought nor hold an Exp. Share.
 	ld hl, wGivingExperienceToExpShareHolders
 	call .CheckParticipation
 	jr nz, .participating
 	ld hl, wBattleParticipantsNotFainted
 	call .CheckParticipation
-	jp z, .next_mon ; not a participant
+	jp z, .next_mon
 
 	xor a
 	ldh [hMultiplicand], a
@@ -394,11 +396,11 @@ GiveExperiencePoints:
 	ret
 
 .GetExpDistribution:
-; Distribute among participants as follows:
-; p=participats e=exp share holders
-; If p or e is zero, just do 1/p or 1/e.
-; Otherwise; P=e if participant, otherwise 0, E=p if holder, otherwise 0
-; exp = current(E+P)/(2ep)
+; Split the exp between the p Pokemon that fought and the e Exp. Share
+; holders. If either count is zero, each of the others gets 1/p (or 1/e).
+; Otherwise fighting earns 1/(2p) and holding an Exp. Share 1/(2e), and a
+; Pokemon that did both gets both: exp * (P + E) / (2ep), where P is e if
+; it fought (or 0) and E is p if it holds an Exp. Share (or 0).
 	ld a, [wGivingExperienceToExpShareHolders]
 	ld d, a
 	ld a, [wBattleParticipantsNotFainted]
@@ -491,7 +493,7 @@ GiveExperiencePoints:
 	ret
 
 .BoostExp:
-; Multiply experience by 1.5x
+; Multiply experience by 1.5.
 	lb de, 3, 2
 	; fallthrough
 .ScaleMod:
@@ -840,30 +842,34 @@ CalcExpBar:
 	ret
 
 PlaceExpBar:
-	ld c, $8 ; number of tiles
+; Draw b pixels of exp bar (8 tiles of 8 pixels), from right to left at hl.
+	ld c, $8
 .loop1
 	ld a, b
 	sub $8
 	jr c, .next
 	ld b, a
-	ld a, $6a ; full bar
+	; full tile
+	ld a, $6a
 	ld [hld], a
 	dec c
-	ret z ; finish
+	ret z
 	jr .loop1
 
 .next
 	add $8
 	jr z, .loop2
-	add $54 ; tile to the left of small exp bar tile
+	; partly full tile: $54 + pixels
+	add $54
 	jr .skip
 
 .loop2
-	ld a, $62 ; empty bar
+	; empty tile
+	ld a, $62
 
 .skip
 	ld [hld], a
-	ld a, $62 ; empty bar
+	ld a, $62
 	dec c
 	jr nz, .loop2
 	ret

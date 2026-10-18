@@ -1331,7 +1331,7 @@ ChooseWildEncounter_BugContestOrSafariZone::
 	
 	push hl
 
-; hl = -[hl]
+; hl = -(map group, map number at hl)
 		cpl
 		inc hl
 		ld l, [hl]
@@ -1339,6 +1339,8 @@ ChooseWildEncounter_BugContestOrSafariZone::
 		ld a, l
 		cpl
 		ld l, a
+		; inc doesn't set carry, so this never carries into h. That only
+		; matters for map number 0, which doesn't exist.
 		or a ; reset carry
 		inc l
 		jr nc, .no_carry
@@ -1354,7 +1356,8 @@ ChooseWildEncounter_BugContestOrSafariZone::
 
 		ld a, h
 		or l
-	pop hl ; hl = start of data
+	; hl = start of data
+	pop hl
 ; (hl - de) == 0000?
 	jr z, .find_time_of_day ; got map
 	
@@ -1367,7 +1370,8 @@ ChooseWildEncounter_BugContestOrSafariZone::
 	inc hl
 	ld a, [wTimeOfDay]
 	and a ; cp MORN_F
-	jr z, .pick_random_number_loop ; correct time of day
+	; correct time of day
+	jr z, .pick_random_number_loop
 	cp NITE_F
 	jr nz, .is_eve
 ; + (20 entries * 4 bytes)

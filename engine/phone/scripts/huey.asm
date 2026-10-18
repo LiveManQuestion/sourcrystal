@@ -21,7 +21,8 @@ HueyPhoneCallerScript: ; Calls you
 	iftrue HueyBattleReminder
 	farscall PhoneScript_GreetPhone_Male
 	farscall PhoneScript_Random2
-	ifequal 0, HueyWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, HueyWantsBattle
 	farsjump Phone_GenericCall_Male
 
 HueyWantsBattle:

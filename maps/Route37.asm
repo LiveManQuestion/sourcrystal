@@ -19,21 +19,21 @@ Route37FruittreesandSunny:
 	iftrue .NoApricorn
 	appear ROUTE_37_APRICORN
 .NoApricorn:
-	;fallthrough
+	; fallthrough
 
 .APRICORN_2:
 	checkflag ENGINE_DAILY_ROUTE_37_APRICORN_2
 	iftrue .NoAPRICORN_2
 	appear ROUTE_37_APRICORN_2
 .NoAPRICORN_2:
-	;fallthrough
+	; fallthrough
 
 .APRICORN_3:
 	checkflag ENGINE_DAILY_ROUTE_37_APRICORN_3
 	iftrue .NoAPRICORN_3
 	appear ROUTE_37_APRICORN_3
 .NoAPRICORN_3:
-	;fallthrough
+	; fallthrough
 
 .Sunny:
 	readvar VAR_WEEKDAY

@@ -7,7 +7,9 @@ MACRO farcall ; bank, address
 ENDM
 
 MACRO newfarcall ; bank, address
-	; We can't replace previous farcalls because it breaks saves...
+	; Like farcall, but passes a and hl through to the function, and
+	; returns its a, flags and hl (see RstBetterFarCall). It's slower than
+	; farcall. The old farcalls weren't converted to it.
 	rst BetterFarCall
 	dbw BANK(\1), \1
 ENDM

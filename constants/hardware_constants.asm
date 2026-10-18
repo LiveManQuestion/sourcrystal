@@ -83,7 +83,7 @@ DEF rNR34                EQU $ff1e ; Channel 3 Frequency's higher data (R/W)
 DEF rNR41                EQU $ff20 ; Channel 4 Sound Length (R/W)
 DEF rNR42                EQU $ff21 ; Channel 4 Volume Envelope (R/W)
 DEF rNR43                EQU $ff22 ; Channel 4 Polynomial Counter (R/W)
-DEF rNR44                EQU $ff23 ; Channel 4 Counter/consecutive; Inital (R/W)
+DEF rNR44                EQU $ff23 ; Channel 4 Counter/consecutive; Initial (R/W)
 DEF rNR50                EQU $ff24 ; Channel control / ON-OFF / Volume (R/W)
 DEF rNR51                EQU $ff25 ; Selection of Sound output terminal (R/W)
 DEF rNR52                EQU $ff26 ; Sound on/off

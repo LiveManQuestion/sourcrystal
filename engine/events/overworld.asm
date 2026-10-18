@@ -1914,7 +1914,9 @@ AskRockSmashPagerText:
 	text_far _AskRockSmashPagerText
 	text_end
 
-HasRockSmash: ; always return true
+; unreferenced
+HasRockSmash:
+; Always returns 0 in wScriptVar: the player has Rock Smash.
 	xor a
 	ld [wScriptVar], a
 	ret

@@ -1,20 +1,21 @@
-PhoneScript_Random2: ; 33%
+; random N sets wScriptVar to 0 to N-1, so ifequal 0 after it has a 1 in N chance.
+PhoneScript_Random2: ; 50%
 	random 2
 	end
 
-PhoneScript_Random3: ; 25%
+PhoneScript_Random3: ; 33%
 	random 3
 	end
 
-PhoneScript_Random4:  ;20%
+PhoneScript_Random4: ; 25%
 	random 4
 	end
 
-PhoneScript_Random5:  ;16%
+PhoneScript_Random5: ; 20%
 	random 5
 	end
 
-PhoneScript_Random11: ;9%
+PhoneScript_Random11: ; 9%
 	random 11
 	end
 

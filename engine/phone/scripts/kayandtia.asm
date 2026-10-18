@@ -21,7 +21,8 @@ KayAndTiaPhoneCallerScript: ; Calls you
 	iftrue KayAndTiaBattleReminder
 	farscall PhoneScript_GreetPhone_Female
 	farscall PhoneScript_Random2
-	ifequal 0, KayAndTiaWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, KayAndTiaWantsBattle
 	farjump Phone_GenericCall_Female
 
 KayAndTiaWantsBattle:

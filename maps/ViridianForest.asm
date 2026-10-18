@@ -22,7 +22,7 @@ ViridianForest_MapScripts:
 	iftrue .NoBerry
 	appear VIRIDIAN_FOREST_BERRY
 .NoBerry:
-	;fallthrough
+	; fallthrough
 
 .Apricorn:
 	checkflag ENGINE_DAILY_VIRIDIAN_FOREST_APRICORN

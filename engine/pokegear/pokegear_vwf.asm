@@ -1,7 +1,8 @@
-; dupe off engine/gfx/vwf.asm
+; A copy of PlaceNextVWFChar (engine/gfx/vwf.asm) that uses the Pokegear's
+; variable-width font (gfx/pokegear_vwf.asm).
 
 PokegearPlaceNextVWFChar:
-; Place character a (just read from [de]) at hl with offset in c.
+; Place the character at [de] at hl with offset in c.
 ; Advances de to the next character.
 ; Returns z if the character is the string terminator.
 .loop
@@ -23,7 +24,8 @@ PokegearPlaceNextVWFChar:
 	ld d, 0
 	ld hl, PokegearVWFWidths
 	add hl, de
-	ld b, [hl] ; b = width in pixels
+	; b = width in pixels
+	ld b, [hl]
 	; get VWFCharacterGFX + a * LEN_1BPP_TILE
 	ld h, d
 	ld l, e
@@ -32,7 +34,8 @@ PokegearPlaceNextVWFChar:
 	add hl, hl ; * 8
 	ld de, PokegearVWFCharacterGFX
 	add hl, de
-	ld d, h ; de = 1bpp tile gfx
+	; de = 1bpp tile gfx
+	ld d, h
 	ld e, l
 	pop hl
 

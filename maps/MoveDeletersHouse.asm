@@ -65,7 +65,7 @@ MoveReminder:
 
 .BigMushroomChoice:
 	callasm LoadBigMushroom
-;fallthrough
+; fallthrough
 
 .relearn_move:
 	special MoveReminder

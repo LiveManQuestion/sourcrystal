@@ -525,7 +525,8 @@ PokeBallEffect:
 
 	ld hl, wStatusFlags2
 	bit STATUSFLAGS2_SAFARI_GAME_F, [hl]
-	jr nz, .safari_zone ;check if we are in a safari game and if so, don't grant exp on capture.
+	; check if we are in a safari game and if so, don't grant exp on capture.
+	jr nz, .safari_zone
 
 	ld a, [wTempSpecies]
 	ld l, a

@@ -32,7 +32,7 @@ Route43Fruittrees:
 	iftrue .NoBerry
 	appear ROUTE_43_BERRY
 .NoBerry:
-	;fallthrough
+	; fallthrough
 
 .Apricorn:
 	checkflag ENGINE_DAILY_ROUTE_43_APRICORN

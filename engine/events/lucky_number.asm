@@ -10,7 +10,8 @@ CheckForLuckyNumberWinners:
 	call PrintNum
 
 	ld b, NUM_BOXES
-	push bc ; will be where box+position number is stored
+	; will be where box+position number is stored
+	push bc
 .outer_loop
 	inc b
 	dec b
@@ -53,7 +54,8 @@ CheckForLuckyNumberWinners:
 
 	; if matching digits were found...
 	ld [wScriptVar], a
-	ld hl, sp+0 ; store box + position on the stack for mon with matching digits
+	; store box + position on the stack for mon with matching digits
+	ld hl, sp+0
 	ld [hl], c
 	inc hl
 	ld [hl], b
@@ -63,10 +65,12 @@ CheckForLuckyNumberWinners:
 	dec c
 	jr nz, .loop
 	dec b
-	bit 7, b ; check for reaching -1
+	; check for reaching -1
+	bit 7, b
 	jr z, .outer_loop
 .done
-	pop bc ; restores box + position, if applicable
+	; restores box + position, if applicable
+	pop bc
 	call WaitSFX
 	ld a, [wScriptVar]
 	and a
@@ -82,7 +86,8 @@ CheckForLuckyNumberWinners:
 	dec b
 	ld hl, .MatchInParty
 	jr z, .got_text
-	farcall GetBoxName ; loads box name into wStringBuffer1
+	; loads box name into wStringBuffer1
+	farcall GetBoxName
 	ld hl, .MatchInStorage
 .got_text
 	jp PrintText

@@ -253,7 +253,7 @@ PokeDollVendingMachine:
 	checkevent EVENT_DECO_SURFING_PIKACHU_DOLL
 	iftrue .alreadyOwned
 	setevent EVENT_DECO_SURFING_PIKACHU_DOLL
-;fallthrough
+; fallthrough
 .givedoll:
 	opentext
 	writetext PokeDollVendingMachineHeyItsText

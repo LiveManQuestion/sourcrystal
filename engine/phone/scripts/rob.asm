@@ -13,7 +13,8 @@ RobPhoneCalleeScript: ; You call
 .NotFriday:
 	checkflag ENGINE_ROB_GAVE_BERRY
 	iftrue .Generic
-	farscall PhoneScript_Random2 ; 33% chance when you call them
+	; 50% chance when you call them
+	farscall PhoneScript_Random2
 	ifequal 0, RobHasBerry
 	setflag ENGINE_ROB_GAVE_BERRY
 
@@ -31,7 +32,8 @@ RobPhoneCallerScript: ; Calls you
 	checkflag ENGINE_ROB_READY_FOR_REMATCH
 	iftrue RobRematchAndBerryReminder
 	farscall PhoneScript_GreetPhone_Male
-	farscall PhoneScript_Random2 ; 33% chance when you call them
+	; 50% chance when they call you
+	farscall PhoneScript_Random2
 	ifequal 0, RobHasBerry
 	setflag ENGINE_ROB_GAVE_BERRY
 	farscall PhoneScript_Random2

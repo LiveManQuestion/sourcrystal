@@ -21,7 +21,7 @@ Route11Fruittrees:
 	iftrue .NoBerry
 	appear ROUTE_11_BERRY
 .NoBerry:
-	;fallthrough
+	; fallthrough
 
 .Apricorn:
 	checkflag ENGINE_DAILY_ROUTE_11_APRICORN

@@ -102,10 +102,9 @@ CheckCanLearnMoveTutorMove:
 	db MENU_BACKUP_TILES ; flags
 	menu_coords 0, 12, SCREEN_WIDTH - 1, SCREEN_HEIGHT - 1
 
-; duplicate; the difference is that instead of taking a predetermined
-; set of moves, it can take *any move* provided you store it in
-; wNamedObjectIndex and is listed in the tutor move list under
-; constants/item_constants.asm
+; Like MoveTutor, but teaches the move in wNamedObjectIndex instead of one
+; of the tutor's fixed moves. The move must be one of the tutor moves
+; (add_mt in constants/item_constants.asm).
 MoveTutor2:
 	call FadeToMenu
 	call ClearBGPalettes

@@ -303,7 +303,6 @@ FadePalettesStep:
 	jr c, .dist_is_big
 
 	; Approximates linear fading
-	; TODO: actual linear fading
 	push bc
 	call SimpleDivide
 	and a

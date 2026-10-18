@@ -23,7 +23,8 @@ AlfredPhoneCallerScript: ; Calls you
 	iftrue AlfredBattleReminder
 	farscall PhoneScript_GreetPhone_Male
 	farscall PhoneScript_Random2
-	ifequal 0, AlfredWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, AlfredWantsBattle
 	farjump Phone_GenericCall_Male
 
 AlfredWantsBattle:

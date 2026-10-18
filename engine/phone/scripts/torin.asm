@@ -21,7 +21,8 @@ TorinPhoneCallerScript: ; Calls you
 	iftrue TorinBattleReminder
 	farscall PhoneScript_GreetPhone_Male
 	farscall PhoneScript_Random2
-	ifequal 0, TorinWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, TorinWantsBattle
 	farjump Phone_GenericCall_Male
 
 TorinWantsBattle:

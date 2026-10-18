@@ -117,7 +117,8 @@ BillsPC_LoadUI:
 
 	; Blank held cursor icon + item icons.
 	ld hl, vTiles3 tile $08
-	ld a, 7 ; cursor+quick icon/item + hover item icon
+	; cursor+quick icon/item + hover item icon
+	ld a, 7
 	call BillsPC_BlankTiles
 
 	call BillsPC_BlankCursorItem
@@ -138,7 +139,8 @@ BillsPC_LoadUI:
 	ldh [rVBK], a
 
 	; Cursor sprite OAM
-	lb de, -18, 0 ; fixed up by the animseq code
+	; fixed up by the animseq code
+	lb de, -18, 0
 	ld a, SPRITE_ANIM_OBJ_PC_CURSOR
 	call InitSpriteAnimStruct
 	ld a, PCANIM_ANIMATE
@@ -156,7 +158,8 @@ BillsPC_LoadUI:
 	; Pack icon.
 	; TODO: Instead of a hack where we prevent the pack from claiming a slot,
 	; maybe implement a sprite anim priority system?
-	ld hl, wSpriteAnim4 ; reserve this for quickanim
+	; reserve this for quickanim
+	ld hl, wSpriteAnim4
 	inc [hl]
 	push hl
 	lb de, $58, $30
@@ -243,7 +246,7 @@ UseBillsPC:
 	ld de, .BoxTiles
 	call .Box
 
-	; Seperator between box name and content
+	; Separator between box name and content
 	hlcoord 7, 6
 	lb bc, $3e, 11
 	call .SpecialRow
@@ -533,7 +536,8 @@ BillsPC_Get2bpp:
 	ld a, e
 	or l
 	and $f
-	jr nz, .get2bpp ; de and/or hl isn't a multiple of 16.
+	; de and/or hl isn't a multiple of 16.
+	jr nz, .get2bpp
 
 	; Must be a copy from non-VRAM to VRAM.
 	ld a, d
@@ -1288,7 +1292,8 @@ ManageBoxes:
 	ld a, [wBillsPC_CursorHeldSlot]
 	and a
 	jr z, .nothing_held_a
-	call BillsPC_PlaceHeldMon ; might not do anything
+	; might not do anything
+	call BillsPC_PlaceHeldMon
 	jr .loop
 
 .nothing_held_a
@@ -1301,7 +1306,8 @@ ManageBoxes:
 	cp PC_ITEM_MODE
 	jr nz, .confirm_ok
 	ld a, [wBillsPC_CursorPos]
-	cp $10 ; If below this, we're on boxname.
+	; If below this, we're on boxname.
+	cp $10
 	jr c, .confirm_ok
 	cp $21 ; Bag location.
 	jr z, .confirm_ok
@@ -1405,7 +1411,8 @@ ManageBoxes:
 
 .regular_right
 	; Move right, wrapping around
-	inc a ; 6 columns, CursorPosValid fixes up final column 6+
+	; 6 columns, CursorPosValid fixes up final column 6+
+	inc a
 	and ~$8
 	jr .new_cursor_pos
 
@@ -1440,7 +1447,8 @@ ManageBoxes:
 
 .regular_left
 	; Move left, wrapping around
-	or $8 ; 6 columns, CursorPosValid fixes up final column 6+
+	; 6 columns, CursorPosValid fixes up final column 6+
+	or $8
 	dec a
 	and ~$8
 	jr .new_cursor_pos
@@ -1623,7 +1631,8 @@ BillsPC_CursorPick2:
 	ld a, [hl]
 	cp PCANIM_PICKUP
 	jr nc, .pick_loop2
-	ret ; [hl] is now PCANIM_ANIMATE.
+	; [hl] is now PCANIM_ANIMATE.
+	ret
 
 BillsPC_SetIcon:
 ; Writes icon tiles to hl depending on species data in de. Assumes vbk1.
@@ -1658,7 +1667,7 @@ BillsPC_MoveIconData:
 	ld a, 1
 	ldh [rVBK], a
 
-	; Handle held items seperately from this point.
+	; Handle held items separately from this point.
 	call BillsPC_IsHoldingItem
 	jr z, .not_holding_item
 
@@ -1671,9 +1680,11 @@ BillsPC_MoveIconData:
 	jr nz, .quick_ok
 	ld a, b
 	inc a
-	ld de, vTiles3 tile $20 ; Item for mon cursor is hovering
+	; Item for mon cursor is hovering
+	ld de, vTiles3 tile $20
 	jr nz, .got_item_tile
-	ld de, vTiles3 tile $08 ; Item cursor is holding.
+	; Item cursor is holding.
+	ld de, vTiles3 tile $08
 .got_item_tile
 	ld hl, vTiles3 tile $14 ; Quick tile.
 	push bc
@@ -2117,7 +2128,8 @@ BillsPC_MaybeMoveCursor:
 	ret
 
 .move_cursor
-	ld a, $31 ; Move to right below it.
+	; Move to right below it.
+	ld a, $31
 	ld [wBillsPC_CursorPos], a
 	xor a
 	ret
@@ -2322,7 +2334,8 @@ BillsPC_MoveItem:
 	; fallthrough
 .got_cursor_item
 	ld a, b
-	or $80 ; Mark that we're holding an item rather than a mon.
+	; Mark that we're holding an item rather than a mon.
+	or $80
 	ld [wBillsPC_CursorHeldBox], a
 	ld a, c
 	ld [wBillsPC_CursorHeldSlot], a
@@ -2476,7 +2489,8 @@ BillsPC_Menu:
 	call LoadMenuHeader
 	xor a
 	ld [wWhichIndexSet], a
-	ldh [hBGMapMode], a ; restored to 1 upon CloseWindow
+	; restored to 1 upon CloseWindow
+	ldh [hBGMapMode], a
 	call DoNthMenu
 	pop bc
 	push af
@@ -2669,7 +2683,8 @@ BillsPC_ReleaseAll:
 	; * Nothing was released. You can't release Eggs or PKMN knowing HMs.
 	; * There's nothing there!
 	; * X PKMN released.
-	lb de, 0, 0 ; Successful and failed releases.
+	; Successful and failed releases.
+	lb de, 0, 0
 	call BillsPC_GetCursorSlot
 .loop
 	ld a, c
@@ -2873,7 +2888,8 @@ BillsPC_Theme:
 
 	ld a, [wMenuJoypad]
 	cp B_BUTTON
-	jr z, .refresh_theme ; revert back to what it used to be
+	; revert back to what it used to be
+	jr z, .refresh_theme
 
 	ld a, [wScrollingMenuCursorPosition]
 	call SetBoxTheme
@@ -2949,7 +2965,7 @@ BillsPC_SwapStorage:
 	push de
 	push bc
 
-	; Items are handled seperately.
+	; Items are handled separately.
 	call BillsPC_IsHoldingItem
 	jp z, .holding_mon
 

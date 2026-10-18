@@ -1,3 +1,8 @@
+; Generate the DVs of a wild Pokemon during a swarm (DAILYFLAGS1_SWARM_F). The
+; swarming species is more often shiny: two rolls of 2 in 256 each (about
+; 1.6%), one for shiny DVs with Attack 15 and one with Attack 3 (female for
+; most species), and two more with a SHINY CHARM. Other species get random
+; DVs.
 GenerateSwarmShiny:
 	ld a, [wSwarmMapGroup]
 	ld b, a
@@ -277,17 +282,19 @@ GenerateSwarmShiny:
 	cp SEEL
 .next
 	jr nz, .skipshine
-	;fallthrough
+	; fallthrough
 .rollshiny
 	call Random
-	cp 2 ; adjust to desired percentage
+	; 2 in 256 chance
+	cp 2
 	jr nc, .trynext
 	ld b, ATKDEFDV_SHINY
 	ld c, SPDSPCDV_SHINY
 	jr .UpdateDVs
 .trynext
 	call Random
-	cp 2 ; adjust to desired percentage
+	; 2 in 256 chance
+	cp 2
 	jr nc, .trynext2
 	ld b, ATKDEFDV_SHINYF
 	ld c, SPDSPCDV_SHINY
@@ -296,14 +303,16 @@ GenerateSwarmShiny:
 	call CheckShinyCharm
 	jr nc, .skipshine
 	call Random
-	cp 2 ; adjust to desired percentage
+	; 2 in 256 chance
+	cp 2
 	jr nc, .trynext3
 	ld b, ATKDEFDV_SHINY
 	ld c, SPDSPCDV_SHINY
 	jr .UpdateDVs
 .trynext3
 	call Random
-	cp 2 ; adjust to desired percentage
+	; 2 in 256 chance
+	cp 2
 	jr nc, .skipshine
 	ld b, ATKDEFDV_SHINYF
 	ld c, SPDSPCDV_SHINY

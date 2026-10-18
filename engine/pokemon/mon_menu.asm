@@ -1237,7 +1237,7 @@ PlaceMoveData:
 	ld a, 100
 	ldh [hMultiplier], a
 	call Multiply
-; x / 255 (?)
+; x / 254, rounded down (255 shows as 100)
 	ld b, 4
 	ld a, 254
 	ldh [hDivisor], a
@@ -1257,11 +1257,10 @@ PlaceMoveData:
 .power
 	ld a, [wCurSpecies]
 
-	; Specifically these shouldn't have POWER displays
-	; The other method would be to change the move data
-	; themselves but I don't feel like checking for side
-	; effects for that one
-	;   see also move_reminder.asm
+	; Sonic Boom and Dragon Rage do fixed damage, so they show no power
+	; (their move data has power 20 and 40, which the battle engine
+	; needs). Moves with power 0 or 1 show none either. See also
+	; move_reminder.asm.
 	cp SONICBOOM
 	jr z, .no_power
 	cp DRAGON_RAGE

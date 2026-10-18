@@ -304,15 +304,17 @@ wc3fa:: ds 1
 wc3fb:: ds 1
 wc3fc:: ds 1
 NEXTU
-; needed since I don't want to have multiple copies
-; of the same thing :skull:
+; the Ruins of Alph move tutor's menu list, built here so the move list
+; isn't stored twice in ROM (maps/RuinsOfAlphResearchCenter.asm)
 wRuinsMoveTutorScratch:: ds \
 	(25 * 2) + \ ; total items
 	1 + \ ; cancel button
 	1 ; number of items
 NEXTU
 wSlotsWhichSpecialAnim:: ds 1
-; i don't feel like getting the actual length :(
+; The slot machine copies its interrupt code here (.LCDCallbackPoint to
+; .LCDCallbackPoint_End in engine/games/slot_machine.asm). That's 31 bytes,
+; more than reserved here, but this UNION has room up to wMobileWRAMEnd.
 SlotMachine_LCDCallback:: ds 16
 SlotMachine_VBlankCallback:: ds 1
 ENDU
@@ -983,9 +985,9 @@ SECTION UNION "Overworld Map", WRAM0
 
 ; bill's pc data
 
-; If you change ordering of this, remember to fix LCD hblank code too.
-; Note that (as of when comment was written), hblank can't always keep up
-; if doing 4 pals in one go during party shifting.
+; If you change the order of these, fix the LCD interrupt code too
+; (LCDBillsPC1 in home/lcd.asm). The hblank code can't always keep up when
+; writing 4 palettes at once while the party shifts.
 wBillsPC_CurPals::
 wBillsPC_CurPartyPals:: ds 2 * 2 * 2 ; 2 bytes per color, 2 colors, 2 mons
 wBillsPC_CurMonPals:: ds 2 * 2 * 4 ; 2 bytes per color, 2 colors, 4 mons
@@ -1018,9 +1020,9 @@ wBillsPC_QuickIcon:: dw
 ; Cursor data
 wBillsPC_CursorItem:: db ; what item is selected.
 wBillsPC_CursorPos:: db ; 0-3 * 4*row, row 0 is title. Bit 7 means in party.
-wBillsPC_CursorHeldBox:: db ; 0 for party, 1-16 otherwise
+wBillsPC_CursorHeldBox:: db ; 0 for party, 1-14 otherwise
 wBillsPC_CursorHeldSlot:: db ; 0 for nothing held, or 1-20 (1-6 if party)
-wBillsPC_CursorDestBox:: db ; 0 for party, 1-16 otherwise
+wBillsPC_CursorDestBox:: db ; 0 for party, 1-14 otherwise
 wBillsPC_CursorDestSlot:: db ; 0 for release, or 1-20 (1-6 if party)
 wBillsPC_CursorMode:: db ; 0 for regular mode (red), 1 for swap mode (blue), 2 for item mode (green)
 wBillsPC_CursorAnimFlag:: db ; manage cursor behaviour
@@ -2715,8 +2717,7 @@ wHiddenItemXDelta:: db
 
 ; (engine/events/itemfinder.asm)
 ; stored here so we don't have to calculate the direction
-; everytime a sprite is instantiated
-
+; every time a sprite is instantiated
 wHiddenItemDirection:: db
 ; (engine/events/itemfinder.asm)
 ; sprite offset used
@@ -3473,7 +3474,7 @@ wParkBallsRemaining::
 wSafariBallsRemaining:: db
 wSafariTimeRemaining:: dw
 
-wPhoneList:: ds 11 ; CONTACT_LIST_SIZE + 1
+wPhoneList:: ds 11 ; flag_array NUM_PHONE_CONTACTS, in vanilla's 11 bytes
 
 wWeatherRandomDay:: db
 ; map group, map number

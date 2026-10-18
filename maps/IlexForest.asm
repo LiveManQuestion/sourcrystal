@@ -34,7 +34,7 @@ IlexForestMushroomsAndFarfetchdCallback:
 .TinyMushroom1
 	variablesprite SPRITE_MUSHROOM_1, SPRITE_TINYMUSHROOM
 .finishMushroom1
-	;fallthrough
+	; fallthrough
 	checkflag ENGINE_DAILY_ILEX_FOREST_MUSHROOM_2
 	iftrue IlexForestMushroom2Picked
 	clearevent EVENT_ILEX_FOREST_MUSHROOM_2
@@ -48,7 +48,7 @@ IlexForestMushroomsAndFarfetchdCallback:
 .TinyMushroom2
 	variablesprite SPRITE_MUSHROOM_2, SPRITE_TINYMUSHROOM
 .finishMushroom2
-	;fallthrough
+	; fallthrough
 	checkflag ENGINE_DAILY_ILEX_FOREST_MUSHROOM_3
 	iftrue IlexForestMushroom3Picked
 	clearevent EVENT_ILEX_FOREST_MUSHROOM_3
@@ -62,7 +62,7 @@ IlexForestMushroomsAndFarfetchdCallback:
 .TinyMushroom3
 	variablesprite SPRITE_MUSHROOM_3, SPRITE_TINYMUSHROOM
 .finishMushroom3
-	;fallthrough
+	; fallthrough
 	checkevent EVENT_GOT_HM01_CUT
 	iftrue .Static
 	readmem wFarfetchdPosition
@@ -485,8 +485,9 @@ IlexForestAntidote:
 IlexForestEther:
 	itemball ETHER
 
-IlexForestMushroom1: ;Daily
-; This whole script is written out rather than as an itemball
+IlexForestMushroom1: ; Daily
+; Written out instead of an itemball, since the item depends on whether a
+; Big Mushroom spawned.
 	scall IlexForestParasBattle
 	checkevent EVENT_ILEX_FOREST_BIG_MUSHROOM_1_SPAWN
 	iffalse .skipBigMushroom1
@@ -511,8 +512,9 @@ IlexForestMushroom1: ;Daily
 	closetext
 	end
 
-IlexForestMushroom2: ;Daily
-; This whole script is written out rather than as an itemball
+IlexForestMushroom2: ; Daily
+; Written out instead of an itemball, since the item depends on whether a
+; Big Mushroom spawned.
 	scall IlexForestParasBattle
 	checkevent EVENT_ILEX_FOREST_BIG_MUSHROOM_2_SPAWN
 	iffalse .skipBigMushroom2
@@ -537,8 +539,9 @@ IlexForestMushroom2: ;Daily
 	closetext
 	end
 
-IlexForestMushroom3: ;Daily
-; This whole script is written out rather than as an itemball
+IlexForestMushroom3: ; Daily
+; Written out instead of an itemball, since the item depends on whether a
+; Big Mushroom spawned.
 	scall IlexForestParasBattle
 	checkevent EVENT_ILEX_FOREST_BIG_MUSHROOM_3_SPAWN
 	iffalse .skipBigMushroom3

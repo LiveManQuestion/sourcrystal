@@ -1,3 +1,4 @@
+; Check whether an Unown letter has been caught (is in wUnownDex).
 ; IN
 ;   b  = queried index with "A" starting at 00
 ; OUT
@@ -5,14 +6,16 @@
 ;   c  = (replaced)
 ;   hl = (replaced)
 ;   f  = CARRY, if unown is found
-	and a ; reset carry
+	; reset carry
+	and a
 	ld c, NUM_UNOWN
 	ld hl, wUnownDex
 .loop
 	ld a, [hli]
 	and a
 	ret z
-	dec a ; UnownDex has "A" starting at 01
+	; UnownDex has "A" starting at 01
+	dec a
 	cp b
 	jr z, .found
 	dec c

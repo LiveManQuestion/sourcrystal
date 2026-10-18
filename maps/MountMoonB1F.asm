@@ -23,8 +23,9 @@ MountMoonB1FCheckMushroom:
 .finishMushroom
 	endcallback
 
-MountMoonB1FMushroom: ;Daily
-; This whole script is written out rather than as an itemball
+MountMoonB1FMushroom: ; Daily
+; Written out instead of an itemball, since the item depends on whether a
+; Big Mushroom spawned.
 	scall MountMoonB1FParasBattle
 	checkevent EVENT_MOUNT_MOON_B1F_BIG_MUSHROOM_SPAWN
 	iffalse .skipBigMushroom

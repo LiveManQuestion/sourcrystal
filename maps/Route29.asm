@@ -29,14 +29,14 @@ Route29FruittreesandTuscany:
 	iftrue .NoBerry
 	appear ROUTE_29_BERRY
 .NoBerry:
-	;fallthrough
+	; fallthrough
 
 .Apricorn:
 	checkflag ENGINE_DAILY_ROUTE_29_APRICORN
 	iftrue .NoApricorn
 	appear ROUTE_29_APRICORN
 .NoApricorn:
-	;fallthrough
+	; fallthrough
 
 .Tuscany:
 	checkflag ENGINE_ZEPHYRBADGE

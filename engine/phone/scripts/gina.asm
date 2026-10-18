@@ -17,7 +17,8 @@ GinaPhoneCalleeScript: ; You call
 	iftrue GinaRockets
 	checkflag ENGINE_GINA_GAVE_LEAF_STONE
 	iftrue .skipLeafStone
-	farscall PhoneScript_Random11 ; 9% chance when you call them
+	; 9% chance when you call them
+	farscall PhoneScript_Random11
 	ifequal 0, GinaHasLeafStone
 	setflag ENGINE_GINA_GAVE_LEAF_STONE
 .skipLeafStone:
@@ -40,11 +41,13 @@ GinaPhoneCallerScript: ; Calls you
 	farscall PhoneScript_GreetPhone_Female
 	checkflag ENGINE_ROCKETS_IN_RADIO_TOWER
 	iftrue GinaRockets
-	farscall PhoneScript_Random3 ; 25% chance when they call you
+	; 33% chance when they call you
+	farscall PhoneScript_Random3
 	ifequal 0, GinaHasLeafStone
 	setflag ENGINE_GINA_GAVE_LEAF_STONE
 	farscall PhoneScript_Random2
-	ifequal 0, GinaWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, GinaWantsBattle
 	farsjump Phone_GenericCall_Female
 
 GinaWantsBattle:

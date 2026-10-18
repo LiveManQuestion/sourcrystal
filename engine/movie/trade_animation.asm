@@ -374,8 +374,9 @@ TradeAnim_InitTubeAnim:
 	callfar ClearSpriteAnims
 
 	call EnableLCD
-	call LoadTradeBubbleGFX ; needs DelayFrame...
-	; and overwrites some of the BG palette
+	; LoadTradeBubbleGFX needs DelayFrame (so the LCD must be on), and overwrites
+	; some of the BG palettes
+	call LoadTradeBubbleGFX
 
 	ld hl, .BGPalettes
 	ld de, wBGPals2 palette 0
@@ -481,11 +482,11 @@ TradeAnim_InitTubeAnim:
 	RGB $0B, $10, $1E
 ; BGP2 cable (white bg)
 	RGB 31, 31, 31
-	RGB 31, 31, 00 ; v [THESE COLORS SHOULD ALTERNATE]
-	RGB 31, 15, 00 ; ^ [THESE COLORS SHOULD ALTERNATE]
+	RGB 31, 31, 00 ; swapped with the next color
+	RGB 31, 15, 00 ; when flashing (TradeAnim_FlashBGPals)
 	RGB 00, 00, 00
 ; BGP3 game boy
-	RGB 31, 15, 00 ; [THIS COLOR SHOULD FLASH]
+	RGB 31, 15, 00 ; flashes (TradeAnim_FlashBGPals)
 	RGB 17, 00, 31
 	RGB 04, 00, 10
 	RGB 00, 00, 00
@@ -501,13 +502,13 @@ TradeAnim_InitTubeAnim:
 	RGB 00, 00, 00
 ; BGP6 cable (dark bg)
 	RGB $14, $1A, $1F
-	RGB 31, 31, 00 ; v [THESE COLORS SHOULD ALTERNATE]
-	RGB 31, 15, 00 ; ^ [THESE COLORS SHOULD ALTERNATE]
+	RGB 31, 31, 00 ; swapped with the next color
+	RGB 31, 15, 00 ; when flashing (TradeAnim_FlashBGPals)
 	RGB 00, 00, 00
 ; BGP7 arrow
 	RGB 31, 31, 31
 	RGB 31, 31, 31
-	RGB 31, 15, 00 ; [THIS COLOR SHOULD FLASH]
+	RGB 31, 15, 00 ; flashes (TradeAnim_FlashBGPals)
 	RGB 00, 00, 00
 
 .BubblePalette:
@@ -546,7 +547,7 @@ INCBIN "gfx/trade/background.tilemap"
 .TradeBGAttrmap:
 INCBIN "gfx/trade/background.attrmap"
 
-; Wait 40 frames
+; Wait wFrameCounter frames (34, set by TradeAnim_InitTubeAnim)
 TradeAnim_TubeToOT2:
 	call TradeAnim_FlashBGPals
 	ld hl, wFrameCounter
@@ -826,7 +827,7 @@ TradeAnim_ShowGivemonData:
 	ld [wTempMonDVs], a
 	ld a, [wPlayerTrademonDVs + 1]
 	ld [wTempMonDVs + 1], a
-; works well enough
+; load the Pokemon's palette (shiny or not, from wTempMonDVs)
 	ld b, SCGB_PLAYER_OR_MON_FRONTPIC_PALS
 	call GetSGBLayout
 	ld a, %11100100 ; 3,2,1,0
@@ -852,7 +853,7 @@ TradeAnim_ShowGetmonData:
 	ld [wTempMonDVs], a
 	ld a, [wOTTrademonDVs + 1]
 	ld [wTempMonDVs + 1], a
-; and here
+; load the Pokemon's palette (shiny or not, from wTempMonDVs)
 	ld b, SCGB_PLAYER_OR_MON_FRONTPIC_PALS
 	call GetSGBLayout
 	ld a, %11100100 ; 3,2,1,0
@@ -1421,7 +1422,6 @@ TradeAnim_FlashBGPals:
 	push af
 		ld a, BANK(wBGPals2)
 		ldh [rSVBK], a
-	; hmm...
 		; tubes (1)
 		ld hl, wBGPals2 palette 2 color 1
 		ld bc, palred (31) + palgreen (15) + palblue (00)

@@ -11,7 +11,8 @@ ParryPhoneCalleeScript: ; You call
 	iftrue ParryWantsBattle
 
 .NotFriday:
-	farsjump ParryBattleWithMeScript ; not a rematch request
+	; not a rematch request
+	farsjump ParryBattleWithMeScript
 
 ParryBattleReminder:
 	getlandmarkname STRING_BUFFER_5, LANDMARK_ROUTE_45
@@ -23,7 +24,8 @@ ParryPhoneCallerScript: ; Calls you
 	iftrue ParryBattleReminder
 	farscall PhoneScript_GreetPhone_Male
 	farscall PhoneScript_Random2
-	ifequal 0, ParryWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, ParryWantsBattle
 	farsjump Phone_GenericCall_Male
 
 ParryWantsBattle:

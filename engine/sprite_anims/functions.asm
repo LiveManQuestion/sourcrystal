@@ -1127,7 +1127,8 @@ SpriteAnimFunc_PcPack:
 
 	; Hide pack outside Item mode
 	newfarcall BillsPC_CheckBagDisplay
-	ld a, $80 ; move it out of view
+	; move it out of view
+	ld a, $80
 	jr nz, .got_pack_y
 	xor a
 .got_pack_y

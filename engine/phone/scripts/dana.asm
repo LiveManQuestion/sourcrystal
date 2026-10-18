@@ -13,7 +13,8 @@ DanaPhoneCalleeScript: ; You call
 .NotThursday:
 	checkflag ENGINE_DANA_GAVE_THUNDERSTONE
 	iftrue .skipThunderStone
-	farscall PhoneScript_Random11 ; 9% chance when you call them
+	; 9% chance when you call them
+	farscall PhoneScript_Random11
 	ifequal 0, DanaHasThunderstone
 	setflag ENGINE_DANA_GAVE_THUNDERSTONE
 .skipThunderStone:
@@ -34,11 +35,13 @@ DanaPhoneCallerScript: ; Calls you
 	checkflag ENGINE_DANA_READY_FOR_REMATCH
 	iftrue DanaBattleReminder
 	farscall PhoneScript_GreetPhone_Female
-	farscall PhoneScript_Random3 ; 25% chance when they call you
+	; 33% chance when they call you
+	farscall PhoneScript_Random3
 	ifequal 0, DanaHasThunderstone
 	setflag ENGINE_DANA_GAVE_THUNDERSTONE
 	farscall PhoneScript_Random2
-	ifequal 0, DanaWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, DanaWantsBattle
 	farscall PhoneScript_Random3
 	ifequal 0, DanaFoundRare
 	farsjump Phone_GenericCall_Female

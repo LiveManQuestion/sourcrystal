@@ -1737,7 +1737,7 @@ BattleAnim_Softboiled:
 	anim_wait 16
 	anim_bgeffect BATTLE_BG_EFFECT_FADE_MON_TO_LIGHT_REPEATING, $0, BG_EFFECT_USER, $40
 	anim_sound 0, 0, SFX_METRONOME
-;fallthrough
+; fallthrough
 BattleAnimSub_SoftboiledHeal:
 .loop
 	anim_obj BATTLE_ANIM_OBJ_RECOVER, 44, 88, $20
@@ -4116,7 +4116,7 @@ BattleAnim_Magnitude:
 	anim_if_param_equal 5, .Magnitude4_5
 	anim_if_param_equal 9, BattleAnim_Earthquake
 	anim_if_param_equal 10, BattleAnim_Earthquake
-;fallthrough
+; fallthrough
 ;.Magnitude6_7_8
 	anim_bgeffect BATTLE_BG_EFFECT_SHAKE_SCREEN_X, $60, $3, $0
 	anim_sound 0, 1, SFX_EMBER

@@ -31,7 +31,8 @@ _SafeCopyTilemapAtOnce::
 	ldh [hCGBPalUpdate], a
 	ldh a, [rLY]
 	cp $70
-	call nc, DelayFrame ; not enough time to update music, so wait a frame
+	; not enough time to update music, so wait a frame
+	call nc, DelayFrame
 	ld a, e
 	ldh [hCGBPalUpdate], a
 .waitLYAndUpdateMusic
@@ -55,7 +56,8 @@ _SafeCopyTilemapAtOnce::
 	and %1000
 	swap a
 	or 5
-	ldh [hBGMapMode], a ; bit 7 = skip attr map
+	; bit 7 = skip attr map
+	ldh [hBGMapMode], a
 	ld a, 1 << 7 | 7 ; execute actual VBlank7
 	ldh [hVBlank], a
 	call UpdateSound
@@ -84,7 +86,8 @@ _CopyTilemapAtOnce::
 	hlcoord 0, 0
 	xor a ; VRAM0
 	call CopyFullTilemapInHBlank
-	ei ; in case we've passed vblank
+	; in case we've passed vblank
+	ei
 	pop af
 	ldh [hMapAnims], a
 	pop af
@@ -128,17 +131,19 @@ _UpdateBGMap::
 	xor a
 	ld h, a
 	ld d, a
-	ldh a, [hBGMapHalf] ; multiply by 20 to get the tilemap offset
+	; multiply by 20 to get the tilemap offset: hl = ((hl * 4 + hl) * 2) * 2
+	ldh a, [hBGMapHalf]
 	ld l, a
 	ld e, a
-	add hl, hl ; hl = hl * 2
-	add hl, hl ; hl = hl * 4
-	add hl, de ; hl = (hl*4) + de
-	add hl, hl ; hl = (5*hl)*2
-	add hl, hl ; hl = (5*hl)*4
+	add hl, hl
+	add hl, hl
+	add hl, de
+	add hl, hl
+	add hl, hl
 	add hl, bc
 	ld sp, hl
-	ldh a, [hBGMapHalf] ; multiply by 32 to get the bg map offset
+	; multiply by 32 to get the bg map offset
+	ldh a, [hBGMapHalf]
 	; assumes [hBGMapHalf] < 16
 	swap a
 	add a
@@ -317,11 +322,13 @@ CopyTilemapInHBlank:
 	jr nc, .inVBlank1
 .waitnohbl1
 	ldh a, [rSTAT]
-	and rSTAT_MODE_2 ; wait until mode 2-3
+	; wait until mode 2-3
+	and rSTAT_MODE_2
 	jr z, .waitnohbl1
 .waithbl1
 	ldh a, [rSTAT]
-	and rSTAT_MODE_2 ; wait until mode 0-1
+	; wait until mode 0-1
+	and rSTAT_MODE_2
 	jr nz, .waithbl1
 ; load BGMap0
 .inVBlank1
@@ -355,11 +362,13 @@ CopyTilemapInHBlank:
 	jr nc, .inVBlank2
 .waitnohbl2
 	ldh a, [rSTAT]
-	and rSTAT_MODE_2 ; wait until mode 2-3
+	; wait until mode 2-3
+	and rSTAT_MODE_2
 	jr z, .waitnohbl2
 .waithbl2
 	ldh a, [rSTAT]
-	and rSTAT_MODE_2 ; wait until mode 0-1
+	; wait until mode 0-1
+	and rSTAT_MODE_2
 	jr nz, .waithbl2
 ; load BGMap0
 .inVBlank2

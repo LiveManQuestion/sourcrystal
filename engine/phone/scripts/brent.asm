@@ -21,7 +21,8 @@ BrentPhoneCallerScript: ; Calls you
 	iftrue BrentBattleReminder
 	farscall PhoneScript_GreetPhone_Male
 	farscall PhoneScript_Random2
-	ifequal 0, BrentWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, BrentWantsBattle
 	farscall PhoneScript_Random2
 	ifequal 0, BrentBillTrivia
 	farsjump Phone_GenericCall_Male

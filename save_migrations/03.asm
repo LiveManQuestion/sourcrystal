@@ -1,16 +1,16 @@
 ; version 02 -> 03: vanilla's map IDs and box layout for Pokemon Stadium 2.
-;
+
 ; Pokemon Stadium 2 only lets you use a Game Pak in its Lab when the game was
 ; saved in a Pokemon Center, which it checks against its own list of vanilla
 ; Crystal map IDs. Removing unused maps had shifted the IDs of the Blackthorn
 ; and Route 10 Pokemon Centers, so placeholder maps (UNUSED_BLACKTHORN_MAP,
 ; UNUSED_CERULEAN_MAP_1 and _2) now fill those slots again. Every map ID the
 ; save holds after a placeholder moves up to match.
-;
+
 ; Stadium also reads and changes the PC boxes, so they're back in vanilla's
 ; layout: 14 boxes instead of 16, with box names in wBoxNames. The old box
 ; format isn't converted, so the boxes are emptied.
-;
+
 ; Version 03 was never released, so 04.asm runs these for version 02 saves
 ; before its own changes.
 

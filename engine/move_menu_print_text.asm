@@ -1,10 +1,11 @@
-; Modified version of PlaceString that translates <LINE> characters into <LF> commands.
+; Modified version of PlaceString that translates <LINE> characters into <LF>
+; commands, to print move descriptions on more lines.
 ; See:
 ;   * mon_menu.asm
 ;   * move_reminder.asm
 ; Rationale:
-;   MoveDescriptions is also used for TM/HM descriptions, so they couldn't be
-;   changed nor must they be duplicated.
+;   MoveDescriptions are also the TM/HM descriptions, so they can't be changed,
+;   and copies of them would waste space.
 
 	push hl
 .place_next

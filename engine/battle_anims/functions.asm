@@ -1109,14 +1109,16 @@ BattleAnimFunc_Bubble:
 	ld a, [hl]
 	cp $98
 	jr nc, .okay
-	ld de, $88 ; Assume Fast Value for Bubblebeam
+	; Assume Fast Value for Bubblebeam
+	ld de, $88
 	ld hl, BATTLEANIMSTRUCT_PARAM
 	add hl, bc
 	ld a, [hl]
 	and $0f
 	dec a
 	jr z, .fast
-	ld de, $60 ; Set Slow Value if PARAM ends with 1
+	; Set Slow Value if PARAM ends with 1
+	ld de, $60
 .fast
 	ld hl, BATTLEANIMSTRUCT_VAR1
 	add hl, bc
@@ -3993,7 +3995,8 @@ InitRadial:
 	add hl, bc
 	xor a
 	ld [hld], a
-	ld [hl], a ; initial position = 0
+	; initial position = 0
+	ld [hl], a
 	jmp BattleAnim_IncAnonJumptableIndex
 
 Step:

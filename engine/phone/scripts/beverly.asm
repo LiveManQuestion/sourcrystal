@@ -5,7 +5,8 @@ BeverlyPhoneCalleeScript: ; You call
 	farscall PhoneScript_AnswerPhone_Female
 	checkflag ENGINE_BEVERLY_GAVE_NUGGET
 	iftrue .Generic
-	farscall PhoneScript_Random4 ; 20% chance when you call them
+	; 25% chance when you call them
+	farscall PhoneScript_Random4
 	ifequal 0, BeverlyFoundNugget
 	setflag ENGINE_BEVERLY_GAVE_NUGGET
 .Generic
@@ -20,7 +21,8 @@ BeverlyPhoneCallerScript: ; Calls you
 	farscall PhoneScript_GreetPhone_Female
 	checkflag ENGINE_BEVERLY_HAS_NUGGET
 	iftrue BeverlyNuggetReminder
-	farscall PhoneScript_Random4 ; 20% chance when they call you
+	; 25% chance when they call you
+	farscall PhoneScript_Random4
 	ifequal 0, BeverlyFoundNugget
 	setflag ENGINE_BEVERLY_GAVE_NUGGET
 	farsjump Phone_GenericCall_Female

@@ -1,5 +1,5 @@
 ; version 02 or 03 -> 04: vanilla's SRAM addresses, for save editors (PKHeX).
-;
+
 ; The link battle records, Hall of Fame, Crystal data (player gender, GS Ball
 ; flags) and Battle Tower data were $30 bytes before vanilla's addresses, and
 ; wSpecialPhoneCallID - wDailyPhoneItemFlags (Blue Card points...) a byte

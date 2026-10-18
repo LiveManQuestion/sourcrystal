@@ -5,10 +5,10 @@ MACRO prob
 	dw prob_total * $ffff / 100
 ENDM
 
-;Male Egg DVs: 9/10/10/10
-;Female Egg DVs: 5/10/10/10
-;Male Shiny Egg DVs: 10/10/10/10
-;Female Shiny Egg DVs: 7/10/10/10
+; Male Egg DVs: 9/10/10/10
+; Female Egg DVs: 5/10/10/10
+; Male Shiny Egg DVs: 10/10/10/10
+; Female Shiny Egg DVs: 7/10/10/10
 OddEggProbabilities:
 ; entries correspond to OddEggs (below)
 	table_width 2

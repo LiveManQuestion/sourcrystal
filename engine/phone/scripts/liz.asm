@@ -24,11 +24,13 @@ LizPhoneCallerScript:
 	gettrainername STRING_BUFFER_3, PICNICKER, LIZ1
 	checkflag ENGINE_LIZ_READY_FOR_REMATCH
 	iftrue LizBattleReminder
-	farscall PhoneScript_Random4 ;20% chance to wrong number
+	; 25% chance to wrong number
+	farscall PhoneScript_Random4
 	ifequal 0, LizWrongNumber
 	farscall PhoneScript_GreetPhone_Female
 	farscall PhoneScript_Random2
-	ifequal 0, LizWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, LizWantsBattle
 	farscall PhoneScript_Random2
 	ifequal 0, LizGossip
 	farsjump Phone_GenericCall_Female

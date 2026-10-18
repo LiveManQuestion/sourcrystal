@@ -68,15 +68,19 @@ ReadTrainerPartyPieces:
 	ld h, d
 	ld l, e
 
-; Variable?
+; Variable? A TRAINERTYPE_VARIABLE trainer has a party for each mode, each
+; starting with its own trainer type: Normal Mode's, then after a $fe
+; delimiter Challenge Mode's.
 	bit TRAINERTYPE_VARIABLE_F, a
 	jr z, .not_variable
 	; check if challenge mode is active
 	ld a, [wChallengeMode]
 	bit GAME_CHALLENGE_MODE_F, a
 	jr z, .continue
+	; c = the number of $fe delimiters to skip, 1. This counts the set bits
+	; of the two ROM bytes at $0002 ($00 and $01, the jp Start address).
 	push hl
-	ld hl, $2 ; number of maximum variable trainer parties per trainer
+	ld hl, $2
 	ld b, 2 
 	call CountSetBits
 	pop hl

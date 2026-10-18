@@ -18,7 +18,7 @@ LoadWeatherPal::
 	assert OW_WEATHER_SANDSTORM == 4
 	dec a
 	jr z, .sandstorm
-	; Sunlight doesn't have a special palette set, yet
+	; Sunlight doesn't have a special palette
 	assert OW_WEATHER_SUNLIGHT == 5
 	ret
 
@@ -129,10 +129,12 @@ CopySpritePal::
 	call AddNTimes
 .got_pal
 	pop de
-	push de ; push wOBPals1 palette *
+	; push wOBPals1 palette *
+	push de
 	ld bc, 1 palettes
 	call FarCopyColorWRAM
-	pop hl ; pop wOBPals1 palette *
+	; pop wOBPals1 palette *
+	pop hl
 	ld a, [wPalFlags]
 	and NO_DYN_PAL_APPLY
 	jr nz, .skip_apply

@@ -20,7 +20,8 @@ GavenPhoneCallerScript: ; Calls you
 	checkflag ENGINE_GAVEN_READY_FOR_REMATCH
 	iftrue GavenBattleReminder
 	farscall PhoneScript_GreetPhone_Male
-	farscall PhoneScript_Random2 ; 33% chance for a rematch
+	; 50% chance for a rematch
+	farscall PhoneScript_Random2
 	ifequal 0, GavenWantsRematch
 	farscall PhoneScript_Random3
 	ifequal 0, GavenFoundRare

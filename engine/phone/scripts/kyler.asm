@@ -23,7 +23,8 @@ KylerPhoneCallerScript: ; Calls you
 	iftrue KylerBattleReminder
 	farscall PhoneScript_GreetPhone_Male
 	farscall PhoneScript_Random2
-	ifequal 0, KylerWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, KylerWantsBattle
 	farjump Phone_GenericCall_Male
 
 KylerWantsBattle:

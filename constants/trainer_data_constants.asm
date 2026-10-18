@@ -101,9 +101,9 @@ DEF SMOGON_BOOM_ABSORB_BONUS EQU 10 ; Rock, Steel or Ghost switch-in against a l
 	const_def
 	const TRAINERTYPE_MOVES_F     ; 0
 	const TRAINERTYPE_ITEM_F      ; 1
-	const TRAINERTYPE_VARIABLE_F  ; 3
-	const TRAINERTYPE_DVS_F       ; 4
-	const TRAINERTYPE_HAPPINESS_F ; 5
+	const TRAINERTYPE_VARIABLE_F  ; 2
+	const TRAINERTYPE_DVS_F       ; 3
+	const TRAINERTYPE_HAPPINESS_F ; 4
 
 ; Trainer party types (see data/trainers/parties.asm)
 DEF TRAINERTYPE_NORMAL     EQU 0

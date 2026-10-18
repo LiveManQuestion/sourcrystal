@@ -141,8 +141,9 @@ GetBackupItemAddr::
 	ret
 
 BackupBattleItems::
-; Copies items from party to a backup of items. Doesn't care if player has less than 6 mons
-; since messing with these item bytes in-battle is safe
+; Copies the held items of all 6 party slots to wPartyBackupItems, so items
+; used up or stolen in battle can be given back afterwards. Empty slots are
+; copied too, which is harmless.
 	ld c, 0
 	jr ToggleBattleItems
 RestoreBattleItems::

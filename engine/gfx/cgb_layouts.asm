@@ -140,7 +140,8 @@ SetBattlePal_Exp:
 
 SetBattlePal_Text:
 	; Mobile Adapter connectivity changes bg pal 7.
-	farcall Function100dc0 ; is a mobile adapter session active?
+	; is a mobile adapter session active?
+	farcall Function100dc0
 	ld hl, PartyMenuBGPalette
 	jr nc, .got_pal
 	ld hl, PartyMenuBGMobilePalette
@@ -338,7 +339,7 @@ _CGB_Pokedex:
 	ret
 
 _CGB_PokedexFormPage:
-	; Section 'bank2' grew too big
+	; in another bank, since this one is full
 	newfarcall __CGB_PokedexFormPage
 	ret
 
@@ -472,9 +473,9 @@ _CGB_PokedexUnownMode:
 	ret
 
 _Load_SlotMachine_Pal:
-; RBY town map format
-; couldn't do it the same way because
-; running into space issues
+; Decode the run-length encoded attribute map at de to hl: each byte is a
+; palette (high nybble) and a run length (low nybble), and 0 ends it. This is
+; the format of Red/Blue's town map, used here to save space.
 .run
 	ld a, [de]
 	and a

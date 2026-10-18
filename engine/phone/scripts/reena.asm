@@ -21,7 +21,8 @@ ReenaPhoneCallerScript: ; Calls you
 	iftrue ReenaBattleReminder
 	farscall PhoneScript_GreetPhone_Female
 	farscall PhoneScript_Random2
-	ifequal 0, ReenaWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, ReenaWantsBattle
 	farsjump Phone_GenericCall_Female
 
 ReenaWantsBattle:

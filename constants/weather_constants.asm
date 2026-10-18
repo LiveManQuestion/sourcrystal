@@ -1,4 +1,4 @@
-; GetCurrentWeather return values
+; overworld weather types (wCurWeather, set by SetCurrentWeather)
 	const_def
 	const OW_WEATHER_NONE
 	const OW_WEATHER_RAIN

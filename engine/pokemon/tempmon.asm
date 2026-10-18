@@ -19,7 +19,8 @@ CopyMonToTempMon:
 	cp OTPARTYMON
 	jr z, .copywholestruct
 
-	; tried to run old box code, crash
+	; Box Pokemon are read through the Storage System (wBufferMon) now,
+	; not from SRAM: hang if old box code runs.
 	di
 	jp @
 
@@ -107,7 +108,8 @@ GetMonSpecies:
 	jr .done
 
 .boxmon
-	; tried to run old box code, crash
+	; Box Pokemon are read through the Storage System (wBufferMon) now,
+	; not from SRAM: hang if old box code runs.
 	di
 	jp @
 

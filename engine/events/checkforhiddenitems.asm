@@ -77,12 +77,14 @@ CheckForHiddenItems:
 	ld l, a
 	ld a, [wYCoord]
 	sub l
-	ld [wHiddenItemYDelta], a ; negative values indicate player is NORTH of the item
+	; negative values indicate player is NORTH of the item
+	ld [wHiddenItemYDelta], a
 	ld a, [wHiddenItemXDelta]
 	ld h, a
 	ld a, [wXCoord]
 	sub h
-	ld [wHiddenItemXDelta], a ; negative values indicate player is WEST of the item
+	; negative values indicate player is WEST of the item
+	ld [wHiddenItemXDelta], a
 	pop hl
 	scf
 	ret

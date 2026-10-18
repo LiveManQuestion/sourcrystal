@@ -15,7 +15,8 @@ AlanPhoneCalleeScript: ; You call
 .NotWednesday:
 	checkflag ENGINE_ALAN_GAVE_FIRE_STONE
 	iftrue .skipFireStone
-	farscall PhoneScript_Random11 ; 9% chance when you call them
+	; 9% chance when you call them
+	farscall PhoneScript_Random11
 	ifequal 0, AlanHasFireStone
 .skipFireStone
 	farsjump AlanHangUpScript
@@ -35,11 +36,13 @@ AlanPhoneCallerScript: ; Calls you
 	checkflag ENGINE_ALAN_READY_FOR_REMATCH
 	iftrue AlanBattleReminder
 	farscall PhoneScript_GreetPhone_Male
-	farscall PhoneScript_Random3 ; 25% chance when they call you
+	; 33% chance when they call you
+	farscall PhoneScript_Random3
 	ifequal 0, AlanHasFireStone
 	setflag ENGINE_ALAN_GAVE_FIRE_STONE
 	farscall PhoneScript_Random2
-	ifequal 0, AlanWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, AlanWantsBattle
 	farsjump Phone_GenericCall_Male
 
 AlanWantsBattle:

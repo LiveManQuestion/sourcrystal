@@ -19,7 +19,7 @@ Route8Fruittrees:
 	iftrue .NoBerry
 	appear ROUTE_8_BERRY
 .NoBerry:
-	;fallthrough
+	; fallthrough
 
 .Apricorn:
 	checkflag ENGINE_DAILY_ROUTE_8_APRICORN

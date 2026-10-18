@@ -4,11 +4,12 @@ Pokedex_FormMode:
 
 	newfarcall ClearSpriteAnims
 
-	; curtain down
+	; black out the screen while drawing
 	newfarcall Pokedex_BlackOutBG
 
 	hlcoord 19, 17
-	ld [hl], 'M' ; last character of action menu
+	; last character of action menu
+	ld [hl], 'M'
 
 	; now do the main screen
 	decoord 0, 0
@@ -62,15 +63,12 @@ Pokedex_FormMode:
 	ld de, vTiles2 tile $00
 	predef GetAnimatedFrontpic
 
-	; curtain up
-	; runs `__CGB_PokedexFormPage` which is in this file
+	; show the screen: load its palettes (__CGB_PokedexFormPage, below)
 	ld b, SCGB_POKEDEX_FORM_PAGE
 	call GetSGBLayout
 
-; The form page here takes control of the Pokedex loop,
-; since it has to update its own sprites.
-; Which also means it has to handle the menu thing itself
-; as well.
+; The form page runs its own loop instead of the Pokedex's, since it has to
+; update its own sprites, so it handles the menu itself too.
 .wait_input
 	call .refresh
 	newfarcall PlaySpriteAnimations
@@ -142,7 +140,6 @@ Pokedex_FormMode:
 	ld de, vTiles0
 	ld hl, PokedexSlowpokeLZ
 	call DecompressRequest2bpp
-	;
 	newfarcall Pokedex_RedisplayDexEntry
 	newfarcall Pokedex_LoadSelectedMonTiles
 	call WaitBGMap
@@ -191,7 +188,7 @@ Pokedex_FormMode:
 	ld a, 1
 	ldh [hCGBPalUpdate], a
 
-	; oh and also update the mon icon
+	; update the mon icon too
 	newfarcall ClearSpriteAnims
 	ld e, MONICON_DEXFORM
 	newfarcall LoadMenuMonIcon
@@ -249,8 +246,8 @@ endr
 	assert @-.RightHandSideColumn == SCREEN_HEIGHT
 
 __CGB_PokedexFormPage:
-; dupe of _CGB_Pokedex
-; linked to from cgb_layouts.asm
+; A copy of _CGB_Pokedex for the form page, called by _CGB_PokedexFormPage
+; (cgb_layouts.asm)
 	ld de, wBGPals1
 	ld a, PREDEFPAL_POKEDEX
 	newfarcall GetPredefPal
@@ -258,7 +255,8 @@ __CGB_PokedexFormPage:
 	ld a, [wCurPartySpecies]
 	cp $ff
 	jr nz, .is_pokemon
-	ld hl, .QuestionMarkPaletteDupe ; green question mark palette
+	; green question mark palette
+	ld hl, .QuestionMarkPaletteDupe
 	newfarcall LoadHLPaletteIntoDE
 	jr .got_palette
 .is_pokemon

@@ -17,14 +17,14 @@ Route33Fruittrees:
 	iftrue .NoBerry
 	appear ROUTE_33_BERRY
 .NoBerry:
-	;fallthrough
+	; fallthrough
 
 .Apricorn:
 	checkflag ENGINE_DAILY_ROUTE_33_APRICORN
 	iftrue .NoApricorn
 	appear ROUTE_33_APRICORN
 .NoApricorn:
-	;fallthrough
+	; fallthrough
 
 .APRICORN_2:
 	checkflag ENGINE_DAILY_ROUTE_33_APRICORN_2

@@ -81,7 +81,8 @@ AskOverwriteSaveFile:
 	and a
 	jr z, .erase
 	call CompareLoadedAndSavedPlayerID
-	ret z ; pretend the player answered "Yes", but without asking
+	; pretend the player answered "Yes", but without asking
+	ret z
 	ld hl, AnotherSaveFileText
 	call SaveTheGame_yesorno
 	jr nz, .refused
@@ -343,7 +344,8 @@ Function14d6c: ; unreferenced
 	jp CloseSRAM
 
 Function14d83: ; unreferenced
-	ld a, BANK(s4_a60c) ; aka BANK(s4_a60d) ; MBC30 bank used by JP Crystal; inaccessible by MBC3
+	; aka BANK(s4_a60d) ; MBC30 bank used by JP Crystal; inaccessible by MBC3
+	ld a, BANK(s4_a60c)
 	call OpenSRAM
 	xor a
 	ld [s4_a60c], a ; address of MBC30 bank

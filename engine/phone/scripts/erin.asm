@@ -21,7 +21,8 @@ ErinPhoneCallerScript: ; Calls you
 	iftrue ErinBattleReminder
 	farscall PhoneScript_GreetPhone_Female
 	farscall PhoneScript_Random3
-	ifequal 0, ErinWantsBattle ; 33% chance for a rematch
+	; 33% chance for a rematch
+	ifequal 0, ErinWantsBattle
 	farsjump Phone_GenericCall_Female
 
 ErinWantsBattle:

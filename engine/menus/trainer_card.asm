@@ -515,7 +515,8 @@ endr
 	call .PrepOAM
 	pop hl
 .skip_badge
-	ld bc, $e ; 6 + 2 * 4
+	; 6 + 2 * 4
+	ld bc, $e
 	add hl, bc
 	pop bc
 	dec b

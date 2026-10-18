@@ -1,5 +1,5 @@
 ; Matchup evaluation for the Smogon AI (SWITCH_SMOGON and AI_SMOGON).
-;
+
 ; Instead of relying on GSC OU usage data, which says nothing about Pokemon
 ; outside the OU metagame, these routines judge a matchup the way a player
 ; does from the battle screen, so they work against any team:
@@ -16,7 +16,7 @@
 ; A matchup scores SMOGON_MATCHUP_EVEN + 16 * log2(the player's turns to KO
 ; ours / ours to KO the player's), so 16 points is a race twice as good.
 ; Higher is better for the AI.
-;
+
 ; Everything here only runs for Smogon-AI trainers in Challenge Mode, and
 ; never in link battles.
 

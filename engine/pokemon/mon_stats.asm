@@ -167,7 +167,9 @@ GetGender:
 ; Get our place in the party/box.
 
 .sBoxMon:
-	; old box code access; crash
+	; Nothing reads box Pokemon from SRAM directly anymore: the Storage
+	; System (engine/pc/bills_pc.asm) loads them into wBufferMon. Hang if
+	; something still does.
 	di
 	jp @
 

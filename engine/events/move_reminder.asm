@@ -69,7 +69,7 @@ MoveReminder:
 	ld a, 1
 	ld [wItemQuantityChange], a
 	call TossItem
-;fallthrough
+; fallthrough
 .finish
 	call ReturnToMapWithSpeechTextbox
 	ld hl, MoveReminderMoveLearnedText

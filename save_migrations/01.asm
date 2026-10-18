@@ -1,8 +1,8 @@
 ; version 00 -> 01: simply update the save version
-;
-; It really does nothing except initiate the new "tagging" system by writing
-; the save version to sGameVersion--not handled here, but in `Apply[Backup]SaveVersion`.
-; Therefore subsequent save migrations should end with this exact same jump.
+; (Kept for reference: save_compat.asm no longer includes it.)
+
+; Version 01 started tagging saves with their version in sGameVersion, which
+; Apply[Backup]SaveVersion writes. Every save migration ends by jumping there.
 
 MigrateSaveFile:
 	jp ApplySaveVersion

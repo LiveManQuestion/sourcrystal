@@ -1,4 +1,7 @@
-; `c` = Which contact to add. Index starts with PHONE_00.
+; wPhoneList is a bit flag array of the registered phone numbers: bit n - 1
+; for contact n. Contact 0, PHONE_00, means "no contact".
+
+; Register contact c (a PHONE_* constant). Returns carry if it already was.
 AddPhoneNumber::
 	push bc
 		call _CheckCellNum
@@ -21,7 +24,8 @@ AddPhoneNumber::
 	scf
 	ret
 
-; `c` = Which contact to delete. Index starts with PHONE_00.
+; Delete contact c (a PHONE_* constant). Returns carry if it wasn't
+; registered.
 DelCellNum::
 	push bc
 		call _CheckCellNum
@@ -44,10 +48,7 @@ DelCellNum::
 	scf
 	ret
 
-; `c` = Which contact to check
-; It's using the index that starts with PHONE_00, I think.
-;
-; Returns carry if the contact is in your list.
+; Returns carry if contact c (a PHONE_* constant) is registered.
 CheckCellNum::
 _CheckCellNum:
 	push de
@@ -137,7 +138,9 @@ CheckPhoneContactTimeOfDay:
 	pop hl
 	ret
 
-; Sets carry if we have someone calling us.
+; Pick a random registered contact. Returns carry and the contact in a and e
+; if they can call now: it's one of their calling times, and they aren't on
+; the player's map.
 ChooseRandomCaller:
 ; Check the time and save it for the "should call" check
 ; later on.
@@ -149,16 +152,13 @@ ChooseRandomCaller:
 	ld a, BANK(sSortedPhoneContacts)
 	call OpenSRAM
 	call SortPhoneContacts
-; Right now sSortedPhoneContacts starts at 00 so we can use this to avoid
-; subtracting 16 bit numbers or whatever. `hl` is at the end of the list plus one.
+; hl is just past the end of the list, and sSortedPhoneContacts starts at
+; $xx00, so l is the number of contacts.
 	assert LOW(sSortedPhoneContacts) == $00
-; So getting the length is as simple as:
 	ld c, l
 
-; Sample a random number.
+; a = a random number modulo the number of contacts
 	call Random
-; Get the modulo (at `a`) of this over how many contacts we actually have
-; (already loaded at `c`).
 	ldh a, [hRandomAdd]
 	call SimpleDivide
 
@@ -166,13 +166,8 @@ ChooseRandomCaller:
 	ld l, a
 	ld h, HIGH(sSortedPhoneContacts)
 
-; Well we got a contact ID...
-; and one that starts with PHONE_00 too
-; Received phone contact will be in `e` because that's what the vanilla code
-; asks for or something.
+; e = the contact (a PHONE_* constant), where vanilla's callers expect it
 	ld e, [hl]
-
-; ...So we're done with accessing SRAM
 	call CloseSRAM
 
 ; Check if it's the right time of day for them to be calling us
@@ -190,8 +185,7 @@ ChooseRandomCaller:
 	add hl, bc
 	ld a, [wMapGroup]
 	cp [hl]
-; If the contact is in a different map group, there isn't a chance they can be
-; in the same map as us...
+; A contact in another map group can't be on the player's map.
 	jr nz, .different_group
 
 ; If the contact is in the exact same map as us, don't call.
@@ -200,9 +194,7 @@ ChooseRandomCaller:
 	cp [hl]
 	jr z, .no_call
 
-; ...so they should always be able to call us.
 .different_group
-; `e` should remain intact here, which is the caller ID we got.
 	ld a, e
 	scf
 	ret
@@ -419,24 +411,18 @@ Script_SpecialBillCall::
 	ld e, PHONE_BILL
 	jr LoadCallerScript
 
-; As this is used by ScriptReceivePhoneCall--and the actual
-; jump to the phone dialog is governed by said script--this
-; means the script has to access something that this function
-; can manipulate. Well that happens to be [wScriptVar].
-;
-; Depending on the player's actions, that variable changes
-; to one of the CALL_* constants to be read by the script.
+; Ring the phone for Script_ReceivePhoneCall, which reads the player's
+; choice from wScriptVar: CALL_EXPLICITLY_PICKUP (A), CALL_EXPLICITLY_HANGUP
+; (B), or CALL_DEFAULT_ACTION (no button before the phone stops ringing).
+
+; The callers on .ForcedCallerList can't be hung up on: they ring like
+; vanilla's calls and are always picked up. (Storing this in the phone
+; contact data would change saved data.)
 RingTwice_StartCall:
-; A slightly cleaner solution would be to add whether/not the player
-; could even shut off these contacts *in* the phone contact data.
-; But then I realize that'd mess with WRAM and I'd need to build up
-; another save migration routine for version 02 on top of the one
-; already in place. So no.
 	call .IsForcedCaller
 	jp c, PhoneCall
 
-; For "regular" phone contacts however, we give the option for
-; the player to shut it off.
+; Other callers can be hung up on.
 	call WaitSFX
 	call Phone_StartRinging
 
@@ -449,11 +435,11 @@ RingTwice_StartCall:
 	ld c, 30
 	call DelayFrames
 
-	ld c, 10 ; how many times to ring
+	; how many times to ring
+	ld c, 10
 	push bc
-; Keep ringing the phone until the player presses a button,
-; or the number of times it's ringing have been exhausted.
-; Whichever comes first.
+; Keep ringing the phone until the player presses a button, or it has rung
+; c times.
 .loop
 		call .CallerTextboxWithName
 		call Phone_PickupHangupIndicator
@@ -527,8 +513,7 @@ RingTwice_StartCall:
 	jr z, .no
 	jr .compare
 .yes
-; Set the ScriptVar to automatically *pick up* the phone here
-; just to avoid any pains later
+; Forced calls are always picked up.
 	ld a, CALL_EXPLICITLY_PICKUP
 	ld [wScriptVar], a
 	scf
@@ -546,9 +531,8 @@ RingTwice_StartCall:
 
 .ABButtonGFX: INCBIN "gfx/font/ab_button.1bpp"
 
-; In the original this appears to be unused. Since 99% of it's like the
-; same thing anyway, wouldn't hurt to reuse it for the case where you
-; *couldn't* shut the phone off :p
+; Unused in vanilla. Rings for the calls that can't be hung up on (see
+; RingTwice_StartCall).
 PhoneCall::
 	; ld a, b
 	; ld [wPhoneScriptBank], a
@@ -727,7 +711,8 @@ GetCallerClassAndName_Gear:
 	ld h, d
 	ld l, e
 	ld a, b
-	push af ; a = phone contact ID
+	; a = phone contact ID
+	push af
 	call GetCallerTrainerClass
 	pop af
 	call GetCallerName_Gear
@@ -800,9 +785,9 @@ GetCallerName_Gear:
 		and a
 		jp z, .not_trainer
 
-		; move WRAM to scratch space
+		; switch to the WRAM bank with the scratch space
 		ldh a, [rSVBK]
-		ldh [hTempBank], a ; is this safe to use?
+		ldh [hTempBank], a
 		ld a, BANK(wScratchPokegearPhoneVWF)
 		ldh [rSVBK], a
 	pop af
@@ -862,8 +847,6 @@ GetCallerName_Gear:
 .transfer_vram
 		push de
 			ld a, [wPokegearPhoneDisplayPosition]
-			; switch-case, that seems less error-prone
-			; than calculation...
 			and a
 			jr z, .zero
 			cp 1
@@ -884,7 +867,8 @@ GetCallerName_Gear:
 			; hl = location to print
 			;      0x9600 + ([wPokegearPhoneDisplayPosition] * 6)
 .got_location
-			ld c, 6 ; occupy this many tiles
+			; occupy this many tiles
+			ld c, 6
 			ld de, wScratchPokegearPhoneVWF
 			call Request2bpp
 		pop de

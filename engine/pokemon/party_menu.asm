@@ -350,7 +350,8 @@ PlacePartyMonTMHMCompatibility:
 	jr z, .NotLearned
 	cp c
 	jr z, .AlreadyLearned
-	inc hl ; moves still take a byte each
+	; moves still take a byte each
+	inc hl
 	dec b
 	jr nz, .CheckKnownMove
 

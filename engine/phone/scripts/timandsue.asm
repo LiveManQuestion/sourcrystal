@@ -23,7 +23,8 @@ TimAndSuePhoneCallerScript: ; Calls you
 	iftrue TimAndSueBattleReminder
 	farscall PhoneScript_GreetPhone_Female
 	farscall PhoneScript_Random2
-	ifequal 0, TimAndSueWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, TimAndSueWantsBattle
 	farjump Phone_GenericCall_Female
 
 TimAndSueWantsBattle:

@@ -33,11 +33,9 @@ HDMATransferTilemapToWRAMBank3::
 	call HDMATransferToWRAMBank3
 	ret
 
-; Copy of HDMATransferTilemapToWRAMBank3.
-; Pokedex frippery that uses ONE additional column for
-; some reason.
-; Therefore this uses wScratchAttrmap as the buffer for that
-; additional column
+; A copy of HDMATransferTilemapToWRAMBank3 for the Pokedex, which also draws
+; a 21st tile column (just past the screen's right edge). wScratchAttrmap
+; holds that extra column.
 HDMATransferDexTilemapToWRAMBank3::
 	ld hl, .f
 	jp CallInSafeGFXMode

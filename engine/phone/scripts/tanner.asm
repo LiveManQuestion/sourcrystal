@@ -21,7 +21,8 @@ TannerPhoneCallerScript:  ; Calls you
 	iftrue TannerBattleReminder
 	farscall PhoneScript_GreetPhone_Male
 	farscall PhoneScript_Random2
-	ifequal 0, TannerWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, TannerWantsBattle
 	farsjump Phone_GenericCall_Male
 
 TannerWantsBattle:

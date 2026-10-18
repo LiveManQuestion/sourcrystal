@@ -98,7 +98,8 @@ LoadPartyMenuMonIconColors:
 	ld d, a
 	ld a, [wCurIconMonHasItemOrMail]
 	and a
-	ld a, PAL_OW_RED ; item or mail color
+	; item or mail color
+	ld a, PAL_OW_RED
 	jr nz, .ok
 	ld a, d
 .ok
@@ -191,7 +192,8 @@ LoadPagerMonIcon:
 	ld h, [hl]
 	ld l, a
 	ld a, [wCurIcon]
-	cp MAGIKARP ; first mon in Icons2
+	; first mon in Icons2
+	cp MAGIKARP
 	ld bc, 8 tiles
 	ld e, BANK("Mon Icons 1")
 	ret c
@@ -241,7 +243,8 @@ PokedexFormPage_InitMonIcon:
 	ld [wCurIcon], a
 	xor a
 	call GetIconGFX
-	ld de, $485b ; TODO: wtf is depixel grahhhhh
+	; pixel coords x = $48, y = $5b (same as depixel 9, 11, 0, 3)
+	ld de, $485b
 	ld a, SPRITE_ANIM_OBJ_PARTY_MON
 	call _InitSpriteAnimStruct
 	ld hl, SPRITEANIMSTRUCT_ANIM_SEQ_ID
@@ -655,7 +658,8 @@ endr
 
 GetIconBank:
 	ld a, [wCurIcon]
-	cp MAGIKARP ; first species in "Mon Icons 2"
+	; first species in "Mon Icons 2"
+	cp MAGIKARP
 	lb bc, BANK("Mon Icons 1"), 8
 	ret c
 	ld b, BANK("Mon Icons 2")

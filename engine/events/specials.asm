@@ -380,7 +380,7 @@ SnorlaxAwake:
 	db  7,  7 ; left
 	db 10,  6 ; right
 	db 10,  7 ; right
-;respawn
+; next to the respawned Snorlax (ROUTE_11_BIG_SNORLAX_RESPAWN)
 	db 50, 11 ; left
 	db 50, 12 ; left
 	db 53, 11 ; right
@@ -448,7 +448,8 @@ RespawnOneOffs:
 	jr nz, .CaughtSnorlax
 	ld de, EVENT_ROUTE_11_SNORLAX
 	farcall EventFlagAction
-	jr z, .CaughtSnorlax ; Snorlax Not Been Woken Yet
+	; Snorlax is still asleep on Route 11: don't respawn it
+	jr z, .CaughtSnorlax
 	eventflagreset EVENT_ROUTE_11_SNORLAX_RESPAWN
 .CaughtSnorlax
 
@@ -479,7 +480,9 @@ RespawnOneOffs:
 	ld de, ENGINE_PLAYER_CAUGHT_MEWTWO
 	farcall EngineFlagAction
 	jr nz, .CaughtMewtwo
-	eventflagreset EVENT_CERULEAN_CAVE_B1F_MEWTWO ; No special event flag needed. Mewtwo is always there when you first enter the cave.
+	; Mewtwo needs no respawn flag: it's always there when the player
+	; first enters the cave.
+	eventflagreset EVENT_CERULEAN_CAVE_B1F_MEWTWO
 .CaughtMewtwo
 
 	ld de, ENGINE_PLAYER_CAUGHT_MEW

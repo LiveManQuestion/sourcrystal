@@ -531,7 +531,8 @@ AI_Smogon_Asleep:
 	ld hl, wEnemyAIMoveScores
 	add hl, bc
 	ld a, [hl]
-	cp 80 ; disabled or out of PP
+	; 80 or more: disabled or out of PP
+	cp 80
 	jr nc, .no
 	ld hl, wEnemyMonMoves
 	add hl, bc
@@ -617,7 +618,8 @@ AI_Smogon_SureKO:
 	ld hl, wEnemyAIMoveScores
 	add hl, bc
 	ld a, [hl]
-	cp 80 ; disabled or out of PP
+	; 80 or more: disabled or out of PP
+	cp 80
 	jr nc, .not_ko
 	ld hl, wEnemyMonMoves
 	add hl, bc
@@ -656,8 +658,9 @@ AISmogon_LoadedMoveKOs:
 	ld [wCurDamage], a
 	ld a, l
 	ld [wCurDamage + 1], a
+	; carry if b is $ff
 	ld a, b
-	add a ; carry if b is $ff
+	add a
 	ret
 
 .KOs:

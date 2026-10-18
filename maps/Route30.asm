@@ -25,21 +25,21 @@ Route30Fruittrees:
 	iftrue .NoBerry
 	appear ROUTE_30_BERRY
 .NoBerry:
-	;fallthrough
+	; fallthrough
 
 .Apricorn:
 	checkflag ENGINE_DAILY_ROUTE_30_APRICORN
 	iftrue .NoApricorn
 	appear ROUTE_30_APRICORN
 .NoApricorn:
-	;fallthrough
+	; fallthrough
 
 .BERRY_2:
 	checkflag ENGINE_DAILY_ROUTE_30_BERRY_2
 	iftrue .NoBERRY_2
 	appear ROUTE_30_BERRY_2
 .NoBERRY_2:
-	;fallthrough
+	; fallthrough
 
 .APRICORN_2:
 	checkflag ENGINE_DAILY_ROUTE_30_APRICORN_2

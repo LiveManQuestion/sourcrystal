@@ -21,7 +21,8 @@ JackPhoneCallerScript:
 	iftrue JackBattleReminder
 	farscall PhoneScript_GreetPhone_Male
 	farscall PhoneScript_Random2
-	ifequal 0, JackWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, JackWantsBattle
 	farscall PhoneScript_Random4
 	ifequal 0, JackFindsRare
 	ifequal 1, JackBattleTrivia

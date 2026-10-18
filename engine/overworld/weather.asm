@@ -7,6 +7,9 @@ DEF SANDSTORM_TILE  EQU WEATHER_TILE_1
 DEF PAL_OW_WEATHER  EQU 6
 
 DoOverworldWeather::
+; Run one frame of overworld weather (wCurWeather): spawn and move its
+; sprites, or tint the palettes for sunlight. Weather sprites use the OAM
+; slots before hUsedWeatherSpriteIndex, below the map objects' slots.
 	push hl
 	push de
 	push bc
@@ -16,8 +19,8 @@ DoOverworldWeather::
 	bit OW_WEATHER_DISABLED_F, [hl]
 	jr nz, .done
 
-	; rolling counter from 0 to 255 used to run weather
-	; in 30fps or every odd frame.
+	; Disabled: run weather only on odd frames (30 fps), using
+	; wOverworldWeatherInternalTimer, a counter that wraps from 255 to 0.
 ;	ld a, [wOverworldWeatherInternalTimer]
 ;	and %1
 ;	jr z, .done
@@ -30,8 +33,8 @@ DoOverworldWeather::
 	ld [wOverworldWeatherCooldown], a
 .no_cooldown
 
-	; if hUsedWeatherSpriteIndex >= the first object OAM index,
-	; then we need to set hUsedWeatherSpriteIndex the OAM index before the first object OAM index.
+	; If hUsedWeatherSpriteIndex reaches the first OAM slot used by
+	; objects, move it to the slot before that.
 	ldh a, [hUsedOAMIndex]
 	; a = (SPRITEOAMSTRUCT_LENGTH * NUM_SPRITE_OAM_STRUCTS) - a
 	cpl
@@ -42,8 +45,8 @@ DoOverworldWeather::
 	add -SPRITEOAMSTRUCT_LENGTH
 	ldh [hUsedWeatherSpriteIndex], a
 .ok
-	; if cooldown is not 0, we don't want to spawn new weather sprites
-	; instead we want to slowly finishing dropping the current sprites.
+	; While the weather is ending (cooldown not 0), don't spawn new weather
+	; sprites: let the current ones finish falling.
 	ld a, [wOverworldWeatherCooldown]
 	and a
 	jr nz, .on_cooldown
@@ -52,7 +55,7 @@ DoOverworldWeather::
 	ld hl, .DoWeather_Jumptable
 	call JumpTable
 .done
-	; we are done, increment the weather delay rolling counter (0->255->0)
+	; we are done, increment the weather frame counter (0->255->0)
 	ld hl, wOverworldWeatherInternalTimer
 	inc [hl]
 	; always check if we have exceeded the sprite limit
@@ -92,7 +95,8 @@ DoOverworldWeather::
 .rain_cooldown
 	call DoRainFall
 	call RainSplashCleanup
-; The sun cooldown doesn't really have much as the logic is inside of it, but this exists for the jumptable to behave.
+; Sunlight has nothing to wind down (DoOverworldSunlight handles it), but it
+; needs an entry in the jumptable.
 .sun_cooldown
 .cooldown_cleanup
 	; decrement the weather cooldown until it is 0
@@ -107,8 +111,8 @@ SpawnRandomWeatherFullScreen::
 	lb bc, SCREEN_WIDTH_PX, SCREEN_HEIGHT_PX
 ; fallthrough
 SpawnRandomWeatherCoords::
-; This is used to randomize the weather's starting positions on the screen from
-; randomize weather sprite x/y coords from (0,0) to (b,c)
+; Fill the free OAM slots with weather sprites at random positions, x from
+; 0 to b and y from 0 to c, so weather is already on screen when it starts.
 	ld a, [wCurWeather]
 	assert OW_WEATHER_NONE == 0
 	and a
@@ -159,8 +163,9 @@ SpawnRandomWeatherCoords::
 .rain
 	call .find_oam_and_radomize
 	ret c
+	; 20% of them are splashes
 	call Random
-	cp 20 percent ; 20 percent splashes
+	cp 20 percent
 	; a = carry ? RAINSPLASH_TILE : RAINDROP_TILE
 	assert RAINDROP_TILE + 1 == RAINSPLASH_TILE
 	ccf
@@ -184,7 +189,7 @@ SpawnRandomWeatherCoords::
 	call ScanForEmptyOAM
 	pop bc
 	ret c
-	; sprite coord is (RandomRange(0, b), RandomRange(0, c))
+	; sprite coord (y, x) is (RandomRange(0, c), RandomRange(0, b))
 	ld a, c
 	call RandomRange
 	ld [hli], a
@@ -211,7 +216,8 @@ DoSnowFall:
 	ld h, d
 	ld l, e
 	ld b, NUM_SPRITE_OAM_STRUCTS
-.loop ; for (wShadowOAM -> wShadowOAMEnd)
+; for each sprite in wShadowOAM
+.loop
 	; if the sprite is hidden, skip it
 	ld hl, SPRITEOAMSTRUCT_YCOORD
 	ld a, [hl]
@@ -250,7 +256,7 @@ DoSnowFall:
 	sub c
 	ld c, a
 
-	; sprites with an even index move down 1 faster.
+	; sprites with an odd index move down 1 faster.
 	call IsEvenSpriteIndex
 	add c
 
@@ -288,7 +294,8 @@ DoSnowFall:
 	inc a
 	ld hl, SPRITEOAMSTRUCT_XCOORD
 	add hl, de
-	sub 1 ; no-optimize a++|a-- (need to set carry)
+	; sub 1 instead of dec a, to set carry
+	sub 1 ; no-optimize a++|a--
 	ld [hl], a
 	jr c, .despawn
 .next
@@ -337,12 +344,13 @@ endr
 	call DoRainFall
 ; fallthrough
 RainSplashCleanup:
-	; we leave rain splashes on screen for approx 3.75fps, staggered
-	; per OAM slot instead of clearing every splash on screen at once.
+	; Rain splashes stay on screen for up to 8 frames. Each OAM slot is
+	; cleared on its own frame of the 8, so they don't all vanish at once.
 	ld de, wShadowOAM
 	ld b, NUM_SPRITE_OAM_STRUCTS
 	ld c, 0
-.loop ; for (wShadowOAM -> wShadowOAMEnd)
+; for each sprite in wShadowOAM
+.loop
 	; if sprite tile is not a rain splash, skip it
 	ld hl, SPRITEOAMSTRUCT_TILE_ID
 	add hl, de
@@ -360,7 +368,7 @@ RainSplashCleanup:
 	; hide the rain splash
 	ld hl, SPRITEOAMSTRUCT_YCOORD
 	add hl, de
-	ld [hl], OAM_YCOORD_HIDDEN ; offscreen
+	ld [hl], OAM_YCOORD_HIDDEN
 .next
 	ld hl, SPRITEOAMSTRUCT_LENGTH
 	add hl, de
@@ -384,7 +392,7 @@ SpawnSnowFlake:
 	and %11
 	jr z, .spawn_on_right
 	
-	; sprite coord is (0, RandomRange(0, SCREEN_WIDTH_PX + 7) + TILE_WIDTH)
+	; sprite coord (y, x) is (0, RandomRange(0, SCREEN_WIDTH_PX + 7) + TILE_WIDTH)
 	xor a
 	ld [hli], a
 	ld a, SCREEN_WIDTH_PX + 7
@@ -407,7 +415,7 @@ SpawnSnowFlake:
 	ret
 
 .spawn_on_right
-	; sprite coord is (SCREEN_WIDTH_PX + TILE_WIDTH, RandomRange(0, OAM_YCOORD_HIDDEN))
+	; sprite coord (y, x) is (RandomRange(0, OAM_YCOORD_HIDDEN), SCREEN_WIDTH_PX + TILE_WIDTH)
 	ld a, OAM_YCOORD_HIDDEN
 	call RandomRange
 	ld [hli], a
@@ -428,7 +436,8 @@ ScanForEmptyOAM:
 	rrca
 	rrca
 	ld b, a
-.loop ; Scan (wShadowOAM --> index of first object OAM slot)
+; scan wShadowOAM up to the first object OAM slot
+.loop
 	; if the sprite is hidden, return the slot
 	ld a, [hl]
 	cp OAM_YCOORD_HIDDEN
@@ -445,12 +454,12 @@ ScanForEmptyOAM:
 	ret
 
 SpawnRainDrop:
-	; 50% chance of spawning a raindop on the right
+	; 50% chance of spawning a raindrop on the right
 	call Random
 	and 1
 	jr z, .spawn_on_right
 
-	; sprite coord is (0, RandomRange(0, SCREEN_WIDTH_PX + 7) + TILE_WIDTH)
+	; sprite coord (y, x) is (0, RandomRange(0, SCREEN_WIDTH_PX + 7) + TILE_WIDTH)
 	xor a
 	ld [hli], a
 	ld a, SCREEN_WIDTH_PX + 7
@@ -473,7 +482,7 @@ SpawnRainDrop:
 	ret
 
 .spawn_on_right
-	; sprite coord is (SCREEN_WIDTH_PX + TILE_WIDTH, RandomRange(0, OAM_YCOORD_HIDDEN))
+	; sprite coord (y, x) is (RandomRange(0, OAM_YCOORD_HIDDEN), SCREEN_WIDTH_PX + TILE_WIDTH)
 	ld a, OAM_YCOORD_HIDDEN
 	call RandomRange
 	ld [hli], a
@@ -485,7 +494,7 @@ ClearWeather:
 	; doing this will cause _UpdateSprites to hide all weather sprites.
 	xor a
 	ldh [hUsedWeatherSpriteIndex], a
-	; We clear these as well, just since we should at this point to avoid trouble later.
+	; Reset the sunlight cycle too.
 	ld [wSunlightTimer], a
 	ld [wSunlightIncCounter], a
 .finish_clearing
@@ -496,7 +505,8 @@ DoRainFall:
 	ld h, d
 	ld l, e
 	ld b, NUM_SPRITE_OAM_STRUCTS
-.loop ; for (wShadowOAM -> wShadowOAMEnd)
+; for each sprite in wShadowOAM
+.loop
 	; if the sprite is hidden, skip it
 	ld hl, SPRITEOAMSTRUCT_YCOORD
 	ld a, [hl]
@@ -530,7 +540,7 @@ DoRainFall:
 	ld a, [hl]
 	ld c, a
 
-	; sprites with an even index move down 2 faster.
+	; sprites with an odd index move down 2 faster.
 	call IsEvenSpriteIndex
 	add a
 	add c
@@ -550,7 +560,7 @@ DoRainFall:
 	ld a, [hl]
 	ld c, a
 
-	; sprites with an even index move left 2 faster.
+	; sprites with an odd index move left 2 faster.
 	call IsEvenSpriteIndex
 	cpl
 	inc a
@@ -591,12 +601,12 @@ DoRainFall:
 	cp PAL_OW_WEATHER
 	jr nz, .next
 
-	; double the player's step vector
+	; Splashes stay on the ground, so they only move with the screen.
 	ld a, [wPlayerStepVectorY]
-;	add a ; not needed for SourCrystal
+;	add a
 	ld c, a
 
-	; get the sprite's y coord and subtract the player's doubled step vector
+	; get the sprite's y coord and subtract the player's step vector
 	ld hl, SPRITEOAMSTRUCT_YCOORD
 	add hl, de
 	ld a, [hl]
@@ -607,12 +617,11 @@ DoRainFall:
 	jr nc, .despawn
 	ld [hli], a
 
-	; double the player's step vector
 	ld a, [wPlayerStepVectorX]
-;	add a ; not needed for SourCrystal
+;	add a
 	ld c, a
 
-	; get the sprite's x coord and subtract the player's doubled step vector
+	; get the sprite's x coord and subtract the player's step vector
 	ld a, [hl]
 	sub c
 	ld [hl], a
@@ -642,7 +651,8 @@ DoSandFall:
 	ld h, d
 	ld l, e
 	ld b, NUM_SPRITE_OAM_STRUCTS
-.loop ; for (wShadowOAM -> wShadowOAMEnd)
+; for each sprite in wShadowOAM
+.loop
 	; if the sprite is hidden, skip it
 	ld hl, SPRITEOAMSTRUCT_YCOORD
 	ld a, [hl]
@@ -679,7 +689,7 @@ DoSandFall:
 	sub c
 	ld c, a
 
-	; sprites with an even index move up 2 slower.
+	; sprites with an odd index move up 2 slower.
 	call IsEvenSpriteIndex
 	add a
 	add c
@@ -707,7 +717,7 @@ DoSandFall:
 	sub c
 	ld c, a
 
-	; sprites with an even index move left 2 faster.
+	; sprites with an odd index move left 2 faster.
 	call IsEvenSpriteIndex
 	cpl
 	inc a
@@ -748,7 +758,7 @@ SpawnSandDrop:
 	and 1
 	jr z, .spawn_on_right
 
-	; sprite coord is (RandomRange(0, SCREEN_WIDTH_PX + 7) + TILE_WIDTH, SCREEN_HEIGHT_PX + TILE_WIDTH)
+	; sprite coord (y, x) is (SCREEN_HEIGHT_PX + TILE_WIDTH, RandomRange(0, SCREEN_WIDTH_PX + 7) + TILE_WIDTH)
 	ld a, SCREEN_HEIGHT_PX + TILE_WIDTH
 	ld [hli], a
 	ld a, SCREEN_WIDTH_PX + 7
@@ -770,7 +780,7 @@ SpawnSandDrop:
 	ret
 
 .spawn_on_right
-	; sprite coord is (SCREEN_WIDTH_PX + TILE_WIDTH, RandomRange(0, OAM_YCOORD_HIDDEN))
+	; sprite coord (y, x) is (RandomRange(0, OAM_YCOORD_HIDDEN), SCREEN_WIDTH_PX + TILE_WIDTH)
 	ld a, OAM_YCOORD_HIDDEN
 	call RandomRange
 	ld [hli], a
@@ -779,15 +789,18 @@ SpawnSandDrop:
 	jr .finish
 
 IsEvenSpriteIndex:
-; input: e = sprite index
-; output: a = is_even(e / 4)
+; input: e = low byte of the sprite's address in wShadowOAM
+; output: a = 1 if the sprite's index (e / 4) is odd, 0 if it's even
 	ld a, e
 	rra
-	rra ; / 4
+	rra
 	and 1
 	ret
 
 WeatherSpriteLimitCheck:
+; The Game Boy draws at most 10 sprites per scanline. Count the sprites on
+; each scanline in wWeatherScratch, and hide the extra weather sprites on
+; any line with more than 10.
 	ldh a, [rSVBK]
 	push af
 	ld a, BANK(wWeatherScratch)
@@ -803,14 +816,16 @@ WeatherSpriteLimitCheck:
 	ld d, h
 	ld e, l
 	ld b, NUM_SPRITE_OAM_STRUCTS
-.loop ; for (wShadowOAM -> wShadowOAMEnd)
+; for each sprite in wShadowOAM
+.loop
 	ld a, [hl]
-	; convert OAM y cord to screen y cord
+	; convert OAM y coord to screen y coord
 	sub TILE_WIDTH * 2
-	jr c, .next ; OAM is above the screen
+	; skip sprites above or below the screen
+	jr c, .next
 	cp SCREEN_HEIGHT_PX + 1
-	jr nc, .next ; OAM is below the screen
-	; incerement bytes in wWeatherScratch associated with this sprite
+	jr nc, .next
+	; increment the bytes in wWeatherScratch for the 8 lines this sprite covers
 	ld h, HIGH(wWeatherScratch)
 	ld l, a
 rept TILE_WIDTH - 1
@@ -827,7 +842,8 @@ endr
 
 	; scan wWeatherScratch for scanlines with more than 10 sprites
 	ld hl, wWeatherScratch
-	ld a, 10 ; horizontal sprite limit
+	; sprites per scanline limit
+	ld a, 10
 rept SCREEN_HEIGHT_PX - 1
 	cp [hl]
 	call c, SpriteLimitExceeded
@@ -841,35 +857,41 @@ endr
 	ret
 
 SpriteLimitExceeded:
+; Scanline l (low byte of its wWeatherScratch entry) has more than 10
+; sprites: hide all but 10 of them, from the last OAM slot to the first.
+; Weather sprites use the first slots, so they're the ones hidden.
 	push hl
 	push af
-	; initliaze wSpriteOverlapCount to 0.
+	; initialize wSpriteOverlapCount to 0.
 	xor a
 	ld [wSpriteOverlapCount], a
 	ld a, l
-	; convert screen y cord to OAM y cord
+	; convert screen y coord to OAM y coord
 	add TILE_WIDTH * 2
 	ld c, a
+	; d is still HIGH(wShadowOAM)
 	ld hl, wShadowOAM + (NUM_SPRITE_OAM_STRUCTS - 1) * SPRITEOAMSTRUCT_LENGTH
-	ld e, l ; d is still set to HIGH(wShadowOAM)
+	ld e, l
 rept NUM_SPRITE_OAM_STRUCTS
-	; check if OAM y cord is <= (scanline + 16)
+	; a = distance between the OAM y coord and (scanline + 16)
 	ld a, [hl]
-	sub c ; get distance between OAM y cord and (scanline + 16)
-	jr z, .continue_\@ ; Sprite starts on the scanline; continue
-	jr nc, .next_\@ ; OAM's y cord is below the scanline; skip sprite
+	sub c
+	; skip sprites that start below the scanline
+	jr z, .continue_\@
+	jr nc, .next_\@
 .continue_\@
 	; use two's complement to make a positive number
 	cpl
 	inc a
-	; check if distance <= TILE_WIDTH
+	; skip sprites that end above the scanline (distance >= TILE_WIDTH)
 	cp TILE_WIDTH
-	jr nc, .next_\@ ; distance is greater than TILE_WIDTH; skip sprite
+	jr nc, .next_\@
+	; hide every sprite after the 10th
 	ld a, [wSpriteOverlapCount]
 	inc a
-	cp 11 ; horizontal sprite limit + 1
+	cp 11
 	ld [wSpriteOverlapCount], a
-	call nc, .delete_sprite ; for all sprites after the 10th, delete them
+	call nc, .delete_sprite
 .next_\@
 	ld hl, -SPRITEOAMSTRUCT_LENGTH
 	add hl, de
@@ -883,9 +905,9 @@ endr
 	; hl = sprite to delete
 	ld a, [hl]
 	ld [hl], OAM_YCOORD_HIDDEN
-	; convert OAM y cord to screen y cord
+	; convert OAM y coord to screen y coord
 	sub TILE_WIDTH * 2
-	; decerement bytes in wWeatherScratch associated with this sprite
+	; decrement the bytes in wWeatherScratch for the 8 lines this sprite covers
 	ld h, HIGH(wWeatherScratch)
 	ld l, a
 rept TILE_WIDTH - 1
@@ -915,11 +937,17 @@ Lightning:
 	ret
 
 DoOverworldSunlight:
+; Sunlight brightens the palettes a step every 3 frames for 15 frames, then
+; darkens them back over the next 15, and starts again. wSunlightTimer holds
+; the wOverworldWeatherInternalTimer value the cycle started at, and the low
+; nibble of wSunlightIncCounter counts the brightening steps.
+
 	; First check if there is a value in the Sunlight Timer.
 	ld a, [wSunlightTimer]
 	and a
 	jr nz, .check1
-	; We utilize the highest bit of wSunlightIncCounter as a flag to see if we've actually loaded a value yet
+	; Bit 7 of wSunlightIncCounter says whether the timer has been loaded,
+	; in case the start time was 0.
 	ld a, [wSunlightIncCounter]
 	cp %10000000
 	jr z, .check1
@@ -933,6 +961,7 @@ DoOverworldSunlight:
 	jr .done
 
 .check1
+; Only step on frames 3, 6, 9... of the cycle.
 	ld hl, wSunlightTimer
 	ld a, [wOverworldWeatherInternalTimer]
 	sub a, [hl]
@@ -945,6 +974,7 @@ DoOverworldSunlight:
 	ld hl, wSunlightTimer
 	ld a, [wOverworldWeatherInternalTimer]
 	sub a, [hl]
+; Brighten up to frame 15, then darken.
 	cp 15
 	jr c, .inc_pals
 	jr z, .inc_pals
@@ -980,11 +1010,11 @@ DoOverworldSunlight:
 	cp 30
 	jr c, .dec_pals
 .clear_timers
-	; Resets this
+; Frame 30: the last darkening step, then start a new cycle. Reload the map
+; palettes to get exactly the untinted colors back, since steps that were
+; capped at 0 or 31 don't cancel out.
 	call Sunlight_DecPals
-	farcall LoadMapPals   ; force an exact resync to the true untinted colors,
-	                      ; correcting any clamp-induced drift from this cycle
-	                      ; before the next one begins
+	farcall LoadMapPals
 	xor a
 	ld [wSunlightTimer], a
 	ld [wSunlightIncCounter], a
@@ -1003,8 +1033,7 @@ Sunlight_IncPals:
 	ld a, BANK(wBGPals1)
 	ldh [rSVBK], a
 
-	; Let's get to business... first we need to load the bg palettes
-	; and e, which stores our value of 7 * 4 palettes
+	; Brighten the first 7 BG palettes: 7 * 4 = 28 colors.
 	ld hl, wBGPals1
 	ld e, 28
 .attempt_inc_bg
@@ -1019,7 +1048,9 @@ Sunlight_IncPals:
 	pop af
 	ldh [rSVBK], a
 
-	; Update the pals
+	; Update the pals. ApplyPals overwrites the water's animated colors, so
+	; redraw the current frame of the water animation (now from the tinted
+	; colors) right after it.
 	farcall ApplyPals
 	farcall AnimateWaterPalette
 	ld a, TRUE
@@ -1053,11 +1084,8 @@ Sunlight_DecPals:
 	pop af
 	ldh [rSVBK], a
 
-	; Update the pals
+	; Update the pals, and redraw the water animation (see Sunlight_IncPals).
 	farcall ApplyPals
-	; Same reasoning as Sunlight_IncPals: re-assert the water shimmer's
-	; current frame (now picking up the newly-detinted source colors)
-	; immediately after ApplyPals overwrites it.
 	farcall AnimateWaterPalette
 	ld a, TRUE
 	ldh [hCGBPalUpdate], a
@@ -1144,7 +1172,8 @@ TrySaturateColor:
 	;   c = a 5-bit G value (0-31)
 	;   d = a 5-bit B value (0-31)
 	; Operation:
-	;   Attempts to brighten the palette by adding 2 to each value of an RGB555 color
+	;   Brightens an RGB555 color by adding 1 to each channel that isn't
+	;   preserved (see SunTogglePreserveBlueGreen), up to 31
 	ld a, [wSunlightPreserveRed]
 	and %00010000
 	jr nz, .green
@@ -1173,7 +1202,8 @@ TryDesaturateColor:
 	;   c = a 5-bit G value (0-31)
 	;   d = a 5-bit B value (0-31)
 	; Operation:
-	;   Attempts to darken the palette by subtracting 2 from each value of an RGB555 color
+	;   Darkens an RGB555 color by subtracting 1 from each channel that isn't
+	;   preserved (see SunTogglePreserveBlueGreen), down to 0
 	ld a, [wSunlightPreserveRed]
 	and %00010000
 	jr nz, .green
@@ -1200,9 +1230,9 @@ TrySaturateChannel:
 	; Input:
 	;   a = a 5-bit RGB value (0-31)
 	; Operation:
-	;   Saturates and RGB value by 2
+	;   Adds 1 to an RGB channel, up to 31
 	; Output:
-	;   a = a 5-bit RGB value, where 2 <= a <= 31
+	;   a = a 5-bit RGB value, where 1 <= a <= 31
 	inc a
 	cp 32
 	ret c
@@ -1213,9 +1243,9 @@ TryDesaturateChannel:
 	; Input:
 	;   a = a 5-bit RGB value (0-31)
 	; Operation:
-	;   Desatures an RGB value by 2
+	;   Subtracts 1 from an RGB channel, down to 0
 	; Output:
-	;   a = a 5-bit RGB value, where 0 <= a <= 29
+	;   a = a 5-bit RGB value, where 0 <= a <= 30
 	sub 1
 	ret nc
 	xor a
@@ -1225,18 +1255,11 @@ SunTogglePreserveBlueGreen:
 	; Input:
 	;   N/A
 	; Operation:
-	;   Modifies wSunlightIncCounters bits 6 and 5.
-	;
-	;   Only triggers when it is not nighttime, as the moon
-	;   glows white, not reddish like the sun beating down
-	;   on you does.
-	;
-	;   Sets bits to preserve the (B)lue and (G)reen values
-	;   on cycles 2 and 4. Unsets the bits on all other
-	;   cycles.
-
-	; night check already handled in SetCurrentWeather
-
+	;   Sets bits 6 and 5 of wSunlightIncCounter (wSunlightPreserveBlue
+	;   and wSunlightPreserveGreen) on steps 2 and 4 of the cycle, and
+	;   clears them on the others. Skipping blue and green on those steps
+	;   tints the light red, like sunshine.
+	;   (Sunlight never runs at night: SetCurrentWeather checks for that.)
 	ld a, [wSunlightIncCounter]
 	and %00001111
 	cp 2
@@ -1254,11 +1277,13 @@ SunTogglePreserveBlueGreen:
 	ret
 
 
+; TogglePreserveRed, TogglePreserveGreen and TogglePreserveBlue are unused.
+
 TogglePreserveRed:
 	; Input:
 	;   N/A
 	; Operation:
-	;   Sets the 4th bit of wSunlightPreserveRed if it't unset, or unsets it if it's set.
+	;   Toggles bit 4 of wSunlightPreserveRed.
 	ld a, [wSunlightPreserveRed]
 	and %00010000
 	ld a, [wSunlightPreserveRed]
@@ -1276,7 +1301,7 @@ TogglePreserveGreen:
 	; Input:
 	;   N/A
 	; Operation:
-	;   Sets the 5th bit of wSunlightPreserveGreen if it't unset, or unsets it if it's set.
+	;   Toggles bit 5 of wSunlightPreserveGreen.
 	ld a, [wSunlightPreserveGreen]
 	and %00100000
 	ld a, [wSunlightPreserveGreen]
@@ -1294,7 +1319,7 @@ TogglePreserveBlue:
 	; Input:
 	;   N/A
 	; Operation:
-	;   Sets the 6th bit of wSunlightPreserveBlue if it't unset, or unsets it if it's set.
+	;   Toggles bit 6 of wSunlightPreserveBlue.
 	ld a, [wSunlightPreserveBlue]
 	and %01000000
 	ld a, [wSunlightPreserveBlue]

@@ -67,7 +67,7 @@ LoadSpecialMapPalette:
 
 .lookup_specifics
 	ld hl, MapSpecificPalettes
-; fallthru
+; fallthrough
 SearchPaletteRoutine:
 .keep_looking
 	ld a, [hl]

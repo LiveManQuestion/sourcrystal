@@ -21,7 +21,8 @@ ChadPhoneCallerScript: ; Calls you
 	iftrue ChadBattleReminder
 	farscall PhoneScript_GreetPhone_Male
 	farscall PhoneScript_Random2
-	ifequal 0, ChadWantsBattle ; 33% chance for a rematch
+	; 50% chance for a rematch
+	ifequal 0, ChadWantsBattle
 	farscall PhoneScript_Random2
 	ifequal 0, ChadOakGossip
 	farscall PhoneScript_Random3

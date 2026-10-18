@@ -125,9 +125,12 @@ _SlotMachine:
 	res rLCDC_SPRITE_SIZE, [hl] ; 8x8
 	ret
 
-; no, the LOAD section directive does not work here
+; .LCDCallbackPoint to .LCDCallbackPoint_End is copied to
+; SlotMachine_LCDCallback in RAM, so the LCD interrupt can switch ROM banks
+; (a LOAD section doesn't work here). Jumps back into it must point to RAM.
 .LCDCallbackPoint:
-; just does a unaccounted bankswitch to the payload
+; switch to the payload's bank without changing hROMBank, so the bank can
+; be restored afterwards
 	push af
 	ld a, BANK(.LCDCallbackPayload)
 	ld [MBC3RomBank], a
@@ -151,8 +154,7 @@ _SlotMachine:
 .LCDCallbackPoint_End:
 
 .LCDCallbackPayload:
-; payload generates mid-frame palette writes
-; for the gradient thingy
+; change palettes mid-frame for the background's color gradient
 	ldh a, [rLY]
 
 ; sound engine on vblank spills over here, can't do
@@ -538,7 +540,7 @@ ENDM
 	dec c
 	jr nz, .blank_tile
 
-	; payout gfx?
+	; reel icons, also used in the payout text
 	ld hl, Slots2LZ
 	ld de, vTiles2 tile $2C
 	call Decompress
@@ -588,7 +590,8 @@ Slots_AddTopCoverSprites:
 	ld [hl], SPRITE_ANIM_FRAMESET_SLOTS_COVER_GREEN
 	ld hl, SPRITEANIMSTRUCT_VAR1
 	add hl, bc
-	ld [hl], 42 ; mark sprite for later deletion
+	; mark sprite for later deletion
+	ld [hl], 42
 	depixel 2, 9
 	ld a, SPRITE_ANIM_OBJ_SLOTS_COVER
 	call InitSpriteAnimStruct
@@ -615,7 +618,8 @@ Slots_AddBottomCoverSprites:
 	call InitSpriteAnimStruct
 	ld hl, SPRITEANIMSTRUCT_VAR1
 	add hl, bc
-	ld [hl], 67 ; mark sprite for later deletion
+	; mark sprite for later deletion
+	ld [hl], 67
 	depixel 10, 9
 	ld a, SPRITE_ANIM_OBJ_SLOTS_COVER
 	call InitSpriteAnimStruct
@@ -637,7 +641,8 @@ Slots_RemoveBottomCoverSprites:
 .loop
 	cp [hl]
 	jr nz, .next
-	ld [hl], 69 ; mark sprite for *immediate* deletion
+	; mark sprite for *immediate* deletion
+	ld [hl], 69
 .next
 	ld bc, SPRITEANIMSTRUCT_LENGTH
 	add hl, bc
@@ -652,7 +657,8 @@ Slots_RemoveTopCoverSprites:
 .loop
 	cp [hl]
 	jr nz, .next
-	ld [hl], 69 ; mark sprite for *immediate* deletion
+	; mark sprite for *immediate* deletion
+	ld [hl], 69
 .next
 	ld bc, SPRITEANIMSTRUCT_LENGTH
 	add hl, bc
@@ -2456,8 +2462,9 @@ Slots_PayoutText:
 
 .Text_PrintPayout:
 	text_asm
+	; the matched icon's 2x2 tiles start at tile $2c + wSlotMatched
 	ld a, [wSlotMatched]
-	add $2C ; TODO
+	add $2C
 	ldcoord_a 2, 13
 	inc a
 	ldcoord_a 2, 14

@@ -1096,7 +1096,8 @@ SetBattleAnimPal:
 	dec b
 	jr nz, .got_pal_target
 	ld a, d
-	add 8 ; wBGPals + 8 palettes == wOBPals1
+	; wBGPals + 8 palettes == wOBPals1
+	add 8
 	ld d, a
 
 .got_pal_target

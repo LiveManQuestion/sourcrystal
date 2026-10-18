@@ -502,7 +502,8 @@ PlayerDepositItemMenu:
 
 .CantDeposit
 	ld hl, .CantDepositText
-	call MenuTextboxBackup ; push text to queue
+	; push text to queue
+	call MenuTextboxBackup
 	ret
 
 .CantDepositText

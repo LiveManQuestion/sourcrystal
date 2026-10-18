@@ -19,7 +19,8 @@ PlaceNextVWFChar::
 	ld d, 0
 	ld hl, VWFWidths
 	add hl, de
-	ld b, [hl] ; b = width in pixels
+	; b = width in pixels
+	ld b, [hl]
 	; get VWFCharacterGFX + a * LEN_1BPP_TILE
 	ld h, d
 	ld l, e
@@ -28,7 +29,8 @@ PlaceNextVWFChar::
 	add hl, hl ; * 8
 	ld de, VWFCharacterGFX
 	add hl, de
-	ld d, h ; de = 1bpp tile gfx
+	; de = 1bpp tile gfx
+	ld d, h
 	ld e, l
 	pop hl
 
@@ -117,7 +119,8 @@ _GetNextVWFLength::
 	ld d, 0
 	ld hl, VWFWidths
 	add hl, de
-	ld a, [hl] ; b = width in pixels
+	; b = width in pixels
+	ld a, [hl]
 	add c
 	ld c, a
 	pop de

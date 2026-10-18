@@ -5,7 +5,8 @@ DerekPhoneCalleeScript: ; You call
 	farscall PhoneScript_AnswerPhone_Male
 	checkflag ENGINE_DEREK_GAVE_NUGGET
 	iftrue .SkipNugget
-	farscall PhoneScript_Random4 ; 20% chance when you call them
+	; 25% chance when you call them
+	farscall PhoneScript_Random4
 	ifequal 0, DerekFoundNugget
 	setflag ENGINE_DEREK_GAVE_NUGGET
 .SkipNugget
@@ -30,7 +31,8 @@ DerekPhoneCallerScript: ; Calls you
 	checkflag ENGINE_DEREK_HAS_NUGGET
 	iftrue DerekNuggetReminder
 	farscall PhoneScript_GreetPhone_Male
-	farscall PhoneScript_Random4 ; 20% chance when you call them
+	; 25% chance when they call you
+	farscall PhoneScript_Random4
 	ifequal 0, DerekFoundNugget
 	setflag ENGINE_DEREK_GAVE_NUGGET
 	farscall PhoneScript_Random2

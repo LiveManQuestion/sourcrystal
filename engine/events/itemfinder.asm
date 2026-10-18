@@ -21,8 +21,8 @@ ItemFinder:
 	ld a, [wHiddenItemYDelta]
 	ld c, a
 	or b
-	jr z, .got_direction ; same animation, but this condition
-	                     ; is also checked later on
+	; same animation, but this condition is also checked later on
+	jr z, .got_direction
 	ld a, c ; restore [wHiddenItemYDelta]
 	and a
 	jr nz, .dy_is_not_zero
@@ -88,8 +88,8 @@ ItemFinderAnimation:
 	or b
 	jr nz, .regular_animation
 
-; "found" graphics
-; i'm lazy :(
+; The item is under the player: load the "found" frame (tiles 24-27) into
+; all three arrow frames.
 	ld de, ItemFinderGFX tile 24
 	ld hl, vTiles1 tile 0
 	lb bc, BANK(ItemFinderGFX), 4
@@ -197,8 +197,8 @@ ItemFinderAnimation:
 	ret
 
 ; from the subroutine from cut:
-;   1. shift ALL sprites right by 8 slots to ensure the weather thing affects what it's
-;      supposed to
+;   1. shift ALL sprites right by 8 slots again, so weather sprites go back
+;      to the OAM slots the weather code expects
 .FinishSprites:
 	; hl = source
 	ld hl, wShadowOAMSprite31 + 3
@@ -231,7 +231,8 @@ endr
 	dw .Finish
 
 .SpawnArrowAndPlayFirstSound:
-	depixel 10, 10, 4, 0 ; start from middle of screen
+	; start from middle of screen
+	depixel 10, 10, 4, 0
 	ld a, SPRITE_ANIM_OBJ_ITEMFINDER
 	call InitSpriteAnimStruct
 

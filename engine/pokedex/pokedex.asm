@@ -799,8 +799,8 @@ Pokedex_InitUnownMode:
 	call Pokedex_IncrementDexPointer
 	ret
 
-; DexCurUnownIndex previously points to UnownDex + [DexCurUnownIndex]
-; now repurposed as an alphabetical index starting at A=00
+; wDexCurUnownIndex is the Unown letter shown (A = 0), not an index into
+; wUnownDex as in vanilla.
 
 Pokedex_IsUnownCaught:
 INCLUDE "engine/pokedex/is_unown_caught.asm"
@@ -2486,7 +2486,8 @@ Pokedex_LoadAnyFootprint:
 	push hl
 	ld e, l
 	ld d, h
-	ld hl, vTiles2 tile $53 ; upper half of foot
+	; upper half of foot
+	ld hl, vTiles2 tile $53
 	lb bc, BANK(Footprints), 2
 	call Request1bpp
 	pop hl
@@ -2498,7 +2499,8 @@ Pokedex_LoadAnyFootprint:
 
 	ld e, l
 	ld d, h
-	ld hl, vTiles2 tile $59 ; lower half of foot
+	; lower half of foot
+	ld hl, vTiles2 tile $59
 	lb bc, BANK(Footprints), 2
 	jp Request1bpp
 
