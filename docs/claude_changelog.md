@@ -1053,3 +1053,9 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   `tools/claude/pyboy_hdma_repro.py`. (An overworld weather-behind-textbox
   change was tried and reverted the same day: the user decided against it
   after hearing its tradeoffs.)
+- **2026-10-19**: Challenge Mode Elite Four rematch teams are all on type.
+  Bruno 2: Heracross and Poliwrath replace Golem and Steelix. Karen 2: two
+  Tyranitar (Curse, and special Crunch/Fire Blast) replace Vileplume and
+  Gengar; Gen 2 has only five fully evolved Dark types. Will 2 and Koga 2
+  were already all Psychic and all Poison. Moves checked against the
+  learnsets; all four ROMs built.
