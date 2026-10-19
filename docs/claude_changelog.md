@@ -1031,3 +1031,9 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   Attack or Sp.Atk is at `SMOGON_SETUP_GOAL` (+2 Tentacruel Substituted in
   front of a sleeping Zapdos). `ai_check.sh` vs `HEAD`: tests ALL OK, judge
   regret 67.7 -> 66.1, Koga 2 107 -> 123/144 (z +2.4), others noise.
+- **2026-10-19**: `AISmogon_PickedLeadMoveFirst` also keeps a Pokemon in to
+  Rapid Spin away Spikes on its side when the player phazes and it moves
+  first: Whitney's Smeargle switched out of a Roar Steelix over and over,
+  dragged back in through Spikes each time. `ai_check.sh` vs `HEAD`: tests
+  ALL OK, the judge's ('switch', 'rapidspin') pattern 9 clear -> 0, regret
+  66.1 -> 65.4, battles noise.

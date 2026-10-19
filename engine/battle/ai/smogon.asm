@@ -707,10 +707,14 @@ AISmogon_PickedLeadMoveFirst:
 ; sleep move or Spikes that lands before the player can hit back: the enemy
 ; is faster, or the player surely can't attack. A Spore Smeargle has no
 ; attacks, so its matchups always look bad, and it switched out before it
-; could ever use Spore or Spikes.
+; could ever use Spore or Spikes. Also Rapid Spin against Spikes on our side
+; when the player phazes: switching out only gets us dragged back in through
+; them (Whitney's Smeargle and a Roar Steelix).
 	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
 	cp EFFECT_SPIKES
 	jr z, .first
+	cp EFFECT_RAPID_SPIN
+	jr z, .rapid_spin
 	cp EFFECT_SLEEP
 	jr nz, .no
 ; Sleep fails through a Substitute.
@@ -725,6 +729,12 @@ AISmogon_PickedLeadMoveFirst:
 	scf
 	ret
 
+.rapid_spin
+	ld a, [wEnemyScreens]
+	bit SCREENS_SPIKES, a
+	jr z, .no
+	call AISmogon_PlayerPhazes
+	jr c, .first
 .no
 	and a
 	ret
