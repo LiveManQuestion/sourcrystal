@@ -51,8 +51,8 @@ most of it, but not the frame tiles `$ba`-`$bf`: Sour loads them first and
 loads only `a`-`z` (26 tiles) after them, so the textbox Frame option isn't
 overwritten. Vanilla loads 32 tiles over them, which hides the bug. Don't
 "fix" this in the ROM; check state through RAM when a screenshot looks off.
-Reported to PyBoy: `docs/pyboy_hdma_issue.md`, with a repro in
-`tools/claude/pyboy_hdma_repro.py`.
+Fixed on PyBoy master (`3cec580`) but not in 2.8.1; delete this paragraph
+and the `CLAUDE.md` line after upgrading.
 - `ai_check.sh [ROM] [BASE_REV]` (defaults: `sourcrystal.gbc`, `HEAD`):
   everything to check a Smogon AI change, in one report: both test suites,
   `PLAYER=smart` battles on Koga 2, Misty 2, Whitney 2 and Jasmine 2
