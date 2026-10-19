@@ -221,6 +221,12 @@ SwitchSmogon:
 	call AISmogon_ScoreActive
 	call AISmogon_PenalizeAsleepActive
 
+; So should one below half HP about to use a recovery move that heals more
+; than the player's strongest attack takes off (Whitney's Miltank switched
+; out instead of using Milk Drink against Snorlax and Steelix).
+	call AISmogon_PickedHealOutpaces
+	jp c, DontSwitch
+
 ; A Pokemon that can phaze, Haze or Explode deals with a boosted player
 ; itself, unless neither side can KO the other: then it would just Haze
 ; forever (Crobat against a Curse Steelix).
@@ -330,6 +336,41 @@ SwitchSmogon:
 
 .RestMove:
 	db REST
+	db -1 ; end
+
+AISmogon_PickedHealOutpaces:
+; Return carry if the enemy is below half HP, the move it picked
+; (wCurEnemyMove: AISmogon_ScoreActive reuses wEnemyMoveStruct) heals half
+; its max HP, and the player's strongest attack (AISmogon_ScoreActive's
+; estimate) does less than that.
+	call AICheckEnemyHalfHP
+	jr c, .no
+	ld a, [wCurEnemyMove]
+	ld hl, .HalfHealMoves
+	ld de, 1
+	call IsInArray
+	jr nc, .no
+; carry if the strongest attack < max HP / 2
+	ld a, [wEnemyMonMaxHP]
+	ld d, a
+	ld a, [wEnemyMonMaxHP + 1]
+	ld e, a
+	srl d
+	rr e
+	ld a, [wSmogonAIThreat + ATTACKS_BEST + 1]
+	sub e
+	ld a, [wSmogonAIThreat + ATTACKS_BEST]
+	sbc d
+	ret
+
+.no
+	and a
+	ret
+
+.HalfHealMoves:
+	db RECOVER
+	db SOFTBOILED
+	db MILK_DRINK
 	db -1 ; end
 
 AI_TryItem:

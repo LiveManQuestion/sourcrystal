@@ -1037,3 +1037,12 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   dragged back in through Spikes each time. `ai_check.sh` vs `HEAD`: tests
   ALL OK, the judge's ('switch', 'rapidspin') pattern 9 clear -> 0, regret
   66.1 -> 65.4, battles noise.
+- **2026-10-19**: `SwitchSmogon` keeps a Pokemon below half HP in when its
+  picked move is Recover, Softboiled or Milk Drink and the player's
+  strongest attack (the matchup estimate) does less than half its max HP
+  (`AISmogon_PickedHealOutpaces`): Whitney's Miltank switched out instead
+  of using Milk Drink against Snorlax and Steelix. `ai_check.sh` vs `HEAD`:
+  tests ALL OK, ('switch', 'milkdrink') 10 clear -> 2, wins 210 -> 228/576
+  (z +1.1; Jasmine 3 -> 0, Koga 118 -> 128). Tried and dropped: Growl
+  against a likely exploder (Miltank vs Cloyster, which the judge likes):
+  it didn't change those picks and the judge's regret went up.
