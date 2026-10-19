@@ -1046,3 +1046,10 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   (z +1.1; Jasmine 3 -> 0, Koga 118 -> 128). Tried and dropped: Growl
   against a likely exploder (Miltank vs Cloyster, which the judge likes):
   it didn't change those picks and the judge's regret went up.
+- **2026-10-19**: PyBoy draws the textbox border as letters because its
+  HBlank DMA copies two blocks per HBlank in CGB double speed (Sour runs in
+  it), so `_continue_HDMATransfer`'s early stop starts a 128-block general
+  DMA. Notes for the PyBoy issue in `docs/pyboy_hdma_issue.md`, repro in
+  `tools/claude/pyboy_hdma_repro.py`. (An overworld weather-behind-textbox
+  change was tried and reverted the same day: the user decided against it
+  after hearing its tradeoffs.)

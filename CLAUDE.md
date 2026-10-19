@@ -144,3 +144,5 @@ write over the user's save files.
 - PyBoy: one hook per address (share them with `battle_harness.Battle.on`),
   and exceptions in hooks are swallowed silently, so count or log them. Some
   menus (party, PC) draw as a white screen; check state through RAM.
+- PyBoy draws the textbox border as letters (k-p); real hardware doesn't.
+  It's PyBoy's HBlank DMA, not a ROM bug: see `docs/claude_tools.md`.

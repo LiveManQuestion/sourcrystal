@@ -36,6 +36,23 @@ emulator's clock was reset, as in the user's save of 2026-10-16) makes
 Continue ask to reset the clock, a prompt the harnesses' boot button presses
 don't expect, so battles never start (`"started": false`). Never write over
 the user's save files.
+
+PyBoy (2.8.1) garbles some VRAM, so screenshots can show glitches real
+hardware doesn't. The textbox border drawn as letters (k-p) is one; other
+emulators draw it fine. The cause, checked by hooking the `res 7, [rHDMA5]`
+in `_continue_HDMATransfer` (`engine/gfx/dma_transfer.asm`, vanilla code):
+the routine starts an HBlank DMA one block longer than needed, counts
+scanlines, then cancels the last block. In CGB double speed (Sour runs in
+it; vanilla doesn't) PyBoy copies two blocks per HBlank (hardware: one at
+either speed; tested with a small ROM), so the transfer has already finished
+(HDMA5 reads `$ff`), and the cancel write (`$7f`, bit 7 clear) starts a new 128-block
+general DMA of leftover `wScratchTilemap` data. Later font loads overwrite
+most of it, but not the frame tiles `$ba`-`$bf`: Sour loads them first and
+loads only `a`-`z` (26 tiles) after them, so the textbox Frame option isn't
+overwritten. Vanilla loads 32 tiles over them, which hides the bug. Don't
+"fix" this in the ROM; check state through RAM when a screenshot looks off.
+Reported to PyBoy: `docs/pyboy_hdma_issue.md`, with a repro in
+`tools/claude/pyboy_hdma_repro.py`.
 - `ai_check.sh [ROM] [BASE_REV]` (defaults: `sourcrystal.gbc`, `HEAD`):
   everything to check a Smogon AI change, in one report: both test suites,
   `PLAYER=smart` battles on Koga 2, Misty 2, Whitney 2 and Jasmine 2
