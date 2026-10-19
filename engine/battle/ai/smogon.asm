@@ -1571,9 +1571,13 @@ AI_Smogon_Substitute:
 	call AISmogon_ResistsExplosion
 	jp nz, AISmogon_GreatlyEncourage
 .no_explosion
-; A sleeping or frozen Pokemon can't break a Substitute.
-	call AISmogon_PlayerCantAttack
+; A sleeping or frozen Pokemon can't break a Substitute, which then covers
+; boosting. Already boosted, attack instead (Misty's +2 Tentacruel used
+; Substitute in front of a sleeping Zapdos).
+	call AISmogon_PlayerSurelyCantAttack
 	ret z
+	call AISmogon_EnemyAttacksBoosted
+	ret c
 	jp AISmogon_Encourage
 
 AI_Smogon_Setup:
@@ -1648,6 +1652,17 @@ AI_Smogon_Setup:
 	call AICheckEnemyHalfHP
 	ret nc
 
+	push hl
+	call AISmogon_ScoreActive
+	pop hl
+; Boosting is the way through a Pokemon that heals more than our attacks
+; take off between its heals, past SMOGON_SETUP_GOAL too, enough to beat
+; AI_Setup's discouragement after the first turn. This comes before the
+; two-hit KO check: it would heal in between (Misty's +2 Tentacruel stopped
+; boosting against a Vaporeon that Rests).
+	call .BreaksHealing
+	jp c, AISmogon_GreatlyEncourage
+
 ; Our attacks already surely KO it in two hits: a boost can't save a turn
 ; (Koga's Qwilfish Cursing in front of a half-HP Cloyster).
 	push hl
@@ -1656,14 +1671,6 @@ AI_Smogon_Setup:
 	jr c, .discourage
 
 ; Don't set up in front of something that hits harder than we do.
-	push hl
-	call AISmogon_ScoreActive
-	pop hl
-; (Unless it heals and our attacks don't 2HKO it yet: then boosting is the
-; way through, past SMOGON_SETUP_GOAL too, enough to beat AI_Setup's
-; discouragement after the first turn.)
-	call .BreaksHealing
-	jp c, AISmogon_GreatlyEncourage
 	ld a, [wEnemyAISwitchScore]
 	cp SMOGON_MATCHUP_EVEN
 	jr c, .discourage
@@ -1695,18 +1702,20 @@ AI_Smogon_Setup:
 
 .BreaksHealing:
 ; Return carry if this Swords Dance or Growth is the way through a Pokemon
-; that outheals our attacks (Misty's +2 Tentacruel vs a Rest Vaporeon,
-; which +2 Sludge Bomb doesn't 2HKO from full HP): AISmogon_ScoreActive
-; found it can heal, three of its strongest hits don't KO us, and our
-; strongest attack, with the boosts we have, doesn't 2HKO it from full HP
-; (7/4 of its highest roll, about two of its lowest). (Not "our attacks
-; never KO it": that counts Swords Dance's setup credit, as if unboosted.)
-; Keeps wEnemyMoveStruct and hl.
+; that outheals our attacks (Misty's +2 Tentacruel vs a Rest Vaporeon):
+; AISmogon_ScoreActive found it can heal, three of its strongest hits don't
+; KO us, and our strongest attack, with the boosts we have, doesn't 2HKO it
+; from full HP (twice 7/8 of its highest roll, about its lowest), or take
+; two thirds of its max HP if it may have Rest and Sleep Talk, which can Rest
+; again while asleep (the engine judge prefers +4 Sludge Bomb on Vaporeon to
+; more boosts).
+; (Not "our attacks never KO it": that counts Swords Dance's setup credit,
+; as if unboosted.) Keeps wEnemyMoveStruct and hl.
 	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
 	cp EFFECT_ATTACK_UP_2
 	jr z, .attack_boost
 	cp EFFECT_SP_ATK_UP
-	jr nz, .no_carry
+	jp nz, .no_carry
 .attack_boost
 	ld a, [wSmogonAIPlayerHeal + HEAL_AMOUNT]
 	ld b, a
@@ -1765,15 +1774,29 @@ AI_Smogon_Setup:
 	and a
 	jr z, .pop_no_carry
 
-; de = its highest roll: carry if de * 7/4 < the player's max HP
+; de = its highest roll: carry if twice (or 3/2 of) de * 7/8 < the
+; player's max HP
 	ld h, d
 	ld l, e
 	srl d
 	rr e
-	add hl, de
-	jr c, .pop_no_carry
 	srl d
 	rr e
+	srl d
+	rr e
+	ld a, l
+	sub e
+	ld l, a
+	ld a, h
+	sbc d
+	ld h, a
+	call AISmogon_PlayerRestTalks
+	ld d, h
+	ld e, l
+	jr nc, .two_hits
+	srl d
+	rr e
+.two_hits
 	add hl, de
 	jr c, .pop_no_carry
 	ld a, [wBattleMonMaxHP]
@@ -2280,6 +2303,48 @@ AISmogon_PlayerRevealedMove:
 .done
 	pop bc
 	pop hl
+	ret
+
+AISmogon_PlayerMayKnow:
+; Return carry if the player's active Pokemon has used move a, or hasn't
+; revealed four moves and its SmogonTraits have a flag in c. Keeps bc, de
+; and hl.
+	call AISmogon_PlayerRevealedMove
+	ret c
+	ld a, [wPlayerUsedMoves + NUM_MOVES - 1]
+	and a
+	ret nz
+	call AISmogon_GetPlayerTraits
+	and c
+	ret z
+	scf
+	ret
+
+AISmogon_PlayerRestTalks:
+; Return carry if the player's active Pokemon may have both Rest and Sleep
+; Talk. Keeps bc, de and hl.
+	push bc
+	ld a, REST
+	ld c, SMOGON_REST
+	call AISmogon_PlayerMayKnow
+	jr nc, .done
+	ld a, SLEEP_TALK
+	ld c, SMOGON_SLEEP_TALK
+	call AISmogon_PlayerMayKnow
+.done
+	pop bc
+	ret
+
+AISmogon_EnemyAttacksBoosted:
+; Return carry if the enemy's Attack or Sp.Atk is at SMOGON_SETUP_GOAL or
+; higher.
+	ld a, [wEnemyAtkLevel]
+	cp SMOGON_SETUP_GOAL
+	ccf
+	ret c
+	ld a, [wEnemySAtkLevel]
+	cp SMOGON_SETUP_GOAL
+	ccf
 	ret
 
 AISmogon_PlayerBoosted:

@@ -1020,3 +1020,14 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   are unchanged. `ai_scenarios.py`'s switch cases now set the candidates' held
   item (none by default): with Bugsy's all-Leftovers team, "flying avoids
   spikes" became a tie. ALL OK on this build and `HEAD`.
+- **2026-10-19**: Smogon AI vs the new Misty team (engine judge patterns):
+  `AI_Smogon_Setup` checks `.BreaksHealing` before the two-hit KO check (a
+  healer heals in between: +2 Tentacruel stopped boosting against a 247 HP
+  Vaporeon), and against a Pokemon that may have Rest and Sleep Talk
+  (`AISmogon_PlayerRestTalks`) keeps boosting until its lowest roll takes
+  two thirds of the max HP (+4 Sludge Bomb on Vaporeon: the judge prefers
+  attacking there). `AI_Smogon_Substitute` no longer encourages a
+  Substitute in front of a sleeping Pokemon that may Sleep Talk, or once
+  Attack or Sp.Atk is at `SMOGON_SETUP_GOAL` (+2 Tentacruel Substituted in
+  front of a sleeping Zapdos). `ai_check.sh` vs `HEAD`: tests ALL OK, judge
+  regret 67.7 -> 66.1, Koga 2 107 -> 123/144 (z +2.4), others noise.

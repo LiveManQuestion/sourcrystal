@@ -554,12 +554,14 @@ w('wPlayerScreens', 0)
 
 # AI_Smogon_Setup vs a Pokemon that outheals our attacks (Misty's Tentacruel
 # vs the save's Rest Vaporeon, which +2 Sludge Bomb doesn't 2HKO from full
-# HP): keep boosting while it's safe, until the attack 2HKOs.
+# HP): keep boosting while it's safe, until the attack 2HKOs (against Rest
+# and Sleep Talk, until its lowest roll takes two thirds of its max HP).
 heal_setup_cases = [
     # (name, Attack stage, Tentacruel's HP, Vaporeon's revealed moves, expected score)
     ('+2 tentacruel vs vaporeon', 9, 158, [], 17),
     ('+2 tentacruel vs resttalk vaporeon', 9, 158, ['SURF', 'GROWTH', 'SLEEP_TALK', 'REST'], 17),
     ('+4 tentacruel vs vaporeon (2HKOs)', 11, 158, [], 22),
+    ('+4 tentacruel vs resttalk vaporeon', 11, 158, ['SURF', 'GROWTH', 'SLEEP_TALK', 'REST'], 22),
     ('+2 tentacruel below half HP', 9, 100, [], 20),
 ]
 for name, stage, hp, pused, exp in heal_setup_cases:
