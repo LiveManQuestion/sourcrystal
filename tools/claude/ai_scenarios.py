@@ -484,6 +484,8 @@ def on_switch_entry(ctx):
             for k in range(4):
                 mem[W('wOTPartyMon1Moves') + b + k] = moves[k] if k < len(moves) else 0
             mem[W('wOTPartyMon1Status') + b] = 0
+            # held items (Leftovers) change the scores: don't use the party's
+            mem[W('wOTPartyMon1Item') + b] = extra.get('item', 0)  # NO_ITEM
             word(W('wOTPartyMon1HP') + b, extra.get('chp', 200)); word(W('wOTPartyMon1MaxHP') + b, 200)
             for k in range(5):
                 word(W('wOTPartyMon1Attack') + b + 2 * k, 200)

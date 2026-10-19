@@ -1002,3 +1002,21 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   Crystal and Sour Crystal: no warning, flag stays clear). Both are local
   commits in `~/mupen64plus-core` (branches `gb-ram-mirroring`,
   `gb-rtc-start-time`), PRs #1195 and #1196.
+- **2026-10-18**: Gym leaders' Challenge Mode rematch teams are the sample
+  teams from Smogon's GSC Monotype thread (threads/3786401, Aeran's post #2;
+  Jasmine gets cherryb0ng's WIP Steel team, since there's no Steel sample):
+  Falkner Flying, Bugsy Bug, Whitney Normal, Chuck Fighting, Jasmine Steel,
+  Pryce Ice, Brock Rock, Misty Water, Lt. Surge Electric, Erika Grass, Janine
+  Poison, Sabrina Psychic, Blaine Fire. Sets, items and Hidden Power DVs are
+  the pastes' (Miracle Berry is LUM_BERRY, Mint Berry CHESTO_BERRY); each slot
+  keeps its old level. No legendaries: each one is swapped for the best
+  non-legendary of the type in the thread's viability ranking (post #3) not
+  already on the team, with a set from the thread (Jumpluff, Sneasel,
+  Kingdra, Electrode), Smogon's GS dex (Dragonite, Ampharos) or Blaine's old
+  team (Ninetales, Magcargo): Falkner Zapdos/Articuno -> Dragonite/Jumpluff,
+  Pryce Articuno -> Sneasel, Misty Suicune -> Kingdra, Lt. Surge
+  Zapdos/Raikou -> Ampharos/Electrode, Blaine Moltres/Entei ->
+  Ninetales/Magcargo. Morty (Ghost) and Clair (Dragon) had no team and
+  are unchanged. `ai_scenarios.py`'s switch cases now set the candidates' held
+  item (none by default): with Bugsy's all-Leftovers team, "flying avoids
+  spikes" became a tie. ALL OK on this build and `HEAD`.
