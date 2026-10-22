@@ -1059,3 +1059,21 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   Gengar; Gen 2 has only five fully evolved Dark types. Will 2 and Koga 2
   were already all Psychic and all Poison. Moves checked against the
   learnsets; all four ROMs built.
+- **2026-10-22**: Legendary AI. In Challenge Mode, wild Raikou, Entei,
+  Suicune, Mewtwo, Lugia and Ho-Oh pick their moves with the trainer AI (the
+  gym leaders' layers, AI_Smogon included, plus the new `AI_Legendary`:
+  no Roar, Whirlwind, Teleport or Baton Pass) instead of at random
+  (`engine/battle/ai/legendary.asm`). The wild Pokemon is copied into a
+  one-Pokemon enemy party each turn for the AI's party reads. Checked with
+  84 headless wild battles (each legendary and a Snorlax control, with and
+  without Challenge Mode, two saves): no crashes, every move used was the
+  AI's pick, no Roar (7 battle-ending Roars without the AI); other wild
+  battles unchanged. `cmp_data` ALL IDENTICAL, `damage_diff` 0 mismatches,
+  `ai_scenarios` ALL OK.
+- **2026-10-22**: Challenge Mode legendary movesets
+  (`LegendaryChallengeMoves`, from the user's `legendariesmoves.md`): Lugia
+  Curse/Aeroblast/Whirlwind/Recover, Ho-Oh Flamethrower/Toxic/Recover/
+  Whirlwind, Mewtwo Psychic/DynamicPunch/Barrier/Recover, Entei Fire Blast/
+  Sunny Day/SolarBeam/Roar, Suicune Hydro Pump/Surf/Ice Beam/Roar, Raikou
+  Thunderbolt/Roar/Rain Dance/Thunder. Same 84-battle check: movesets loaded
+  in Challenge Mode only, no crashes, every move used was the AI's pick.

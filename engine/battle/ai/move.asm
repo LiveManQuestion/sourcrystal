@@ -2,10 +2,15 @@ AIChooseMove:
 ; Score each move of wEnemyMonMoves in wEnemyAIMoveScores. Lower is better.
 ; Pick the move with the lowest score.
 
-; Wildmons attack at random.
+; Wildmons attack at random, except the legendaries in LegendaryAIMons in
+; Challenge Mode.
 	ld a, [wBattleMode]
 	dec a
-	ret z
+	jr nz, .trainer
+	farcall AIUsesLegendaryAI
+	ret nc
+	farcall AILegendary_FillOTParty
+.trainer
 
 	ld a, [wLinkMode]
 	and a
@@ -65,6 +70,12 @@ AIChooseMove:
 
 ; Apply AI scoring layers depending on the trainer class.
 .ApplyLayers:
+	; Only the legendary AI gets here in wild battles.
+	ld a, [wBattleMode]
+	dec a
+	ld hl, LegendaryAIMoveWeights
+	jr z, .got_move_weights
+
 	ld hl, TrainerClassAttributes + TRNATTR_AI_MOVE_WEIGHTS
 
 	; If we have a battle in Battle Tower, just load the attributes of the first
@@ -72,14 +83,14 @@ AIChooseMove:
 	; same AI, regardless of the loaded class of trainer.
 	ld a, [wInBattleTowerBattle]
 	bit IN_BATTLE_TOWER_BATTLE_F, a
-	jr nz, .battle_tower_skip
+	jr nz, .got_move_weights
 
 	ld a, [wTrainerClass]
 	dec a
 	ld bc, NUM_TRAINER_ATTRIBUTES
 	call AddNTimes
 
-.battle_tower_skip
+.got_move_weights
 	lb bc, CHECK_FLAG, 0
 	push bc
 	push hl
@@ -235,7 +246,7 @@ AIScoringPointers:
 	dw AI_Risky
 	dw AI_Immunities
 	dw AI_Smogon
-	dw AI_None
+	dw AI_Legendary
 	dw AI_None
 	dw AI_None
 	dw AI_None

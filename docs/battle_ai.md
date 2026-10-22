@@ -5,7 +5,8 @@ How the trainer AI is organized (see also `CLAUDE.md`).
 - `engine/battle/ai/move.asm`: `AIChooseMove` runs the scoring layers enabled
   in each trainer class's `TRNATTR_AI_MOVE_WEIGHTS`
   (`data/trainers/attributes.asm`). Lower score = better; `AIDiscourageMove`
-  adds 10. Layer order: `AIScoringPointers`. `AI_Smogon` runs last.
+  adds 10. Layer order: `AIScoringPointers`. `AI_Smogon` runs last (then
+  `AI_Legendary`, which only wild legendaries enable).
 - `engine/battle/ai/scoring.asm`: the vanilla-style layers (AI_Basic, AI_Smart,
   AI_Status, ...). AI_Smart's per-effect handlers still apply under AI_Smogon,
   which adds to or cancels their scores. AI_Status covers status immunities.
@@ -96,8 +97,22 @@ How the trainer AI is organized (see also `CLAUDE.md`).
   Steelix forever. It also
   switches out a Pokemon with no useful move left: `AIChooseMove` (which runs
   first each turn) sets `wEnemyAIMovesSpent` when every move scores above 20.
+- `engine/battle/ai/legendary.asm`: wild legendaries in Challenge Mode.
+  Wild Pokemon normally attack at random (`ParseEnemyAction`), but the
+  species in `LegendaryAIMons` (Raikou, Entei, Suicune, Mewtwo, Lugia,
+  Ho-Oh) pick their moves with `AIChooseMove` (`AIUsesLegendaryAI`, also
+  checked by `ParseEnemyAction` to keep the AI's pick), with the gym
+  leaders' layers plus `AI_Legendary` (`LegendaryAIMoveWeights`). The AI
+  reads its own Pokemon from the enemy party, which wild battles leave as
+  stale RAM, so `AILegendary_FillOTParty` makes the wild Pokemon a party of
+  one each turn (nothing else reads the enemy party in wild battles).
+  They also get the movesets in `LegendaryChallengeMoves` instead of their
+  level-up moves (`AILegendary_SetChallengeMoves`, from `LoadEnemyMon`), and
+  keep them when caught. `AI_Legendary` scores Roar, Whirlwind and Teleport
+  (they end a wild battle) and Baton Pass 79: worse than any move that's
+  still useful, so Raikou only Roars when its Electric attacks can't hit. Roamers still flee unless trapped or asleep.
 - Banks: `items.asm`, `switch.asm`, `scoring.asm`, `smogon.asm`,
-  `smogon_switch.asm` and the Smogon data tables are all in the "Enemy Trainers"
+  `smogon_switch.asm`, `legendary.asm` and the Smogon data tables are all in the "Enemy Trainers"
   section (bank $0e), so they call each other with plain `call`. Battle Core
   (bank $0f) and Effect Commands (bank $0d) are reached with `farcall`/`callfar`
   or `newfarcall` (keeps all registers). `FindAliveEnemyMons` stays in Effect

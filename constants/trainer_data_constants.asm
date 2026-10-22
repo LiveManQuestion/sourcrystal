@@ -22,6 +22,7 @@ DEF NUM_TRAINER_ATTRIBUTES EQU _RS
 	shift_const AI_RISKY
 	shift_const AI_IMMUNITIES
 	shift_const AI_SMOGON
+	shift_const AI_LEGENDARY
 DEF NO_AI EQU 0
 
 ; SmogonTraits bit flags (see data/battle/ai/smogon_traits.asm)

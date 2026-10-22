@@ -5918,7 +5918,7 @@ ParseEnemyAction:
 	jp nz, .skip_load
 	ld a, [wEnemySubStatus3]
 	and 1 << SUBSTATUS_CHARGED | 1 << SUBSTATUS_RAMPAGE | 1 << SUBSTATUS_BIDE
-	jr nz, .skip_load
+	jp nz, .skip_load
 
 	ld hl, wEnemySubStatus5
 	bit SUBSTATUS_ENCORED, [hl]
@@ -5972,7 +5972,9 @@ ParseEnemyAction:
 	ld a, [wBattleMode]
 	dec a
 	jr nz, .skip_load
-; wild
+; wild, unless AIChooseMove picked the move
+	farcall AIUsesLegendaryAI
+	jr c, .skip_load
 .loop2
 	ld hl, wEnemyMonMoves
 	call BattleRandom
@@ -6522,6 +6524,7 @@ endc
 	ld [wSkipMovesBeforeLevelUp], a
 ; Fill moves based on level
 	predef FillMoves
+	farcall AILegendary_SetChallengeMoves
 
 .PP:
 ; Trainer battle?

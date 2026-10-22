@@ -115,7 +115,9 @@ Details: `docs/battle_ai.md`. In short: `AIChooseMove`
 (`engine/battle/ai/move.asm`) runs the scoring layers each trainer class
 enables (lower score = better); `AI_Smogon` (`smogon.asm`, Challenge Mode
 only) runs last and only uses what a human could know. Switching is `SwitchSmogon` (`items.asm`) with matchup
-scoring in `smogon_switch.asm`. All of these share bank $0e; Battle Core and
+scoring in `smogon_switch.asm`. In Challenge Mode the wild legendaries in
+`LegendaryAIMons` (`legendary.asm`) also pick moves with `AIChooseMove`
+instead of at random. All of these share bank $0e; Battle Core and
 Effect Commands need `farcall` or `newfarcall`.
 
 ## Tools (`tools/claude/`)
