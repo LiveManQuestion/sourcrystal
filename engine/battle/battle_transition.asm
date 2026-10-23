@@ -684,7 +684,11 @@ StartTrainerBattle_LoadPokeBallGraphics:
 	jr .nextscene
 
 .cgb
+	ld hl, .rocketpals
+	call .IsRocketClass
+	jr z, .got_pals
 	ld hl, .pals
+.got_pals
 	ld a, [wTimeOfDayPalset]
 	cp DARKNESS_PALSET
 	jr nz, .not_dark
@@ -818,9 +822,28 @@ INCLUDE "gfx/overworld/trainer_battle.pal"
 .darkpals:
 INCLUDE "gfx/overworld/trainer_battle_dark.pal"
 
+.rocketpals:
+INCLUDE "gfx/overworld/rocket_battle.pal"
+
 .loadpokeballgfx:
-	ld a, [wOtherTrainerClass]
+	ld de, TeamRocketTransition
+	call .IsRocketClass
+	ret z
 	ld de, PokeBallTransition
+	ret
+
+.IsRocketClass:
+; Team Rocket gets an "R" instead of the Poke Ball (same classes as the
+; Rocket battle music; Scientists also battle outside the Rocket base).
+; Returns z if wOtherTrainerClass is a Rocket class.
+	ld a, [wOtherTrainerClass]
+	cp GRUNTM
+	ret z
+	cp GRUNTF
+	ret z
+	cp EXECUTIVEM
+	ret z
+	cp EXECUTIVEF
 	ret
 
 PokeBallTransition:
@@ -842,6 +865,27 @@ pusho b.X ; . = 0, X = 1
 	bigdw %..XXXX....XXXX..
 	bigdw %....XXXXXXXX....
 	bigdw %......XXXX......
+popo
+
+TeamRocketTransition:
+; 16x16 overlay of a Team Rocket "R"
+pusho b.X ; . = 0, X = 1
+	bigdw %XXXXXXXXXXXX....
+	bigdw %XXXXXXXXXXXXXX..
+	bigdw %XXXXXXXXXXXXXXX.
+	bigdw %XXXXXXXXXXXXXXX.
+	bigdw %XXXXX.....XXXXXX
+	bigdw %XXXXX......XXXXX
+	bigdw %XXXXX.....XXXXXX
+	bigdw %XXXXXXXXXXXXXXX.
+	bigdw %XXXXXXXXXXXXXXX.
+	bigdw %XXXXXXXXXXXXXX..
+	bigdw %XXXXXXXXXXXXX...
+	bigdw %XXXXX....XXXXX..
+	bigdw %XXXXX....XXXXX..
+	bigdw %XXXXX.....XXXXX.
+	bigdw %XXXXX......XXXXX
+	bigdw %XXXXX......XXXXX
 popo
 
 WipeLYOverrides:

@@ -1077,3 +1077,9 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   Sunny Day/SolarBeam/Roar, Suicune Hydro Pump/Surf/Ice Beam/Roar, Raikou
   Thunderbolt/Roar/Rain Dance/Thunder. Same 84-battle check: movesets loaded
   in Challenge Mode only, no crashes, every move used was the AI's pick.
+- **2026-10-22**: Team Rocket battle transition (pokecrystal wiki, "Add a new
+  battle transition" parts 1-2): Grunts and Executives get a red "R" overlay
+  (`TeamRocketTransition`, `gfx/overworld/rocket_battle.pal`) instead of the
+  Poké Ball. Same classes as the Rocket battle music; Scientists left out
+  because the Seafoam Gym ones aren't Rockets. The dark palette still wins at
+  night. All four ROMs build with no warnings.
