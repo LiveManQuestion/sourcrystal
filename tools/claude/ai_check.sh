@@ -9,7 +9,11 @@
 # Options (environment): SEEDS=144 (battles per trainer), TRACE_SEEDS=36
 # (traced battles per trainer, for the judge), ITERS=600000 (judge search
 # iterations per decision, JOBS=11 decisions at a time; ITERS=0 searches
-# MS=400 milliseconds on 11 threads instead, as before), TRAINERS="KOGA 2|MISTY 2|WHITNEY 2|JASMINE 2",
+# MS=400 milliseconds on 11 threads instead, as before), TRAINERS="KOGA 2|MISTY 2|WHITNEY 2|JASMINE 2"
+# (TRAINERS=all: every party of every Smogon AI trainer class, from
+# make_battle_scripts.py; with PLAYER_LEVEL=match the save's party plays at
+# each party's top level, see battle_harness.py, and SEEDS=$TRACE_SEEDS
+# takes the battles from the traces),
 # SMART_PLAYER=basic (the player without status moves, see smart_player.py),
 # SAVE=sourcrystal.sav (read through save_ram.py), NO_JUDGE=1 (skip
 # the traces and the judge).
@@ -38,6 +42,9 @@ else
 	search="--ms $ms --threads 11"
 fi
 trainers=${TRAINERS:-"KOGA 2|MISTY 2|WHITNEY 2|JASMINE 2"}
+if [ "$trainers" = all ]; then
+	trainers=$(python3 -c "import json; print('|'.join(json.load(open('$here/battle_scripts.json'))))")
+fi
 save=${SAVE:-$root/sourcrystal.sav}
 judge=1
 [ -n "${NO_JUDGE:-}" ] && judge=""
@@ -60,7 +67,7 @@ run_rom() {
 	local key
 	# (the full smart player's rules are part of the key; SMART_PLAYER=basic
 	# plays like the player before them, so it keeps the old keys)
-	key=$( (cat "$r" "$work/save.ram"; echo "$seeds|$trace_seeds|$ms|$trainers"
+	key=$( (cat "$r" "$work/save.ram"; echo "$seeds|$trace_seeds|$ms|$trainers${PLAYER_LEVEL:+|$PLAYER_LEVEL}"
 		[ "${SMART_PLAYER:-}" = basic ] || cat "$here/smart_player.py") | sha256sum | cut -c1-16)
 	local dir=$root/.aicheck/$key
 	mkdir -p "$dir"

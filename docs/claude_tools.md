@@ -61,6 +61,10 @@ and the `CLAUDE.md` line after upgrading.
   battles and `TRACE_SEEDS=36` traced battles per trainer, `ITERS=600000`
   judge iterations per decision (`JOBS=11` at a time; `ITERS=0` uses the
   old `MS=400` timed search), `TRAINERS=...`, `SAVE=...`, `NO_JUDGE=1`.
+  `TRAINERS=all PLAYER_LEVEL=match SEEDS=8 TRACE_SEEDS=8` checks every
+  party of every Smogon AI class (107, first battles and rematches), with
+  the save's party at each party's top level: about 15 minutes of traces
+  and 2 hours of judging (11,500 decisions) per uncached ROM.
   Each ROM's results are cached in `.aicheck/` (git-ignored) by its
   contents, the save, `smart_player.py` and the options (judge files by
   their search settings), so the base runs once per commit; about 25
@@ -94,7 +98,12 @@ and the `CLAUDE.md` line after upgrading.
   Mode battle against a Smogon-AI trainer. JSON line with crashes, AI routine
   counts, the enemy's moves, every enemy switch-in, and `player_left` /
   `enemy_left` (Pokemon with HP left at the end: finer than win/loss). Run
-  `make_battle_scripts.py` first (add trainers to its list). An injected
+  `make_battle_scripts.py` first: it writes a script for every party of
+  every `SWITCH_SMOGON` class, and each party's top level
+  (`battle_levels.json`). `PLAYER_LEVEL=N` (environment, or `match` for
+  that top level) sets the smart player's party to level N, stats and exp
+  recalculated (`pokedata.calc_stats`, `exp_at_level`), so early trainers
+  face a team at their level. An injected
   battle needs `winlosstext`.
   - Default player: an unkillable Typhlosion (Tackle, Swords Dance, Roar,
     Toxic) pressing random buttons. Good for crashes and stalls, not for win

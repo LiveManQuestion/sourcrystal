@@ -15,6 +15,9 @@ queue. The player is either:
   (Tackle/Swords Dance/Roar/Toxic) that presses random buttons and gets
   healed now and then. Good for crashes and stalls, not for win rates.
 - smart=True: the save's own party, healed once, played by smart_player.py.
+  With level (or PLAYER_LEVEL in the environment), the party is set to that
+  level first (stats and exp recalculated), to match an early trainer;
+  'match' is the trainer's top level (battle_levels.json).
 
 run() returns: started, ended, won (wBattleResult: 0 win, 1 loss, 2 draw),
 frames, crashed_at (a jump to the rst $38 crash vector, with the stack),
@@ -36,8 +39,12 @@ from pokedata import load_sym  # noqa: E402
 
 
 class Battle:
-    def __init__(self, rom, symf, save, trainer, seed, smart=False):
+    def __init__(self, rom, symf, save, trainer, seed, smart=False, level=None):
         self.trainer, self.seed, self.smart = trainer, seed, smart
+        level = level or os.environ.get('PLAYER_LEVEL')
+        if level == 'match':
+            level = json.load(open(os.path.join(HERE, 'battle_levels.json')))[trainer]
+        self.level = int(level or 0)
         self.rng = random.Random(int(seed))
         script = json.load(open(os.path.join(HERE, 'battle_scripts.json')))[trainer]
         self.move_ids = script[:8]
@@ -107,6 +114,8 @@ class Battle:
         if self.smart:
             from smart_player import SmartPlayer, heal_party
             self.player = SmartPlayer(self.pb, self.sym, hook=self.on)
+            if self.level:
+                self.set_party_level(self.level)
             heal_party(mem, W)
         else:
             tackle, swords_dance, roar, toxic, _, _, _, typhlosion = self.move_ids
@@ -132,6 +141,24 @@ class Battle:
         mem[W('wMapReentryScriptBank')] = 1
         mem[W('wMapReentryScriptAddress')] = base & 0xff
         mem[W('wMapReentryScriptAddress') + 1] = base >> 8
+
+    def set_party_level(self, level):
+        from pokedata import calc_stats, exp_at_level
+        mem, W = self.mem, self.W
+        length = W('wPartyMon2') - W('wPartyMon1')
+        for i in range(mem[W('wPartyCount')]):
+            at = lambda n: W('wPartyMon1' + n) + i * length
+            species = mem[at('Species')]
+            dvs = [mem[at('DVs')], mem[at('DVs') + 1]]
+            stat_exp = [self.word(at('HPExp') + 2 * k) for k in range(5)]
+            stats = calc_stats(species, level, dvs, stat_exp)
+            mem[at('Level')] = level
+            exp = exp_at_level(species, level)
+            for k in range(3):
+                mem[at('Exp') + k] = exp >> (16 - 8 * k) & 0xff
+            self.set_word(at('MaxHP'), stats[0])
+            for k, v in enumerate(stats[1:]):
+                self.set_word(at('Attack') + 2 * k, v)
 
     def alive(self, first, count):
         length = self.W(first[:-1] + '2') - self.W(first)

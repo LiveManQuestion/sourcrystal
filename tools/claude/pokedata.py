@@ -10,6 +10,7 @@ const_skip, const_next and shift_const, which ad hoc parsers got wrong.
     effectiveness(TYPES['FIRE'], (TYPES['STEEL'], TYPES['GROUND'])) -> 2
     load_sym('sourcrystal.sym')['wEnemyMonHP'] -> (bank, address)
 """
+import math
 import os
 import re
 
@@ -119,6 +120,9 @@ def effectiveness(attack_type, defender_types):
 
 
 BASE_TYPES = {}
+# [hp, atk, def, spd, sat, sdf] and the GROWTH_* name, by species id
+BASE_STATS = {}
+GROWTH = {}
 for _name, _n in SPECIES.items():
     _path = os.path.join(ROOT, 'data/pokemon/base_stats', _name.lower() + '.asm')
     if os.path.exists(_path):
@@ -126,6 +130,38 @@ for _name, _n in SPECIES.items():
             _m = re.match(r'\s*db (\w+),\s*(\w+)\s*; type', _line)
             if _m:
                 BASE_TYPES[_n] = (TYPES[_m.group(1)], TYPES[_m.group(2)])
+            _m = re.match(r'\s*db\s+(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\s*$', _line)
+            if _m and _n not in BASE_STATS:
+                BASE_STATS[_n] = [int(x) for x in _m.groups()]
+            _m = re.match(r'\s*db (GROWTH_\w+)', _line)
+            if _m:
+                GROWTH[_n] = _m.group(1)
+
+
+def exp_at_level(species, level):
+    """The least exp a Pokemon of species has at level (Gen 2 growth rates)."""
+    n = level
+    return max(0, int({
+        'GROWTH_MEDIUM_FAST': n ** 3,
+        'GROWTH_SLIGHTLY_FAST': 3 * n ** 3 / 4 + 10 * n * n - 30,
+        'GROWTH_SLIGHTLY_SLOW': 3 * n ** 3 / 4 + 20 * n * n - 70,
+        'GROWTH_MEDIUM_SLOW': 6 * n ** 3 / 5 - 15 * n * n + 100 * n - 140,
+        'GROWTH_FAST': 4 * n ** 3 / 5,
+        'GROWTH_SLOW': 5 * n ** 3 / 4}[GROWTH[species]]))
+
+
+def calc_stats(species, level, dvs, stat_exp):
+    """Gen 2 [max hp, atk, def, spd, sat, sdf] from the two DV bytes and the
+    five stat exp words (hp, atk, def, spd, spc), like CalcMonStats."""
+    atk, dfn, spd, spc = dvs[0] >> 4, dvs[0] & 15, dvs[1] >> 4, dvs[1] & 15
+    hp_dv = (atk & 1) << 3 | (dfn & 1) << 2 | (spd & 1) << 1 | spc & 1
+    out = []
+    for k, (dv, exp) in enumerate(zip((hp_dv, atk, dfn, spd, spc, spc),
+                                      (*stat_exp[:4], stat_exp[4], stat_exp[4]))):
+        root = min(255, math.ceil(math.sqrt(exp)))
+        stat = ((BASE_STATS[species][k] + dv) * 2 + root // 4) * level // 100
+        out.append(stat + (level + 10 if k == 0 else 5))
+    return out
 
 HIDDEN_POWER_TYPES = ['FIGHTING', 'FLYING', 'POISON', 'GROUND', 'ROCK', 'BUG', 'GHOST', 'STEEL',
                       'FIRE', 'WATER', 'GRASS', 'ELECTRIC', 'PSYCHIC_TYPE', 'ICE', 'DRAGON', 'DARK']
