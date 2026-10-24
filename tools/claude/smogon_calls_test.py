@@ -16,6 +16,8 @@ game_call.py on hand-made battle states:
   Whitney 2 and Jasmine 2 against the save's party.
 - AISmogon_PickedLeadMoveFirst (smogon.asm): when Spore or Spikes keeps
   the active Pokemon in.
+- AI_Aggressive's strongest attack (AIStrongestMove skips a move out of PP
+  in Challenge Mode).
 
 usage: smogon_calls_test.py ROM SYM SAVE.ram    (last line RESULT: ALL OK)"""
 import os
@@ -444,19 +446,28 @@ QWILFISH_KOGA = dict(species=SPECIES['QWILFISH'], level=85, hp=231, max_hp=231, 
 TENTACRUEL_MISTY = dict(species=SPECIES['TENTACRUEL'], level=84, hp=118, max_hp=253, stats=[134, 139, 198, 164, 231],
                         moves=[MOVE_IDS[x] for x in ('SLUDGE_BOMB', 'SWORDS_DANCE', 'HYDRO_PUMP', 'SUBSTITUTE')],
                         pp=[8, 30, 3, 10], dvs=(127, 255), item=0)
+# Red 2's Charizard out of Fire Blast PP: Earthquake is its strongest attack
+# on Steelix, not the spent Fire Blast (which left Earthquake and Rock Slide
+# tied).
+CHARIZARD_RED = dict(species=SPECIES['CHARIZARD'], level=100, hp=296, max_hp=296, stats=[203, 191, 235, 253, 205],
+                     moves=[MOVE_IDS[x] for x in ('FIRE_BLAST', 'EARTHQUAKE', 'ROCK_SLIDE', 'SWORDS_DANCE')],
+                     pp=[0, 10, 9, 30], dvs=(255, 255), item=0)
+CLOYSTER_P = ('CLOYSTER', ('WATER', 'ICE'), ['SURF'])
+STEELIX_P = ('STEELIX', ('STEEL', 'GROUND'), ['EARTHQUAKE'])
 aggressive_cases = [
-    # (name, enemy, Attack stage, Challenge Mode, expected scores)
-    ('qwilfish vs cloyster', QWILFISH_KOGA, 7, True, [20, 20, 21, 20]),
-    ('qwilfish vs cloyster, normal mode', QWILFISH_KOGA, 7, False, [20, 21, 20, 20]),
-    ('+2 tentacruel vs cloyster', TENTACRUEL_MISTY, 9, True, [20, 20, 21, 20]),
+    # (name, enemy, Attack stage, Challenge Mode, the player's Pokemon, expected scores)
+    ('qwilfish vs cloyster', QWILFISH_KOGA, 7, True, CLOYSTER_P, [20, 20, 21, 20]),
+    ('qwilfish vs cloyster, normal mode', QWILFISH_KOGA, 7, False, CLOYSTER_P, [20, 21, 20, 20]),
+    ('+2 tentacruel vs cloyster', TENTACRUEL_MISTY, 9, True, CLOYSTER_P, [20, 20, 21, 20]),
+    ('charizard out of fire blast vs steelix', CHARIZARD_RED, 7, True, STEELIX_P, [21, 20, 21, 20]),
 ]
 challenge = m[A('wChallengeMode')]
-for name, mon, stage, cm, exp in aggressive_cases:
-    if SPECIES['CLOYSTER'] not in party:
+for name, mon, stage, cm, (player, ptypes, pused), exp in aggressive_cases:
+    if SPECIES[player] not in party:
         print('SKIP', name); continue
     set_ot(mon)
     w('wEnemyAtkLevel', stage); word('wEnemyMonAttack', mon['stats'][0] * (stage - 5) // 2)
-    set_player(party.index(SPECIES['CLOYSTER']) + 1, ('WATER', 'ICE'), ['SURF'])
+    set_player(party.index(SPECIES[player]) + 1, ptypes, pused)
     w('wBattleWeather', 0); w('wCriticalHit', 0)
     w('wChallengeMode', challenge | 1 if cm else challenge & ~1)
     for i in range(4):

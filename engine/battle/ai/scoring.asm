@@ -3095,6 +3095,19 @@ AIStrongestMove:
 	push hl
 	push de
 	push bc
+; In Challenge Mode, skip a move out of PP: Red's Charizard, out of Fire
+; Blast, kept discouraging Earthquake and Rock Slide alike against Steelix.
+	ld c, a
+	ld a, [wChallengeMode]
+	bit GAME_CHALLENGE_MODE_F, a
+	jr z, .has_pp
+	ld de, wEnemyMonPP - (wEnemyMonMoves + 1)
+	add hl, de
+	ld a, [hl]
+	and PP_MASK
+	jr z, .nodamage
+.has_pp
+	ld a, c
 	call AIGetEnemyMove
 	ld a, [wEnemyMoveStruct + MOVE_POWER]
 	and a
@@ -3301,6 +3314,25 @@ AI_Risky:
 	jr c, .nextmove
 
 .checkko
+; In Challenge Mode, an attack with a charging turn doesn't KO this turn
+; (Karen's Houndoom picked SolarBeam without sun to finish Vaporeon).
+	ld a, [wChallengeMode]
+	bit GAME_CHALLENGE_MODE_F, a
+	jr z, .no_charging
+	ld a, [wEnemyMoveStruct + MOVE_EFFECT]
+	cp EFFECT_SOLARBEAM
+	jr nz, .not_solarbeam
+	ld a, [wBattleWeather]
+	cp WEATHER_SUN
+	jr nz, .nextmove
+	jr .no_charging
+
+.not_solarbeam
+	ld hl, .ChargingEffects
+	ld de, 1
+	call IsInArray
+	jr c, .nextmove
+.no_charging
 	call AIDamageCalc
 
 	ld a, [wCurDamage + 1]
@@ -3324,6 +3356,13 @@ endr
 	pop bc
 	pop de
 	jr .checkmove
+
+.ChargingEffects:
+	db EFFECT_RAZOR_WIND
+	db EFFECT_SKY_ATTACK
+	db EFFECT_SKULL_BASH
+	db EFFECT_FLY
+	db -1 ; end
 
 
 AI_None:

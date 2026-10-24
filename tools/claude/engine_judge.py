@@ -62,8 +62,12 @@ GEN2_TYPES = ['NORMAL', 'FIGHTING', 'FLYING', 'POISON', 'GROUND', 'ROCK', 'BUG',
               'WATER', 'GRASS', 'ELECTRIC', 'PSYCHIC_TYPE', 'ICE', 'DRAGON', 'DARK']
 # (not from TYPES itself: other constants share some values, like STEEL's)
 TYPE_NAMES = {TYPES[name]: name for name in GEN2_TYPES}
+# (poke-engine's Gen 2 gives Frustration, Flail and Magnitude no power:
+# Frustration is 102 at a trainer's 0 happiness, Flail works like Reversal,
+# and Stomping Tantrum is a 75-power Ground attack, near Magnitude's 71)
 MOVE_RENAMES = {'PSYCHIC_M': 'psychic', 'FAINT_ATTACK': 'feintattack', 'VICEGRIP': 'visegrip',
-                'HI_JUMP_KICK': 'highjumpkick', 'RETURN': 'return102'}
+                'HI_JUMP_KICK': 'highjumpkick', 'RETURN': 'return102', 'FRUSTRATION': 'return102',
+                'FLAIL': 'reversal', 'MAGNITUDE': 'stompingtantrum'}
 # Sour Crystal's item names that differ from Gen 2's (the IDs are vanilla's)
 ITEM_RENAMES = {'NO_ITEM': 'none', 'PECHA_BERRY': 'psncureberry', 'CHERI_BERRY': 'przcureberry',
                 'ASPEAR_BERRY': 'burntberry', 'RAWST_BERRY': 'iceberry', 'PERSIM_BERRY': 'bitterberry',
@@ -188,14 +192,47 @@ def search(state, ms, threads, iterations=0):
                         for o in result.side_one}}
 
 
+SEARCH_TIMEOUT = 300
+
+
 def search_safe(args):
-    """search(*args), or {'error': ...} when the engine panics: a Rust panic
-    is a BaseException, which kills a multiprocessing worker and hangs the
-    pool."""
-    try:
-        return search(*args)
-    except BaseException as e:  # noqa: B036
-        return {'error': f'{type(e).__name__}: {e}'}
+    """search(*args) in a forked child, or {'error': ...} when the engine
+    fails. A Rust panic is a BaseException, and a few positions make the
+    engine loop until it overflows its stack (a segfault, minutes later):
+    either would kill a multiprocessing worker and hang the pool, so the
+    child is killed after SEARCH_TIMEOUT seconds (a search usually takes
+    one or two)."""
+    import select
+    import signal
+    import time
+    r, w = os.pipe()
+    pid = os.fork()
+    if pid == 0:
+        os.close(r)
+        try:
+            found = search(*args)
+        except BaseException as e:  # noqa: B036
+            found = {'error': f'{type(e).__name__}: {e}'}
+        with os.fdopen(w, 'w') as f:
+            f.write(json.dumps(found))
+        os._exit(0)
+    os.close(w)
+    chunks, end = [], time.monotonic() + SEARCH_TIMEOUT
+    with os.fdopen(r) as f:
+        while True:
+            left = end - time.monotonic()
+            if left <= 0 or not select.select([f], [], [], left)[0]:
+                os.kill(pid, signal.SIGKILL)
+                os.waitpid(pid, 0)
+                return {'error': f'no result after {SEARCH_TIMEOUT} s'}
+            chunk = f.read()
+            if not chunk:
+                break
+            chunks.append(chunk)
+    os.waitpid(pid, 0)
+    if not chunks:
+        return {'error': 'engine crashed'}
+    return json.loads(''.join(chunks))
 
 
 def judge(d, found):

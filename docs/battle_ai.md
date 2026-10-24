@@ -10,6 +10,9 @@ How the trainer AI is organized (see also `CLAUDE.md`).
 - `engine/battle/ai/scoring.asm`: the vanilla-style layers (AI_Basic, AI_Smart,
   AI_Status, ...). AI_Smart's per-effect handlers still apply under AI_Smogon,
   which adds to or cancels their scores. AI_Status covers status immunities.
+  In Challenge Mode, `AIStrongestMove` (AI_Aggressive's pick) skips moves
+  out of PP, and AI_Risky's KO bonus skips attacks with a charging turn
+  (SolarBeam outside sun, Razor Wind, Sky Attack, Skull Bash, Fly, Dig).
 - `engine/battle/ai/smogon.asm` (`AI_Smogon`): the GSC OU strategy layer,
   only active in Challenge Mode (`wChallengeMode` bit `GAME_CHALLENGE_MODE_F`).
   - Per-effect handlers are in `AI_Smogon_EffectHandlers`. A handler gets
@@ -40,7 +43,11 @@ How the trainer AI is organized (see also `CLAUDE.md`).
     frames a turn.
 - `engine/battle/ai/smogon_switch.asm`: matchup scoring as a KO race.
   `AISmogon_AttackDamage` estimates each side's best attack with the damage
-  formula (no random factor, crits or accuracy), `AISmogon_TurnsToKO` turns
+  formula (no random factor, crits or accuracy; power-1 moves do the
+  attacker's level, Counter and Mirror Coat whoever they face: the race
+  gives no credit for Softboiled, and leaving Counter out against special
+  attackers stopped Whitney 2's Blissey from switching in on Zapdos and
+  cost her most of her wins), `AISmogon_TurnsToKO` turns
   it into hits needed from current HP, and the score is
   `SMOGON_MATCHUP_EVEN` + 16 × log2(the player's half turns / ours): the
   faster side gets half a turn, and a switch-in takes a hit on the way in

@@ -186,7 +186,10 @@ and the `CLAUDE.md` line after upgrading.
     power and sleep turns start from 0; Morning Sun, Synthesis and
     Moonlight always heal 1/2 without weather (the cartridge heals 1/4
     outside the move's time of day), so it overrates them (Erika's
-    Meganium). Items it doesn't know, like the
+    Meganium). Its Gen 2 gives Frustration, Flail and Magnitude no power,
+    so the judge maps them to Return (102), Reversal and Stomping Tantrum
+    (75); Sonic Boom, Dragon Rage, Psywave and Present still do nothing
+    there (the Rivals' Magnemite line). Items it doesn't know, like the
     Sitrus Berry, do nothing (`--check` lists the ones it knows; Sour
     Crystal's renamed items, like the Lum Berry, are mapped back to Gen 2's).
   - Comparing two ROMs: compare the pattern a change targets (the
@@ -196,8 +199,12 @@ and the `CLAUDE.md` line after upgrading.
     disagreements from 9 to 34, half of them from one battle.
   - The engine panics (a Rust panic, a `BaseException`) on an Encore
     without the encored move: `ai_trace.py` logs each side's last move
-    (`last_move`), and on older traces the Encore is left out. A position
-    the engine fails on is skipped and counted at the end; each search goes
+    (`last_move`), and on older traces the Encore is left out. A few
+    positions make the engine loop until it overflows its stack (a
+    segfault minutes later, shown in `journalctl -k`), which hung
+    `multiprocessing.Pool`: each search runs in a forked child, killed
+    after `SEARCH_TIMEOUT` (300 s; a search usually takes a second or two). A
+    position the engine fails on is skipped and counted at the end; each search goes
     into the cache as it finishes, so an interrupted run keeps its work.
   - Oak and Safari (also in `bots/`) only simulate Gen 1.
 - `ai_layers.py ROM SYM RAM TRAINER SEED [--species NAME]`: replays a

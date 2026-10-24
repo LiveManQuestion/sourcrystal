@@ -1083,3 +1083,31 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   Poké Ball. Same classes as the Rocket battle music; Scientists left out
   because the Seafoam Gym ones aren't Rockets. The dark palette still wins at
   night. All four ROMs build with no warnings.
+- **2026-10-24**: Engine judge over every Smogon AI trainer. `ai_check.sh`
+  takes `TRAINERS=all` (all 107 Challenge Mode parties of the SWITCH_SMOGON
+  classes, first battles and rematches) and `PLAYER_LEVEL=match` (the OU
+  test team set to each party's top level, stats recalculated by
+  `pokedata.calc_stats`). Baseline: 856 battles, 11,365 decisions, mean
+  regret 0.010, 65 clear (> 0.1) disagreements. The judge now survives
+  poke-engine panics and crashes (an Encore state panicked it; a few
+  positions loop until the stack overflows: each search runs in a forked
+  child with a 300 s limit) and plays Frustration, Flail and Magnitude with
+  real power. Fixes, both Challenge Mode only:
+  - `AIStrongestMove` skips moves out of PP (Red's Charizard, out of Fire
+    Blast, discouraged everything against Steelix: regret 4.25 over 10
+    clear decisions, now 0.03).
+  - `AI_Risky` doesn't count charging attacks (SolarBeam without sun,
+    Razor Wind, Sky Attack, Skull Bash, Fly/Dig) as a KO (Karen's Houndoom).
+  Tried and dropped: leaving Counter out of the matchup score against
+  special attackers (and Mirror Coat against physical ones). The judge
+  liked it (Blissey vs Cloyster regret 12.1 to 1.0), but Whitney 2 fell
+  from 17 to 3 wins in 144 (z -3.2): Counter's level damage was what made
+  Blissey a switch-in on Zapdos, since the race gives no credit for
+  Softboiled. The remaining clear disagreements are mostly hidden
+  information (the engine sees full sets), engine overrating (Confuse Ray,
+  Synthesis at night) or model gaps (status-only switch-ins, sleep
+  length). Checked with `cmp_data` ALL IDENTICAL, `damage_diff` 0
+  mismatches, `ai_scenarios` and `smogon_calls_test` ALL OK, and
+  `ai_check.sh` against the previous commit: no significant change but
+  Koga 2 (124 to 107 wins, z -2.5), whose team neither fix touches; 144
+  fresh seeds gave 124 to 122 (z -0.3), so it was the RNG reshuffle.
