@@ -44,10 +44,10 @@ How the trainer AI is organized (see also `CLAUDE.md`).
 - `engine/battle/ai/smogon_switch.asm`: matchup scoring as a KO race.
   `AISmogon_AttackDamage` estimates each side's best attack with the damage
   formula (no random factor, crits or accuracy; power-1 moves do the
-  attacker's level, Counter and Mirror Coat whoever they face: the race
-  gives no credit for Softboiled, and leaving Counter out against special
-  attackers stopped Whitney 2's Blissey from switching in on Zapdos and
-  cost her most of her wins), `AISmogon_TurnsToKO` turns
+  attacker's level, Counter and Mirror Coat whoever they face: leaving
+  Counter out against special attackers stopped Whitney 2's Blissey from
+  switching in on Zapdos and cost her most of her wins, even with the
+  stall score below), `AISmogon_TurnsToKO` turns
   it into hits needed from current HP, and the score is
   `SMOGON_MATCHUP_EVEN` + 16 × log2(the player's half turns / ours): the
   faster side gets half a turn, and a switch-in takes a hit on the way in
@@ -64,7 +64,10 @@ How the trainer AI is organized (see also `CLAUDE.md`).
   quarter) that outheals the damage taken lasts until its recovery PP runs
   out (`AISmogon_SideTurns`: its HP plus each heal left), while its own KO
   takes longer by the turns spent healing, at most its PP
-  (`AISmogon_HealDelay`). The AI knows its own Pokemon's PP; the player's
+  (`AISmogon_HealDelay`). When both sides outheal (neither can KO), the
+  one that spends fewer of its turns healing wins: `AISmogon_StallScore`
+  scores `SMOGON_MATCHUP_EVEN` + 16 × log2 of the player's damage taken /
+  healing over ours. The AI knows its own Pokemon's PP; the player's
   Pokemon counts its revealed recovery moves, or Rest if its `SmogonTraits`
   say so, with their base PP. Attack PP counts too: each side keeps a list
   of its attacks' damage and PP (`ATTACKS_*`, `AISmogon_AddAttack`), and

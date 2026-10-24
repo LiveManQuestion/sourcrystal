@@ -807,6 +807,17 @@ AISmogon_ScoreMatchup:
 	xor a ; FALSE
 .got_stalled
 	ld [wSmogonAIStalled], a
+	and a
+	jr z, .race
+	call AISmogon_StallScore
+	jr nc, .race
+	ld b, a
+	pop af
+	pop af
+	ld a, b
+	jr .done
+
+.race
 	pop af
 	ld hl, wSmogonAIPlayerHeal
 	ld de, wSmogonAIPower
@@ -892,6 +903,7 @@ AISmogon_ScoreMatchup:
 	ld a, SMOGON_MATCHUP_EVEN
 	add d
 	sub b
+.done
 	pop hl
 	pop de
 	pop bc
@@ -1253,6 +1265,69 @@ AISmogon_HealDelay:
 	pop hl
 	pop de
 	pop bc
+	ret
+
+AISmogon_StallScore:
+; When neither side can KO the other because both outheal the damage they
+; take, the one that spends fewer of its turns healing wins the stall
+; (Whitney's Blissey against a Rest Zapdos, which heals about as much as
+; Ice Beam takes off): return carry and SMOGON_MATCHUP_EVEN + 16 *
+; log2(the player's damage / healing over ours). No carry if a side doesn't
+; outheal its damage (neither side can hurt the other).
+	ld hl, wSmogonAIOurHeal
+	ld de, wSmogonAIThreat
+	call AISmogon_HealOutlasts
+	ret nc
+	call .HealingShare
+	push af
+	ld hl, wSmogonAIPlayerHeal
+	ld de, wSmogonAIPower
+	call AISmogon_HealOutlasts
+	jr nc, .no_stall
+	call .HealingShare
+	call AISmogon_Log2
+	ld d, a
+	pop af
+	call AISmogon_Log2
+	ld b, a
+	ld a, SMOGON_MATCHUP_EVEN
+	add d
+	sub b
+	scf
+	ret
+
+.no_stall
+	pop af
+	and a
+	ret
+
+.HealingShare:
+; a = 128 * the damage per turn at de / the healing per turn at hl, from 1
+; to 127 (the damage is less than the healing)
+	xor a
+	ldh [hMultiplicand], a
+	ld a, [de]
+	ldh [hMultiplicand + 1], a
+	inc de
+	ld a, [de]
+	ldh [hMultiplicand + 2], a
+	ld a, 128
+	ldh [hMultiplier], a
+	call Multiply
+	ldh a, [hProduct + 1]
+	ldh [hMathBuffer + 1], a
+	ldh a, [hProduct + 2]
+	ldh [hMathBuffer + 2], a
+	ldh a, [hProduct + 3]
+	ldh [hMathBuffer + 3], a
+	ld a, [hli]
+	ld d, a
+	ld e, [hl]
+	call AISmogon_Divide24
+	ld a, l
+	and a
+	ret nz
+	inc a
 	ret
 
 AISmogon_StartAttacks:

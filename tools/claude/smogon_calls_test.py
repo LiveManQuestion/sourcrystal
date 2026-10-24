@@ -18,6 +18,7 @@ game_call.py on hand-made battle states:
   the active Pokemon in.
 - AI_Aggressive's strongest attack (AIStrongestMove skips a move out of PP
   in Challenge Mode).
+- AISmogon_StallScore: who wins a stall where both sides outheal.
 
 usage: smogon_calls_test.py ROM SYM SAVE.ram    (last line RESULT: ALL OK)"""
 import os
@@ -532,6 +533,27 @@ for player, ptypes, pused, exp in physical_cases:
     good = got == exp
     ok &= good
     print('PASS' if good else 'FAIL', 'physical:', player, pused, 'carry', got, 'expected', exp)
+
+# AISmogon_StallScore: when both sides outheal the damage they take, the one
+# that spends fewer turns healing wins (Whitney's Blissey, healing 241 and
+# taking 103 from Thunder, against a Zapdos whose Rest counts as 70 against
+# Ice Beam's 69).
+def heal_block(name, amount, pp, hp):
+    word(name, amount); w(name, pp, 2); m[A(name) + 3] = hp >> 8; m[A(name) + 4] = hp & 0xff
+stall_score_cases = [
+    # (name, our healing, our PP, damage we take, player's healing, PP, damage it takes, expected score or None)
+    ('blissey vs rest zapdos', 241, 10, 103, 70, 10, 69, 148),
+    ('zapdos outhealed by ice beam', 241, 10, 103, 70, 10, 80, None),
+    ('blissey out of softboiled', 241, 0, 103, 70, 10, 69, None),
+]
+for name, oh, opp, threat, ph, ppp, power, exp in stall_score_cases:
+    heal_block('wSmogonAIOurHeal', oh, opp, 483); heal_block('wSmogonAIPlayerHeal', ph, ppp, 280)
+    word('wSmogonAIThreat', threat); word('wSmogonAIPower', power)
+    g.call('AISmogon_StallScore')
+    got = g.result['A'] if g.result['F'] & 0x10 else None
+    good = got == exp
+    ok &= good
+    print('PASS' if good else 'FAIL', 'stall score:', name, 'got', got, 'expected', exp)
 
 # AI_Smogon_Setup: Acid Armor only against a physical attacker (Misty 2's
 # Vaporeon vs the save's Cloyster, which attacks with Surf unless it has

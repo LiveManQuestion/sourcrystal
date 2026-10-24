@@ -1102,8 +1102,8 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   special attackers (and Mirror Coat against physical ones). The judge
   liked it (Blissey vs Cloyster regret 12.1 to 1.0), but Whitney 2 fell
   from 17 to 3 wins in 144 (z -3.2): Counter's level damage was what made
-  Blissey a switch-in on Zapdos, since the race gives no credit for
-  Softboiled. The remaining clear disagreements are mostly hidden
+  Blissey a switch-in on Zapdos: without it both sides outheal, and the
+  race called that a stall worth exactly even. The remaining clear disagreements are mostly hidden
   information (the engine sees full sets), engine overrating (Confuse Ray,
   Synthesis at night) or model gaps (status-only switch-ins, sleep
   length). Checked with `cmp_data` ALL IDENTICAL, `damage_diff` 0
@@ -1111,3 +1111,13 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   `ai_check.sh` against the previous commit: no significant change but
   Koga 2 (124 to 107 wins, z -2.5), whose team neither fix touches; 144
   fresh seeds gave 124 to 122 (z -0.3), so it was the RNG reshuffle.
+- **2026-10-24**: Stall score (`AISmogon_StallScore`). When both sides of a
+  matchup outheal the damage they take, the race used to call it even;
+  now the side that spends fewer of its turns healing wins (16 × log2 of
+  the player's damage / healing over ours). Blissey vs a Rest Zapdos that
+  only takes Ice Beam scores 148. Battles: `ai_check.sh` gave Koga 2 +10
+  and Whitney 2 -7 wins in 144 (z +1.4, -1.5); 144 fresh seeds of each
+  gave +1 and -2 (z +0.2, -0.4), so no change in strength. With it,
+  leaving Counter out of the matchup score against special attackers still
+  cost Whitney 2 (15 to 5 wins, z -2.3), so Counter stays counted.
+  `smogon_calls_test` and `ai_scenarios` ALL OK; all four ROMs build.
