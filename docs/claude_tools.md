@@ -183,7 +183,10 @@ and the `CLAUDE.md` line after upgrading.
     damage matched the cartridge formula's max roll on 103 of 106 real
     matchups (the rest were 1-point rounding), but Fly (90), Petal Dance
     (120) and Tackle (40) keep their later power; Hidden Power counts as 70
-    power and sleep turns start from 0. Items it doesn't know, like the
+    power and sleep turns start from 0; Morning Sun, Synthesis and
+    Moonlight always heal 1/2 without weather (the cartridge heals 1/4
+    outside the move's time of day), so it overrates them (Erika's
+    Meganium). Items it doesn't know, like the
     Sitrus Berry, do nothing (`--check` lists the ones it knows; Sour
     Crystal's renamed items, like the Lum Berry, are mapped back to Gen 2's).
   - Comparing two ROMs: compare the pattern a change targets (the
@@ -191,7 +194,16 @@ and the `CLAUDE.md` line after upgrading.
     change reshuffles the battles' RNG, so different positions come up:
     a weather fix that never touched Koga 2's team moved his clear
     disagreements from 9 to 34, half of them from one battle.
+  - The engine panics (a Rust panic, a `BaseException`) on an Encore
+    without the encored move: `ai_trace.py` logs each side's last move
+    (`last_move`), and on older traces the Encore is left out. A position
+    the engine fails on is skipped and counted at the end; each search goes
+    into the cache as it finishes, so an interrupted run keeps its work.
   - Oak and Safari (also in `bots/`) only simulate Gen 1.
+- `ai_layers.py ROM SYM RAM TRAINER SEED [--species NAME]`: replays a
+  battle like `ai_trace.py` and prints each `AIChooseMove` call's scores
+  after every layer that changed them (hooks `AIChooseMove.CheckLayer`),
+  to find which layer is behind an odd pick.
 - `ai_profile.py ROM SYM RAM TRAINER SEED [SPAN...]`: time AI code in
   scanlines (154 per frame): by default the switch decision, the switch-in
   search and the parts of a matchup score; `START:END1|END2=name` for others.

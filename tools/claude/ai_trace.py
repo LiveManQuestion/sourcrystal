@@ -106,6 +106,8 @@ def run(argv):
             'screen_counts': {side: dict(zip(('safeguard', 'light_screen', 'reflect'),
                                              block(f'w{side}SafeguardCount', 3))) for side in ('Player', 'Enemy')},
             'disabled': {'Player': mem[W('wDisabledMove')], 'Enemy': mem[W('wEnemyDisabledMove')]},
+            # (the move an Encore locks in)
+            'last_move': {'Player': mem[W('wLastPlayerMove')], 'Enemy': mem[W('wLastEnemyMove')]},
             'weather': mem[W('wBattleWeather')], 'weather_count': mem[W('wWeatherCount')]}
         # AIChooseMove picks the move at the start of the turn, but
         # SwitchSmogon runs after the player's switch: then the move is

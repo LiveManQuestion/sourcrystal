@@ -133,6 +133,16 @@ def side(party, active, stages, st, who):
     mons = [pokemon(m, st['unboosted'][who] if i == active else None, toxic and i == active,
                     st['disabled'][who] if i == active else 0) for i, m in enumerate(party)]
     vol = {name for (byte, flag), name in VOLATILES.items() if sub[byte] & 1 << CONST[flag]}
+    # The engine panics on an Encore without the encored move (traces from
+    # before ai_trace.py logged it, or a move the Pokemon doesn't have).
+    last_used = 'move:none'
+    if 'encore' in vol:
+        last = st.get('last_move', {}).get(who)
+        moves = party[active]['moves']
+        if last and last in moves:
+            last_used = f'move:{moves.index(last)}'
+        else:
+            vol.discard('encore')
     if sub[0] & 1 << CONST['SUBSTATUS_PERISH'] and 1 <= counts['perish'] <= 4:
         vol.add(f'perish{counts["perish"]}')
     screens, sc = st['screens'][who], st['screen_counts'][who]
@@ -145,7 +155,7 @@ def side(party, active, stages, st, who):
     durations = pe.VolatileStatusDurations(confusion=counts['confuse'], encore=counts['encore'])
     s = [x - 7 for x in stages]
     return pe.Side(pokemon=mons, active_index=pe.PokemonIndex(str(active)), volatile_statuses=vol,
-                   volatile_status_durations=durations, side_conditions=conditions,
+                   volatile_status_durations=durations, side_conditions=conditions, last_used_move=last_used,
                    substitute_health=st['substitute_hp'][who], attack_boost=s[0], defense_boost=s[1],
                    speed_boost=s[2], special_attack_boost=s[3], special_defense_boost=s[4],
                    accuracy_boost=s[5], evasion_boost=s[6])
@@ -176,6 +186,16 @@ def search(state, ms, threads, iterations=0):
     return {'visits': result.total_visits,
             'options': {o.move_choice: (o.total_score / o.visits if o.visits else 0, o.visits)
                         for o in result.side_one}}
+
+
+def search_safe(args):
+    """search(*args), or {'error': ...} when the engine panics: a Rust panic
+    is a BaseException, which kills a multiprocessing worker and hangs the
+    pool."""
+    try:
+        return search(*args)
+    except BaseException as e:  # noqa: B036
+        return {'error': f'{type(e).__name__}: {e}'}
 
 
 def judge(d, found):
@@ -289,21 +309,35 @@ def main(argv):
     for k, s in zip(keys, states):
         if k not in cache:
             new.setdefault(k, s)
+    tasks = [(s, *settings) for s in new.values()]
+    out = open(opts['--cache'], 'a') if opts['--cache'] else None
+    failed = {}
     if opts['--iterations'] and opts['--jobs'] > 1:
         import multiprocessing
-        with multiprocessing.Pool(opts['--jobs']) as pool:
-            found = pool.starmap(search, [(s, *settings) for s in new.values()], chunksize=1)
+        pool = multiprocessing.Pool(opts['--jobs'])
+        found = pool.imap(search_safe, tasks, chunksize=1)
     else:
-        found = [search(s, *settings) for s in new.values()]
-    for k, f in zip(new, found):
+        pool, found = None, map(search_safe, tasks)
+    # (written as each search ends, so an interrupted run keeps its work)
+    for n, (k, f) in enumerate(zip(new, found)):
+        if 'error' in f:
+            failed[k] = f['error']
+            continue
         cache[k] = dict(key=k, **f)
-    if opts['--cache'] and new:
-        with open(opts['--cache'], 'a') as f:
-            for k in new:
-                f.write(json.dumps(cache[k]) + '\n')
+        if out:
+            out.write(json.dumps(cache[k]) + '\n')
+            out.flush()
+        if n % 500 == 499:
+            print(f'{n + 1}/{len(new)} positions searched', file=sys.stderr)
+    if pool:
+        pool.close()
     print(f'{len(todo)} decisions, {len(new)} positions searched, {len(todo) - len(new)} reused', file=sys.stderr)
+    for e, n in collections.Counter(failed.values()).items():
+        print(f'{n} positions the engine failed on: {e}', file=sys.stderr)
     rows = []
     for (p, b, i, d), k in zip(todo, keys):
+        if k in failed:
+            continue
         j = judge(d, cache[k])
         j.update(trace=os.path.basename(p), battle=b, decision=i, turn=d['turn'],
                  ai_mon=species_name(d['party'][d['active']]['species']),
