@@ -1121,3 +1121,16 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   leaving Counter out of the matchup score against special attackers still
   cost Whitney 2 (15 to 5 wins, z -2.3), so Counter stays counted.
   `smogon_calls_test` and `ai_scenarios` ALL OK; all four ROMs build.
+- **2026-11-08**: Clock reset after the Transfer Pak in gopher64 (not a ROM
+  change). gopher64 v1.1.42 saved the RTC footer of the Transfer Pak `.sav`
+  with a fake timestamp (`0x7FFFFFFF7FFFFFFF`); Game Boy emulators then set
+  the RTC day carry bit, which Crystal's `_FixDays` reads as a reset. Fixed
+  upstream by gopher64 #1329 (real timestamp, catch-up on load), on `main`
+  but not yet released. An old save keeps the carry bit until an in-game
+  save (`SaveRTC`) clears it. Extra fixes on the `gb-cart-fixes` branch of
+  the user's fork (`a16a21f`, no PR yet): GB cart banks mirror past the end
+  of ROM/RAM (Stadium 2's Game Pak check reads RAM bank 4; like
+  mupen64plus #1195), RTC banks past $0C ignored, the RTC advances before a
+  register write, and the saved timestamp is capped at the current time.
+  Checked: PyBoy shows `TIME NOT SET` with the flags set and the clock
+  without; the user saved in GB Tower and SameBoy kept the time.
