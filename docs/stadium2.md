@@ -54,16 +54,74 @@ ares (148) runs the GB Tower at full speed. It reads the Game Boy save from
 
 In mupen64plus, emulators need two mupen64plus-core fixes and an LLE RSP:
 
-- Without the Transfer Pak fix (the system mupen64plus 2.6.0 lacks it),
-  Stadium reads the whole ROM and then says "The Transfer Pak is not set
-  properly". Upstream mupen64plus-core and RMG 0.8.2+ have it.
+- Without the Transfer Pak fix (mupen64plus 2.6.0, Arch's `mupen64plus`
+  package, lacks it), Stadium reads the whole ROM and then says "The Transfer
+  Pak is not set properly". Upstream mupen64plus-core and RMG 0.8.2+ have it.
+  The user's mupen64plus is upstream `master` built from source
+  (`~/src/mupen64plus/`: core, ui-console, input-sdl, audio-sdl, rsp-hle,
+  video-rice) and installed with `PREFIX=$HOME/.local`, so the scripts use
+  `--datadir ~/.local/share/mupen64plus`. To update: `git pull` in each, then
+  `make -C projects/unix all install PREFIX=$HOME/.local` (core: also
+  `VULKAN=0`).
+- In RMG, set controller 1's Pak to Transfer Pak (in the Input settings; the
+  Game Boy ROM and save paths alone don't plug it in) and the RSP plugin to
+  cxd4 or parallel.
 - Without RMG's RSP/RDP timing patch (Rosalie241/RMG `e8d4d6341b`, not
   upstream), it reads ROM banks 1-4, $27 and $7F and then hangs on a white
-  screen. HLE RSP hangs too.
+  screen. HLE RSP hangs too. RMG 0.9.1 (2026-11-04) lost the patch: its "update
+  mupen64plus-core" commit `6b1214f1b6` (2026-09-28) reverted it, so its GB
+  Tower hangs the same way (black screen after choosing the Game Pak; the
+  Game Pak check and the Lab still work). Checked by running RMG under Xvfb
+  with a keyboard profile; changing the CPU emulator or `RandomizeInterrupt`
+  doesn't help.
+- Minimal fix (2026-11-09): `tools/claude/stadium2/rsp_resume_task.diff`
+  (local branch `gb-tower-rsp-resume` in `~/src/mupen64plus/mupen64plus-core`,
+  not pushed). The GB Tower's RSP task (type 2) keeps running and polls for
+  the CPU; cxd4 returns from `doRspCycles` without halting, and upstream
+  only resumes such a task when the CPU writes `SP_STATUS`, which the GB
+  Tower never does after the first time. Resuming it from
+  `rsp_interrupt_event` fixes it (Continue and walking in Sour Crystal
+  checked). It applies unchanged to RMG 0.9.1 (its `rsp_core.c` is
+  upstream's). The cxd4 `WaitForCPUHost` and `SupportCPUSemaphoreLock`
+  options don't help. Pushed to the fork as `gb-tower-rsp-resume` (no PR yet).
+  Regression checks: 74 PeterLemon RSP/interrupt/RCP demos with
+  angrylion-rdp-plus (built in `~/src/mupen64plus/angrylion-rdp-plus`,
+  10 s per demo): 66 pixel-identical on upstream and the fix, 0 different,
+  8 blank on both (XBUS and DCT demos);
+  n64-systemtest stops at "RSP BREAK" on both; in Stadium 2 outside the GB
+  Tower no task returns unhalted, so the new path never runs. Parallel RSP
+  still hangs in the GB Tower (also with RMG's full patch: it needs a
+  parallel-rsp change too).
+- Patched RMG for testing: `~/src/RMG` (the user's fork at v0.9.1, local
+  branch `gb-tower-rsp-resume` with the fix applied to its core), built as
+  a portable install in `~/src/RMG/Bin/Release` (needs `vulkan-headers`);
+  `rmg-gbtower` in `~/.local/bin` launches it. Its settings are
+  `Bin/Release/Config/` (copied from `~/.config/RMG`); N64 saves stay in
+  `~/.local/share/RMG/Save`. GB Tower checked headlessly to Sour Crystal's
+  intro. RMG 0.9.1's core also lacks upstream #1195 and #1196: without
+  #1196 Sour Crystal asks to reset the clock in the GB Tower, and the user's
+  save then hung on "SAVING…" (Stadium stopped writing the cartridge partway
+  through the backup copy). With both applied (`~/src/RMG` commit
+  `b880a08d`) the save finishes.
+- Pokémon Stadium 1 (US Rev 2) has the same GB Tower hang in RMG 0.9.1
+  (black screen after choosing the Game Pak, with pokered.gbc); the
+  patched RMG runs Red there, continues the user's `pokered.sav` and saves
+  (checksum valid). The console frontend shows Stadium 1 as a black screen
+  even outside the GB Tower (video setup), so test it in RMG.
+- Saving in the GB Tower writes about 32 changed 256-byte SRAM pages and
+  skips the rest of the backup copy (`0:$B800-$BF00`, incl. its checksum),
+  in upstream mupen64plus and RMG alike, with vanilla Crystal too. The main
+  copy is complete and the game only reads the backup if the main copy is
+  bad; the next save on a handheld rewrites both. ares (148, more
+  accurate) does the same: main copy written, backup copy only partly
+  (`0:$B200-$B300` written, `$B900-$BA00` and the checksum stale), so it is
+  most likely Stadium 2's own behaviour, not an emulator bug. ares reads
+  the GB save from `<ROM name>.ram` next to the ROM (not `.sav`) and keeps
+  the clock in `<ROM name>.rtc`.
 - Vanilla Crystal behaves the same, so these are emulator problems.
 
-`tools/claude/stadium2/build_core.sh` builds upstream mupen64plus-core plus
-that patch into `.stadium2/` (git-ignored; the dynarec needs `nasm`, without
+`tools/claude/stadium2/build_core.sh` builds upstream mupen64plus-core
+(`a9ca8ec0`, with the Game Boy fixes below) plus that patch into `.stadium2/` (git-ignored; the dynarec needs `nasm`, without
 it the core falls back to the much slower cached interpreter).
 `play.sh [STADIUM2.n64 GBROM GBSAV]` (default: the US ROM, `sourcrystal.gbc`,
 `sourcrystal.sav`) plays with it: RMG's cxd4 RSP and GLideN64 (`GFX=parallel`
@@ -73,23 +131,23 @@ the same `--corelib`, `--rsp` and cxd4 settings to `run.sh`.
 
 The "Out of bound read from GB RAM 8000" warning is Stadium reading SRAM
 bank 4 during the Game Pak check (a real MBC3 mirrors bank 0 there); it's
-harmless with `gb_ram_mirroring.diff`, which `build_core.sh` applies: banks
-past the end of the cartridge's ROM or RAM mirror the start, like on
-hardware (upstream returns nothing for them). Stadium writes a 32-byte
+harmless since upstream #1195 (`gb_ram_mirroring.diff`): banks past the end
+of the cartridge's ROM or RAM mirror the start, like on hardware (older
+cores return nothing for them). Stadium writes a 32-byte
 pattern to bank 0 `$A000` before that read, probably to check the mirroring.
 
 mupen64plus-core used to truncate the Game Boy save to the 32 KB of SRAM the
 first time it wrote it, dropping the 48-byte clock footer of a 32816-byte
 `.sav`, so the game then asked to reset the clock. Fixed upstream in
-`902bc60f` (`docs/mupen64plus_pr.md`), which `build_core.sh` builds; RMG's
+`902bc60f` (`docs/mupen64plus_pr.md`); RMG's
 own core still truncates until an RMG release picks it up.
 
-Upstream's MBC3 clock starts with `last_time` = 0 (`poweron_mbc3_rtc`), so
+mupen64plus-core's MBC3 clock started with `last_time` = 0 (`poweron_mbc3_rtc`), so
 when the GB Tower latches and reads it, the core adds every second since
 1970: past 511 days, which sets the day carry bit that `_FixDays` treats as
 a reset. Gold/Silver/Crystal then say "The clock's time may be wrong"
 (Continue shows TIME ???) and save that flag (`sRTCStatusFlags` = `$80`).
-`gb_rtc_start_time.diff` (in `build_core.sh`) starts it at power on. The
+Upstream #1196 (`gb_rtc_start_time.diff`) starts it at power on. The
 clock still starts at day 0 each session: it doesn't load the `.sav`
 footer's clock.
 

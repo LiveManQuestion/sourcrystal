@@ -104,7 +104,8 @@ its 48-byte RTC footer and the game asks to reset its clock), the fix
 
 Both made against upstream master `902bc60f`, one commit each, from the
 fork's branches of the same name (local clone `~/mupen64plus-core`, remote
-`upstream` = mupen64plus). `build_core.sh` applies both as diffs.
+`upstream` = mupen64plus). Both merged 2026-10-18 (upstream `a9ca8ec0`),
+which `build_core.sh` now builds.
 
 - https://github.com/mupen64plus/mupen64plus-core/pull/1195 "Mirror Game Boy
   cartridge banks past the end of ROM and RAM" (`gb-ram-mirroring`,
@@ -202,8 +203,8 @@ Claude Code" line to replies.
 
 ### Reproducing
 
-- Build: `bash tools/claude/stadium2/build_core.sh` (upstream `902bc60` +
-  RMG's RSP patch + both diffs) into `.stadium2/core`.
+- Build: `bash tools/claude/stadium2/build_core.sh` (upstream `a9ca8ec0`, which
+  has both, + RMG's RSP patch) into `.stadium2/core`.
 - Unit test: the gcc line at the top of `gb_cart_test.c`, against
   `.stadium2/core` or a checkout of either branch.
 - Stadium: `Xvfb :77 -screen 0 800x600x24 &`, then `run.sh` with
@@ -219,3 +220,65 @@ Claude Code" line to replies.
   with `xkey.py Escape` so the save is written. Use copies of saves; the
   project-root `sourcrystal.sav` (2026-10-16) already has the RTC reset
   flag set, so use another save for clock tests.
+
+## GB Tower RSP pull request
+
+Opened 2026-11-10: https://github.com/mupen64plus/mupen64plus-core/pull/1202
+
+Branch `gb-tower-rsp-resume` on the fork (commit `cf4d62d5`, on upstream
+`a9ca8ec0`). Title: **Keep running RSP tasks that return without halting**
+
+~~~markdown
+Pokémon Stadium and Pokémon Stadium 2 hang on a black screen in the GB Tower
+(their built-in Game Boy emulator) with an LLE RSP plugin (cxd4): after you
+choose the Game Pak, Stadium reads a few ROM banks (1, $27, $7F, then 2-4)
+and stops. This happens with any Game Boy game, including unmodified
+Pokémon Red and Crystal.
+
+### Cause
+
+The GB Tower starts an RSP task that never halts: it keeps running and polls
+`SP_STATUS` for work from the CPU. cxd4 returns from `doRspCycles` when the
+microcode waits like this, without the task halting or breaking.
+`do_SP_Task` then marks the task locked and queues an SP interrupt event,
+but the task only runs again when the CPU writes `SP_STATUS`
+(`update_sp_status`). The GB Tower writes it once and then waits for the
+task's results, so the task never runs again.
+
+I found this by logging every RSP task run and every `SP_STATUS` write.
+With the RSP changes from #1153 applied, the GB Tower's task (type 2)
+returns without halting millions of times and is resumed each time without
+the CPU touching `SP_STATUS`. Upstream resumes it once.
+
+### Fix
+
+In `rsp_interrupt_event`, if the task is locked and neither halted nor
+broken, run it again instead of waiting for the CPU. On hardware the RSP
+keeps running until it halts, so this is closer to the real behaviour. It
+only affects tasks that return without halting; with an HLE RSP plugin
+every task halts, so nothing changes there.
+
+This is the part of #1153 (closed) that the GB Tower needs, without the
+rest of that rework.
+
+### Testing
+
+- Pokémon Stadium 2 (US), cxd4 + GLideN64: the GB Tower boots Pokémon
+  Crystal and a Crystal ROM hack, continues a save, walks around and saves.
+  Before: black screen.
+- Pokémon Stadium (US Rev 2), cxd4 + GLideN64 (in RMG with this change
+  applied): the GB Tower boots Pokémon Red, continues a save and saves
+  (save checksum valid). Before: black screen.
+- Stadium 2 outside the GB Tower (boot, Game Pak check, menus, hub): no
+  RSP task returns without halting, so the new code path never runs.
+- 74 of PeterLemon's RSP, interrupt and RCP test ROMs with cxd4 and
+  angrylion-rdp-plus: 66 screenshots pixel-identical before and after, 8
+  blank in both, none different.
+- n64-systemtest: stops at the same test ("RSP BREAK") before and after.
+
+### Not fixed
+
+With parallel-rsp the GB Tower still hangs, before and after this change
+(also with the #1153 changes; as noted there, parallel-rsp needs changes
+of its own).
+~~~

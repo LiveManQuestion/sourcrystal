@@ -1,0 +1,43 @@
+From cf4d62d555f4458af016fd27affc540e93cbacc5 Mon Sep 17 00:00:00 2001
+From: LiveManQuestion <>
+Date: Mon, 9 Nov 2026 23:14:35 -0500
+Subject: [PATCH] Keep running RSP tasks that return without halting
+
+When the RSP plugin returns from doRspCycles without the task halting or
+breaking (cxd4 does this when the microcode polls SP_STATUS for the CPU),
+do_SP_Task marks the task locked and queues an SP interrupt event, but the
+task only ran again when the CPU wrote SP_STATUS. Pokemon Stadium 2's GB
+Tower leaves its RSP task running and never writes SP_STATUS again, so it
+hung on a black screen after loading the Game Boy cartridge. Resume the
+task from the SP interrupt event instead.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/device/rcp/rsp/rsp_core.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/src/device/rcp/rsp/rsp_core.c b/src/device/rcp/rsp/rsp_core.c
+index 99767bc0..05956565 100644
+--- a/src/device/rcp/rsp/rsp_core.c
++++ b/src/device/rcp/rsp/rsp_core.c
+@@ -406,6 +406,17 @@ void rsp_interrupt_event(void* opaque)
+ {
+     struct rsp_core* sp = (struct rsp_core*)opaque;
+ 
++    /* The RSP plugin returned without the task halting or breaking (cxd4
++     * does this when the microcode polls SP_STATUS waiting for the CPU).
++     * Keep running the task instead of waiting for the CPU to write
++     * SP_STATUS: Pokemon Stadium 2's GB Tower leaves its RSP task running
++     * and never writes SP_STATUS again, so it hung on a black screen. */
++    if (sp->rsp_task_locked && !(sp->regs[SP_STATUS_REG] & (SP_STATUS_HALT | SP_STATUS_BROKE)))
++    {
++        do_SP_Task(sp);
++        return;
++    }
++
+     if (!sp->rsp_task_locked)
+     {
+         sp->regs[SP_STATUS_REG] |=
+-- 
+2.56.0
+

@@ -1134,3 +1134,55 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
   register write, and the saved timestamp is capped at the current time.
   Checked: PyBoy shows `TIME NOT SET` with the flags set and the clock
   without; the user saved in GB Tower and SameBoy kept the time.
+- **2026-11-09**: mupen64plus from upstream source. Arch's `mupen64plus`
+  2.6.0 package (uninstalled by the user) lacks the Transfer Pak fix Stadium 2
+  needs; upstream core (`a9ca8ec0`, with PRs #1194-#1196 merged),
+  ui-console, input-sdl, audio-sdl, rsp-hle and video-rice are built in
+  `~/src/mupen64plus/` and installed to `~/.local`. `play.sh`/`run.sh` use
+  `~/.local/share/mupen64plus`; `build_core.sh` builds `a9ca8ec0` plus only
+  RMG's RSP patch (the two diffs are merged). RMG didn't see the Transfer Pak
+  because controller 1's Pak was not set to Transfer Pak (and its RSP was HLE).
+  Checked headlessly: Game Pak check, hub and Lab PC with `sourcrystal.gbc`.
+- **2026-11-09**: RMG 0.9.1's GB Tower hangs (black screen) with any Game
+  Boy ROM: RMG's core update `6b1214f1b6` dropped its own RSP/RDP timing patch
+  (`e8d4d6341b`). The user's RMG config now has controller 1's Transfer Pak
+  on `sourcrystal.gbc`/`.sav` and the cxd4 RSP. `play.sh` (upstream
+  `a9ca8ec0` + that patch) runs the GB Tower to Sour Crystal's Continue screen.
+- **2026-11-09**: Found the minimal mupen64plus-core fix for the GB Tower
+  hang: an 11-line change to `rsp_interrupt_event` resumes RSP tasks that
+  returned without halting (`tools/claude/stadium2/rsp_resume_task.diff`,
+  local branch `gb-tower-rsp-resume`, commit `cf4d62d5`, not pushed or
+  posted). Found by logging RSP tasks and `SP_STATUS` writes in both cores:
+  with RMG's full RSP patch the GB Tower's type-2 task is resumed millions
+  of times without the CPU touching `SP_STATUS`; upstream resumes it once.
+  Checked headlessly: GB Tower to Sour Crystal's overworld, save kept 32816
+  bytes.
+- **2026-11-10**: Tested the GB Tower RSP fix and pushed it to the user's
+  mupen64plus-core fork (branch `gb-tower-rsp-resume`, no PR). 74 PeterLemon
+  homebrew RSP/interrupt/RCP demos show the same results on upstream and the
+  fix; n64-systemtest stops at the same test on both; Parallel RSP still
+  hangs in the GB Tower with any core. Details in `docs/stadium2.md`.
+- **2026-11-10**: Reran the 74 PeterLemon demos with angrylion-rdp-plus
+  (exact hardware output): 66 pixel-identical between upstream and the GB
+  Tower RSP fix, none different, 8 blank on both.
+- **2026-11-10**: Built a portable RMG 0.9.1 with the GB Tower RSP fix
+  (`~/src/RMG/Bin/Release`, launcher `rmg-gbtower`); its GB Tower boots Sour
+  Crystal where the installed RMG 0.9.1 goes black. Not pushed.
+- **2026-11-10**: GB Tower saving. The user's save in the patched RMG hung
+  on "SAVING…" after Stadium wrote the main copy and half the backup; the
+  backup was repaired by copying the main copy (old file kept as
+  `sourcrystal.sav.bak-20261110-gbtower-stalled`). RMG's core lacked the
+  upstream Game Boy fixes #1195/#1196 (clock reset prompt in the GB Tower);
+  with them added to `~/src/RMG` the save completes. In every core, with
+  vanilla Crystal too, the GB Tower writes only about 32 SRAM pages per save
+  and leaves the backup copy's end and checksum unwritten.
+- **2026-11-10**: Stadium 1 (US Rev 2) GB Tower with pokered.gbc: black
+  screen in the installed RMG 0.9.1, works in the patched RMG (continue and
+  save, checksum valid). The RSP fix covers Stadium 1 too.
+- **2026-11-10**: GB Tower save in ares 148 (user-run, copy in
+  `~/ares-gbtower-test`): main copy valid, backup copy only partly written,
+  like mupen64plus. The partial backup is Stadium 2's behaviour, not the
+  emulator's. ares uses `<ROM>.ram`/`.rtc` next to the ROM.
+- **2026-11-10**: Opened mupen64plus-core #1202 "Keep running RSP tasks
+  that return without halting" (branch `gb-tower-rsp-resume`). No comment
+  on RMG #479 (the user asked not to).

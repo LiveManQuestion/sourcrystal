@@ -12,7 +12,7 @@ printf '[Transferpak]\nGB-rom-1 = "%s"\nGB-ram-1 = "%s"\n' "$rom" "$ram" > "$out
 export DISPLAY=:77 SDL_AUDIODRIVER=dummy SDL_VIDEODRIVER=x11
 unset WAYLAND_DISPLAY
 K='Input-SDL-Control1'
-exec mupen64plus --configdir "$out/cfg" --datadir /usr/share/mupen64plus --nosaveoptions \
+exec mupen64plus --configdir "$out/cfg" --datadir "$HOME/.local/share/mupen64plus" --nosaveoptions \
   --noosd --windowed --resolution 640x480 --sshotdir "$out/shots" \
   --gfx mupen64plus-video-rice \
   --set "$K[plugged]=True" --set "$K[plugin]=4" --set "$K[mode]=0" --set "$K[device]=-1" \

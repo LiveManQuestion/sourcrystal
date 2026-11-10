@@ -7,10 +7,11 @@
 # GFX=parallel RMG's parallel-RDP (Vulkan; slower, but draws everything like
 # the hardware). Controller 1 is the first SDL gamepad, auto-configured.
 # mupen64plus writes GBSAV back on exit: a copy is kept in GBSAV.bak-DATE
-# first. Escape quits, F5/F7 save/load state.
+# first. Escape quits, F5/F7 save/load state. CORE=path/libmupen64plus.so.2
+# uses another core (default: the one build_core.sh makes).
 dir=$(cd "$(dirname "$0")" && pwd)
 top=$(cd "$dir/../../.." && pwd)
-core=$top/.stadium2/core/projects/unix/libmupen64plus.so.2
+core=${CORE:-$top/.stadium2/core/projects/unix/libmupen64plus.so.2}
 plugins=/usr/lib/RMG/Plugin
 [ -f "$core" ] || { echo "run $dir/build_core.sh first" >&2; exit 1; }
 if [ $# -ge 3 ]; then
@@ -41,7 +42,7 @@ else
 	gfx=(--gfx "$plugins/GFX/mupen64plus-video-GLideN64.so" --set 'rsp-cxd4[DisplayListToGraphicsPlugin]=True')
 fi
 K='Input-SDL-Control1'
-exec mupen64plus --configdir "$cfg" --datadir /usr/share/mupen64plus --nosaveoptions \
+exec mupen64plus --configdir "$cfg" --datadir "$HOME/.local/share/mupen64plus" --nosaveoptions \
 	--corelib "$core" --rsp "$plugins/RSP/mupen64plus-rsp-cxd4.so" "${gfx[@]}" \
 	--set "$K[plugged]=True" --set "$K[mode]=2" --set "$K[plugin]=4" \
 	--windowed --resolution 960x720 "$@" "$z64"
