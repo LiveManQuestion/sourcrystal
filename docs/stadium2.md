@@ -112,7 +112,10 @@ In mupen64plus, emulators need two mupen64plus-core fixes and an LLE RSP:
   skips the rest of the backup copy (`0:$B800-$BF00`, incl. its checksum),
   in upstream mupen64plus and RMG alike, with vanilla Crystal too. The main
   copy is complete and the game only reads the backup if the main copy is
-  bad; the next save on a handheld rewrites both. ares (148, more
+  bad. Sour Crystal rebuilds the backup on every Continue with a valid main
+  copy (`TryLoadSaveFile` ends with `WriteBackupSave`), so the first load
+  outside the GB Tower repairs it; inside the GB Tower that rewrite is cut
+  short the same way. ares (148, more
   accurate) does the same: main copy written, backup copy only partly
   (`0:$B200-$B300` written, `$B900-$BA00` and the checksum stale), so it is
   most likely Stadium 2's own behaviour, not an emulator bug. ares reads
