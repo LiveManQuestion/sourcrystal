@@ -1186,3 +1186,26 @@ checked. `CLAUDE.md` summarizes what's still true; add new entries here.
 - **2026-11-10**: Opened mupen64plus-core #1202 "Keep running RSP tasks
   that return without halting" (branch `gb-tower-rsp-resume`). No comment
   on RMG #479 (the user asked not to).
+- **2026-11-10**: Parallel RSP's GB Tower hang: its `SP_STATUS` polling
+  timeout sets HALT, and since libretro/parallel-rsp `be05ef71` that HALT
+  is never cleared, so the task ends. `tools/claude/stadium2/parallel_rsp_timeout.diff`
+  (not pushed) flags timeout HALTs; with mupen64plus-core #1202 the GB Tower
+  boots Sour Crystal with parallel-rsp, walks and saves (same result as
+  cxd4). 74 PeterLemon demos unchanged.
+- **2026-11-10**: Added the parallel-rsp fix to the user's RMG fork (branch
+  `gb-tower-rsp-resume`, commit `878d9487`, pushed). Patched RMG with
+  parallel-rsp and softrdp continues, walks and saves in the GB Tower.
+- **2026-11-10**: Pushed the parallel-rsp fix as `gb-tower-status-timeout`
+  (on Rosalie241/parallel-rsp `RMG`) to the user's parallel-rsp fork; PR
+  text drafted in `docs/parallel_rsp_pr.md`, not opened.
+- **2026-11-10**: More parallel-rsp fix checks in RMG: Stadium 1's GB Tower
+  with Red continues, walks and saves; a Stadium 2 battle plays several
+  turns; n64-systemtest output unchanged.
+- **2026-11-10**: The GB Tower runs the Game Boy game at about 62% speed in
+  mupen64plus with the default `CountPerOp` of 2 (the N64 holds 60 VI/s;
+  any RSP or video plugin); `CountPerOp=1` gives full speed. Set per game
+  in the user's `rmg-gbtower` (Counter Factor 1 for Stadium 1 and 2).
+  HLE works too in the patched RMG, through its parallel-rsp fallback.
+- **2026-11-10**: Opened Rosalie241/parallel-rsp #1 (the SP_STATUS timeout
+  fix, `docs/parallel_rsp_pr.md`) and mupen64plus-core #1204
+  (`CountPerOp=1` for every Stadium with a GB Tower, `docs/countperop_pr.md`).

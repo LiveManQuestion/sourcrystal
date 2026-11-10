@@ -1,0 +1,75 @@
+From c2d247ff956d269fc21672868379bca6afa8be6b Mon Sep 17 00:00:00 2001
+From: LiveManQuestion <>
+Date: Tue, 10 Nov 2026 11:15:16 -0500
+Subject: [PATCH] Keep the task running after the SP_STATUS polling timeout
+
+When the microcode polls SP_STATUS for the CPU, RSP_MFC0 sets
+SP_STATUS_HALT after SP_STATUS_TIMEOUT reads to leave the run loop.
+DoRspCycles is meant to clear that HALT again (the code from cxd4), but
+since be05ef71 ("Fixed RSP hang when setting HALT but not BREAK") any HALT
+returns first, so the timeout halts the task for good and the CPU sees
+it as finished. Pokemon Stadium and Pokemon Stadium 2's GB Tower run an
+RSP task that keeps polling SP_STATUS for the CPU, so they hung on a
+black screen after loading the Game Boy cartridge. Remember when the
+HALT came from the timeout and clear it in that case, like cxd4 does.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ parallel.cpp | 6 +++++-
+ rsp/cp0.cpp  | 2 ++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/parallel.cpp b/parallel.cpp
+index 57cb1a7..0d481e3 100644
+--- a/parallel.cpp
++++ b/parallel.cpp
+@@ -20,6 +20,7 @@ RSP::CPU cpu;
+ RSP::JIT::CPU cpu;
+ #endif
+ short MFC0_count[32];
++bool SP_STATUS_TIMED_OUT;
+ int SP_STATUS_TIMEOUT;
+ } // namespace RSP
+ 
+@@ -68,6 +69,7 @@ extern "C"
+ 
+ 		for (auto &count : RSP::MFC0_count)
+ 			count = 0;
++		RSP::SP_STATUS_TIMED_OUT = false;
+ 
+ 		while (!(*RSP::rsp.SP_STATUS_REG & SP_STATUS_HALT))
+ 		{
+@@ -83,7 +85,9 @@ extern "C"
+ 			return cycles;
+ 		else if (*RSP::cpu.get_state().cp0.irq & 1)
+ 			RSP::rsp.CheckInterrupts();
+-		else if (*RSP::rsp.SP_STATUS_REG & SP_STATUS_HALT)
++		// HALT set by the SP_STATUS polling timeout in RSP_MFC0 only pauses
++		// the task: the microcode is waiting for the CPU and has to resume.
++		else if ((*RSP::rsp.SP_STATUS_REG & SP_STATUS_HALT) && !RSP::SP_STATUS_TIMED_OUT)
+ 			return cycles;
+ 		else if (*RSP::rsp.SP_SEMAPHORE_REG != 0) // Semaphore lock fixes.
+ 		{
+diff --git a/rsp/cp0.cpp b/rsp/cp0.cpp
+index 6647d58..7573fc7 100644
+--- a/rsp/cp0.cpp
++++ b/rsp/cp0.cpp
+@@ -8,6 +8,7 @@ namespace RSP
+ extern RSP_INFO rsp;
+ extern short MFC0_count[32];
+ extern int SP_STATUS_TIMEOUT;
++extern bool SP_STATUS_TIMED_OUT;
+ } // namespace RSP
+ #endif
+ 
+@@ -35,6 +36,7 @@ extern "C"
+ 			if (RSP::MFC0_count[rt] >= RSP::SP_STATUS_TIMEOUT)
+ 			{
+ 				*RSP::rsp.SP_STATUS_REG |= SP_STATUS_HALT;
++				RSP::SP_STATUS_TIMED_OUT = true;
+ 				return MODE_CHECK_FLAGS;
+ 			}
+ 		}
+-- 
+2.56.0
+

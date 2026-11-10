@@ -83,17 +83,71 @@ In mupen64plus, emulators need two mupen64plus-core fixes and an LLE RSP:
   `rsp_interrupt_event` fixes it (Continue and walking in Sour Crystal
   checked). It applies unchanged to RMG 0.9.1 (its `rsp_core.c` is
   upstream's). The cxd4 `WaitForCPUHost` and `SupportCPUSemaphoreLock`
-  options don't help. Pushed to the fork as `gb-tower-rsp-resume` (no PR yet).
+  options don't help. Opened as mupen64plus-core #1202.
   Regression checks: 74 PeterLemon RSP/interrupt/RCP demos with
   angrylion-rdp-plus (built in `~/src/mupen64plus/angrylion-rdp-plus`,
   10 s per demo): 66 pixel-identical on upstream and the fix, 0 different,
   8 blank on both (XBUS and DCT demos);
   n64-systemtest stops at "RSP BREAK" on both; in Stadium 2 outside the GB
-  Tower no task returns unhalted, so the new path never runs. Parallel RSP
-  still hangs in the GB Tower (also with RMG's full patch: it needs a
-  parallel-rsp change too).
+  Tower no task returns unhalted, so the new path never runs.
+- Parallel RSP needs its own fix on top of #1202:
+  `tools/claude/stadium2/parallel_rsp_timeout.diff` (against
+  libretro/parallel-rsp `9ab776a`; applies to RMG's copy too). Opened
+  for RMG's copy as Rosalie241/parallel-rsp #1.
+  When the microcode polls `SP_STATUS`, `RSP_MFC0` sets HALT after
+  `SP_STATUS_TIMEOUT` reads to leave the run loop, and `DoRspCycles` should
+  clear it again like cxd4. libretro `be05ef71` (2024, "RSP hang when
+  setting HALT but not BREAK") returns on any HALT first, so the task looks
+  finished and the core never resumes it. The patch flags timeout HALTs and
+  clears them. With both fixes the GB Tower continues the user's save,
+  walks and saves like cxd4 (angrylion-rdp-plus; main copy valid, backup
+  partial as below); either fix alone still goes black. 74
+  PeterLemon demos with parallel-rsp: same screenshots before and after.
+  libretro's consumer is mupen64plus-next, whose core copy lacks #1202 too
+  (same `rsp_interrupt_event`). The repo's ctest suite needs a
+  `mipsel-linux-gnu` toolchain and doesn't build `PARALLEL_INTEGRATION`
+  code, so it can't cover this; `clang-format` is clean.
+  Standalone mupen64plus frontends (RMG, m64p, mupen64plus-ae) build
+  parallel-rsp from Rosalie241/parallel-rsp branch `RMG` (libretro's code
+  plus "m64p mods"), not libretro master. The fix is commit `878d9487` on
+  `~/src/RMG` branch `gb-tower-rsp-resume` (pushed to the user's fork): the
+  patched RMG with parallel-rsp and softrdp continues, walks and saves in
+  the GB Tower; RMG 0.9.1's own parallel-rsp plugin goes black there.
+  Also checked with the patched plugin in RMG: Stadium 1's GB Tower
+  (Red: continue, walk, save, checksum valid; unpatched goes black), a
+  Stadium 2 Battle Now! battle (picking 3 Pokémon and moves needs the A/B/C
+  buttons; a keyboard profile with only A/B/Start/D-pad gets stuck at "All
+  ready!"), and n64-systemtest (same output, stops at "RSP BREAK").
+  The user's test with parallel-rsp + parallel-RDP (Vulkan): the GB Tower
+  works but the game and audio run slowly; the rest of Stadium 2 runs at
+  full speed. cxd4 + parallel-RDP is just as slow, so the slowdown comes
+  from parallel-RDP, not the RSP. In the GB Tower the RSP gets no graphics
+  tasks, only type-2 (audio) tasks resumed about 6000 times a second, and
+  parallel-rsp spends about 2% of the time in them (cxd4 about 5%). The
+  menus jitter up and down with parallel-RDP's default Bob deinterlacing
+  (`DeinterlaceMode = False`); Weave stops it. cxd4 with parallel-RDP
+  needs `[rsp-cxd4] DisplayListToGraphicsPlugin = False` (RMG has no
+  settings dialog for cxd4); GLideN64 needs `True`.
+  RSP HLE (RMG's default) doesn't know the GB Tower's RSP code and forwards
+  it to its `RspFallback` plugin (parallel-rsp). With the patched
+  parallel-rsp as the fallback and #1202, the GB Tower continues, walks
+  and saves (checked headlessly); with RMG 0.9.1's parallel-rsp it goes
+  black. `rmg-gbtower`'s fallback is the patched
+  `Plugin/RSP/mupen64plus-rsp-parallel.so`. The system `/usr/bin/RMG`
+  (0.9.1, settings in `~/.config/RMG`) has neither fix, and its core warns
+  "Out of bound read from GB RAM 8000" (no #1195 mirroring).
+- GB Tower speed: with mupen64plus's default `CountPerOp` of 2 (Stadium 2
+  has no entry in `mupen64plus.ini`), the N64 holds 60 VI/s but the Game
+  Boy game runs at about 62% speed in emulated time (Crystal's play time
+  gained 37 s over 60 s of idling), with every RSP and video plugin: the
+  GB emulator runs on the N64 CPU and gets too few instructions per frame.
+  `CountPerOp = 1` gives full speed (59.97 s over 60 s); the RSP resume
+  delay makes no difference. In RMG set it per game (Counter Factor 1).
+  Opened as mupen64plus-core #1204 (`CountPerOp=1` in `mupen64plus.ini`
+  for every Stadium with a GB Tower).
 - Patched RMG for testing: `~/src/RMG` (the user's fork at v0.9.1, local
-  branch `gb-tower-rsp-resume` with the fix applied to its core), built as
+  branch `gb-tower-rsp-resume` with the fix applied to its core and
+  parallel-rsp), built as
   a portable install in `~/src/RMG/Bin/Release` (needs `vulkan-headers`);
   `rmg-gbtower` in `~/.local/bin` launches it. Its settings are
   `Bin/Release/Config/` (copied from `~/.config/RMG`); N64 saves stay in
