@@ -54,3 +54,30 @@ With this and mupen64plus/mupen64plus-core#1202 the GB Tower works but runs at a
   mupen64plus-next, whose core also lacks #1202, and its PRs are slow (#16
   took about 15 months).
 - Not mentioning be05ef71's author by name with `@`, to avoid notifying them.
+
+## libretro follow-up (when the user asks)
+
+Waiting until mupen64plus-core #1202 is merged or Rosalie241/parallel-rsp #1
+is accepted; don't open these before the user says. Check the state of
+#1202, #1204 and parallel-rsp #1 first and mention any review changes.
+
+1. **libretro/parallel-rsp** (default branch `master`; mupen64plus-next pulls
+   it with `git subrepo pull`). Clone the user's fork
+   `LiveManQuestion/parallel-rsp` (a fork of libretro's), branch from
+   libretro `master` (`9ab776a` when tested), apply
+   `tools/claude/stadium2/parallel_rsp_timeout.diff` (`git apply`), check
+   `clang-format` (repo's `.clang-format`), push a new branch to the fork
+   (the existing `gb-tower-status-timeout` is on Rosalie241's `RMG`, not
+   libretro `master`). PR text: reuse the body above, with owner/repo
+   references (`mupen64plus/mupen64plus-core#1202`), and link
+   Rosalie241/parallel-rsp#1.
+2. **libretro/mupen64plus-libretro-nx** (default branch `develop`; the
+   user has no fork yet: `gh repo fork`). Port #1202
+   (`tools/claude/stadium2/rsp_resume_task.diff`; nx's
+   `mupen64plus-core/src/device/rcp/rsp/rsp_core.c` still had upstream's
+   `rsp_interrupt_event` on 2026-11-10) and #1204 (`CountPerOp=1` on the
+   same 17 entries in `mupen64plus-core/data/mupen64plus.ini`; nx may also
+   need its generated ini headers rebuilt with `generate-ini-headers.sh`).
+   Also bump `mupen64plus-rsp-paraLLEl` if (1) is merged by then.
+   Testing: RetroArch isn't set up here; say so in the PR or test first if
+   the user wants.
